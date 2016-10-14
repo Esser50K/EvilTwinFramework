@@ -117,25 +117,38 @@ class NetworkManager(object):
             card.set_mtu_size(mtu)
             NetUtils().add_routing_rule(card.get_subnet(), card.get_mask(), card.get_ip())
 
-    def set_mac_and_unmanage(self, interface, mac):
+    def set_mac_and_unmanage(self, interface, mac, retry = False):
         card = self.get_netcard(interface)
 
-        if card != None:
-            if not card.set_mac(mac):
-                return False
-                
-            if not self.network_manager_ignore(mac):
-                return False
+        # Runs at least once, if retry is flagged 
+        # it will try to reset the interface and repeat the process
+        while(1):
+            if card != None:
+                if not card.set_mac(mac):
+                    return False
+                    
+                if not self.network_manager_ignore(interface, mac):
+                    return False
 
-            os.system("service NetworkManager restart") # Restarting NetworkManager service
-            return pyw.macget(card.card) == mac
-        else:
-            return False
+                os.system("service NetworkManager restart") # Restarting NetworkManager service
+                if pyw.macget(card.card) == mac:
+                    return True
+
+            if not retry:
+                break
+
+            print "[-] Unable to set mac and unmanage, resetting interface and retrying."
+            retry = False
+            card = NetworkCard(interface)
+            if card.get_mode() != 'managed':
+                card.set_mode('managed')
+        
+        return False
 
     # NetworkManager is usually a conflicting process, 
     # but we can configure it to ignore the interface 
     # we use as access point or to sniff packets
-    def network_manager_ignore(self, mac_address): 
+    def network_manager_ignore(self, interface, mac_address): 
         try:
             ignore_config = dedent( """
                                     [main]
@@ -145,8 +158,9 @@ class NetworkManager(object):
                                     managed=false
 
                                     [keyfile]
-                                    unmanaged-devices=mac:{mac_address}
-                                    """.format(mac_address=mac_address))
+                                    unmanaged-devices=mac:{mac_address},interface-name:{interface}
+                                    """.format( mac_address=mac_address,
+                                                interface=interface))
 
             self.cleanup_filehandler()
             file_handler = FileHandler(self.nm_config_file)

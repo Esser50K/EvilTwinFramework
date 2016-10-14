@@ -298,9 +298,9 @@ class ETFCommandLine(Cmd):
             return self.show_to_complete_options(line, text)
 
     def update_prompt(self):
-        self.prompt = "ETF{modestart}{mode}{modeend}::> ".format(   modestart = colored("[", "cyan"),
+        self.prompt = "ETF{mode_start}{mode}{mode_end}::> ".format( mode_start = colored("[", "cyan"),
                                                                     mode = colored(cmdline.config_mode_string[:-1], "green"),
-                                                                    modeend = colored("]", "cyan"))
+                                                                    mode_end = colored("]", "cyan"))
 
     def do_EOF(self, line): # control-D
         print "Exiting..."

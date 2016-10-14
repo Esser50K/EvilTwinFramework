@@ -85,7 +85,7 @@ class AirCommunicator(object):
             return False
 
         # NetworkManager setup
-        if self.network_manager.set_mac_and_unmanage(ap_interface, bssid):
+        if self.network_manager.set_mac_and_unmanage(ap_interface, bssid, retry = True):
             self.network_manager.iptables_redirect(ap_interface, internet_interface)
             self.network_manager.configure_interface(ap_interface, gateway)
             
@@ -127,14 +127,9 @@ class AirCommunicator(object):
 
             mac = self.configs["aplauncher"]["hostapd"]["bssid"]
 
-            if not self.network_manager.set_mac_and_unmanage(sniffing_interface, mac):
+            if not self.network_manager.set_mac_and_unmanage(sniffing_interface, mac, retry = True):
                 print "[-] Unable to set mac and unmanage, resetting interface and retrying."
-                card = NetworkCard(sniffing_interface)
-                if card.get_mode() != 'managed':
-                    card.set_mode('managed')
-
-                if not self.network_manager.set_mac_and_unmanage(sniffing_interface, mac):
-                    print "[-] Sniffer will probably crash."
+                print "[-] Sniffer will probably crash."
 
             self.air_scanner.set_probe_sniffing(sniff_probes)
             self.air_scanner.set_beacon_sniffing(sniff_beacons)
@@ -151,7 +146,7 @@ class AirCommunicator(object):
         if stop_ap and self.ap_launcher.ap_running:
             self.ap_launcher.stop_access_point()
             self.ap_launcher.restore_config_files()
-            self.network_manager.cleanup_filehandler()
+            self.network_manager.cleanup()
 
         if stop_deauth and self.air_deauthenticator.deauth_running:
             self.air_deauthenticator.stop_deauthentication_attack()
@@ -269,17 +264,18 @@ class AirCommunicator(object):
         ap_arg_list = [ [   str(ap.bssid), 
                             str(ap.ssid), 
                             str(ap.channel),
+                            str(ap.rssi),
                             "/".join(ap.encryption_methods), 
                             str(ap.encyption_cypher),
                             str(ap.authentication_method)] for ap in ap_list]
 
-        table = PrettyTable(["ID:", "BSSID:", "SSID:", "CHANNEL:", "CRYPTO:", "CIPHER:", "AUTH:"])
+        table = PrettyTable(["ID:", "BSSID:", "SSID:", "CHANNEL:", "SIGNAL:", "CRYPTO:", "CIPHER:", "AUTH:"])
         i = 0
         for ap in ap_arg_list:
             table.add_row([str(i)] + ap)
             i += 1
 
-        print table
+        print unicode(str(table), errors='ignore')
 
     def print_sniffed_probes(self):
         self.air_scanner.update_bssid_in_probes()
@@ -287,15 +283,16 @@ class AirCommunicator(object):
 
         for probe in self.air_scanner.get_probe_requests():
             probe_arg_list.append([ probe.client_mac, probe.client_org, 
-                                    probe.ap_ssid, "\n".join(probe.ap_bssid), probe.type ])
+                                    probe.ap_ssid, "\n".join(probe.ap_bssid), 
+                                    probe.rssi, probe.type ])
 
-        table = PrettyTable(["ID:", "CLIENT MAC:", "CLIENT ORG:", "AP SSID:", "AP BSSID:", "TYPE:"])
+        table = PrettyTable(["ID:", "CLIENT MAC:", "CLIENT ORG:", "AP SSID:", "AP BSSID:", "SIGNAL:", "TYPE:"])
         i = 0
         for probe in probe_arg_list:
             table.add_row([str(i)] + probe)
             i += 1
 
-        print table
+        print unicode(str(table), errors='ignore')
 
     def print_bssids_to_deauth(self):
         bssid_list = self.air_deauthenticator.bssids_to_deauth
@@ -311,7 +308,7 @@ class AirCommunicator(object):
             table.add_row([str(i)] + bssid)
             i += 1
 
-        print table
+        print unicode(str(table), errors='ignore')
 
     def print_clients_to_deauth(self):
         client_list = self.air_deauthenticator.clients_to_deauth.keys()
@@ -328,7 +325,7 @@ class AirCommunicator(object):
             table.add_row([str(i)] + client)
             i += 1
 
-        print table
+        print unicode(str(table), errors='ignore')
 
     def print_connected_clients(self):
         client_list = self.ap_launcher.connected_clients.keys()
@@ -346,4 +343,4 @@ class AirCommunicator(object):
             table.add_row([str(i)] + client)
             i += 1
 
-        print table
+        print unicode(str(table), errors='ignore')

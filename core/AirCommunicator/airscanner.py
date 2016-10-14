@@ -31,11 +31,12 @@ class AccessPoint(object):
     The wpa/wpa2 key has to be specified
     """
 
-    def __init__(self,  ssid=None, bssid=None, channel=None,
+    def __init__(self,  ssid=None, bssid=None, channel=None, rssi=None,
                         encryption_methods=(), encyption_cypher=None, authentication_method=None):
         self.ssid = ssid
         self.bssid = bssid
         self.channel = channel
+        self.rssi = rssi
         self.encryption_methods = encryption_methods
         self.encyption_cypher = encyption_cypher
         self.authentication_method = authentication_method
@@ -47,11 +48,12 @@ class AccessPoint(object):
 
 class ProbeInfo(object):
 
-    def __init__(self, client_mac, client_org, ap_ssid, ap_bssids, ptype):
+    def __init__(self, client_mac, client_org, ap_ssid, ap_bssids, rssi, ptype):
         self.client_mac = client_mac
         self.client_org = client_org
         self.ap_bssids = ap_bssids
         self.ap_ssid = ap_ssid
+        self.rssi = rssi
         self.type = ptype
 
     def __eq__(self, other):
@@ -68,7 +70,7 @@ class AirScanner(object):
 
         self.ap_lock, self.probe_lock = Lock(), Lock()
         self.access_points = {}
-        self.probe_requests = {}
+        self.probes = {}
 
     def set_probe_sniffing(self, option):
         self.sniff_probes = option
@@ -143,7 +145,9 @@ class AirScanner(object):
         # https://stackoverflow.com/questions/21613091/how-to-use-scapy-to-determine-wireless-encryption-type
 
         bssid = packet[Dot11].addr3
+        rssi_string = self._get_rssi_from_packet(packet)
         if bssid in self.access_points: # Repetition check
+            self.access_points[bssid].rssi = rssi_string
             return
 
         # Args for AccessPoint object
@@ -161,7 +165,10 @@ class AirScanner(object):
             if elt_layer.ID == 0:
                 ssid = elt_layer.info
             elif elt_layer.ID == 3:
-                channel = ord(elt_layer.info)
+                try:
+                    channel = ord(elt_layer.info)
+                except Exception:
+                    channel = str(elt_layer.info)
             elif elt_layer.ID == 48:
                 crypto.add("wpa2")
                 rsn_info = elt_layer.info
@@ -177,7 +184,7 @@ class AirScanner(object):
         if rsn_info or crypto:
             cipher_suite, auth_suite = self.find_auth_and_cipher(rsn_info, crypto)
 
-        new_ap = AccessPoint(ssid, bssid, channel, crypto, cipher_suite, auth_suite)
+        new_ap = AccessPoint(ssid, bssid, channel, rssi_string, crypto, cipher_suite, auth_suite)
         with self.ap_lock:
             self.access_points[bssid] = new_ap
 
@@ -191,16 +198,17 @@ class AirScanner(object):
                 except Exception as e:
                     pass
 
-                probe = ProbeInfo(client_mac, macf, ssid, [bssid], "RESP")
+                probe = ProbeInfo(client_mac, macf, ssid, [bssid], rssi_string, "RESP")
                 with self.probe_lock:
                     try:
-                        if probe not in self.probe_requests[client_mac]:
-                            self.probe_requests[client_mac].append(probe)
+                        if probe not in self.probes[client_mac]:
+                            self.probes[client_mac].append(probe)
                     except Exception:
-                        self.probe_requests[client_mac] = [probe]
+                        self.probes[client_mac] = [probe]
 
 
     def handle_probe_req_packets(self, packet): # TODO
+        rssi_string = self._get_rssi_from_packet(packet)
         client_mac = packet.addr2 # TODO: Address 1 and 3 are usually broadcst, but could be specific client_mac address
         if packet.haslayer(Dot11Elt):                          
             if packet.ID == 0: 
@@ -217,18 +225,21 @@ class AirScanner(object):
                         pass
                     ap_bssid = self.get_bssid_from_ssid(ssid)   # Returns a list with all the bssids
 
-                    probe = ProbeInfo(client_mac, macf, ssid, ap_bssid, "REQ")
+                    probe = ProbeInfo(client_mac, macf, ssid, ap_bssid, rssi_string, "REQ")
                     with self.probe_lock:
                         try:
-                            if probe not in self.probe_requests[client_mac]:
-                                self.probe_requests[client_mac].append(probe)
+                            if probe not in self.probes[client_mac]:
+                                self.probes[client_mac].append(probe)
                         except Exception:
-                            self.probe_requests[client_mac] = [probe]
+                            self.probes[client_mac] = [probe]
 
-                    
-                    # TODO: 
-                    #if verbose:
-                    #print client_mac + " ("+macf+") <--Probing--> " + ssid
+
+    def _get_rssi_from_packet(self, packet):
+        # Found at http://comments.gmane.org/gmane.comp.security.scapy.general/4673
+        try:
+            return str(-(256-ord(packet.notdecoded[-4:-3]))) + " dbm"
+        except Exception:
+            return None
 
                         
     # TODO: Could be better and actually parse the packet instead of searching for byte sequences within
@@ -260,8 +271,8 @@ class AirScanner(object):
 
     def get_probe_requests(self):
         return [probe 
-                for client_mac in self.probe_requests.keys() 
-                for probe in self.probe_requests[client_mac]]
+                for client_mac in self.probes.keys() 
+                for probe in self.probes[client_mac]]
         
     def get_bssid_from_ssid(self, ssid):
         if not (ssid and ssid != ""):
