@@ -25,7 +25,7 @@ class ETFCommandLine(Cmd):
 
     basic_commands = ["air", "spawn", "restore", "get", "set", "modeset", "back", "list"]
 
-    air_commands = ["deauthor", "sniffer", "aplauncher"]
+    air_commands = ["deauthor", "sniffer", "host"]
     air_options = ["start", "stop", "status"]
     air_aplauncher_options = ["copy_ap", "copy_probe", "load", "save", "list_clients"] # copy: copies from aps_list, save: saves an access points details to file, load: loads access point details from file
     air_sniffer_options = ["list_all", "list_aps", "list_probes"]
@@ -125,7 +125,7 @@ class ETFCommandLine(Cmd):
     def do_get(self, args):
         var = args.split()
         if len(var) != 1:
-            print "[-] Only 1 arg expected after 'modeset'"
+            print "[-] Only 1 arg expected after 'get'"
             return
 
         try:
@@ -211,9 +211,9 @@ class ETFCommandLine(Cmd):
 
     def aplauncher_actions(self, option, index=0):
         if option == "copy_ap":
-            self.aircommunicator.aplauncher_copy_ap(index)
+            self.aircommunicator.airhost_copy_ap(index)
         elif option == "copy_probe":
-            self.aircommunicator.aplauncher_copy_probe(index)
+            self.aircommunicator.airhost_copy_probe(index)
         elif option == "save": # TODO
             pass
         elif option == "load":
@@ -221,19 +221,36 @@ class ETFCommandLine(Cmd):
         elif option == "list_clients":
             self.aircommunicator.print_connected_clients()
 
+    def aircommunicator_service(self, service, option):
+        if service == "deauthor":
+            if option == "start":
+                self.aircommunicator.start_deauthentication_attack()
+            else:
+                self.aircommunicator.stop_air_communications(False, False, True)
+        elif service == "host":
+            if option == "start":
+                self.aircommunicator.start_access_point()
+            else:
+                self.aircommunicator.stop_air_communications(False, True, False)
+        elif service == "sniffer":
+            if option == "start":
+                self.aircommunicator.start_sniffer()
+            else:
+                self.aircommunicator.stop_air_communications(True, False, False)
+
     def do_air(self, args):
         air_command = args.split()
 
         if len(air_command) == 2:
             tool, option = air_command
             if option in self.air_options:
-                self.aircommunicator.service(tool, option)
+                self.aircommunicator_service(tool, option)
             # Options other than starting or stopping the service
             elif tool == "sniffer" and option in self.air_sniffer_options:
                 self.sniffer_actions(option)
             elif tool == "deauthor" and option in self.air_deauthor_options:
                 self.deauthor_actions(option)
-            elif tool == "aplauncher" and option in self.air_aplauncher_options:
+            elif tool == "host" and option in self.air_aplauncher_options:
                 self.aplauncher_actions(option)
         elif len(air_command) == 3:
             tool, option, index = air_command
@@ -243,7 +260,7 @@ class ETFCommandLine(Cmd):
                 print e, "\n[-] Error: specified index '{}' must be integer".format(str(index))
                 return
 
-            if tool == "aplauncher" and option in self.air_aplauncher_options:
+            if tool == "host" and option in self.air_aplauncher_options:
                 self.aplauncher_actions(option, index)
             elif tool == "deauthor" and option in self.air_deauthor_options:
                 self.deauthor_deladd(option, index)
@@ -256,7 +273,7 @@ class ETFCommandLine(Cmd):
         if len(entered) == 1:
             out = self.air_commands
         elif len(entered) == 2:
-            if entered[1] == "aplauncher":
+            if entered[1] == "host":
                 out = self.air_aplauncher_options
             elif entered[1] == "sniffer":
                 out = self.air_sniffer_options
@@ -281,7 +298,7 @@ class ETFCommandLine(Cmd):
         elif len(entered) == 3:
             start = entered[2]
             if entered[1] in self.air_commands:
-                if entered[1] == "aplauncher":
+                if entered[1] == "host":
                     out = [keyword for keyword in self.air_aplauncher_options if keyword.startswith(start)]
                 elif entered[1] == "sniffer":
                     out = [keyword for keyword in self.air_sniffer_options if keyword.startswith(start)]

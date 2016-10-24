@@ -163,9 +163,8 @@ class NetworkManager(object):
                                                 interface=interface))
 
             self.cleanup_filehandler()
-            file_handler = FileHandler(self.nm_config_file)
-            file_handler.write(ignore_config)
-            self.file_handler = file_handler
+            self.file_handler = FileHandler(self.nm_config_file)
+            self.file_handler.write(ignore_config)
         except Exception as e:
             print e
             return False
@@ -196,8 +195,8 @@ class NetworkManager(object):
 
     def reset_interfaces(self):
         for card in self.netcards:
-            card.set_mac(card.original_mac)
-            card.set_mode('managed')
+            self.netcards[card].set_mac(self.netcards[card].original_mac)
+            self.netcards[card].set_mode('managed')
 
     def cleanup(self):
         NetUtils().flush_iptables()

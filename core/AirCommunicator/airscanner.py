@@ -2,17 +2,21 @@
 
 '''
 This module is responsible for scanning the air 
-for 802.11x packets using mostly the Scapy module
+for 802.11x packets mostly using the Scapy module
 '''
 
 import os
 import pyric.pyw as pyw
 import signal
+import traceback
+from AuxiliaryModules.packetlogger import PacketLogger
 from time import sleep
 from threading import Thread, Lock
 from netaddr import EUI, OUI
 from scapy.all import sniff, Dot11, Dot11Beacon, Dot11Elt, Dot11ProbeReq, Dot11ProbeResp
+from socket import error as socket_error
 from utils.networkmanager import NetworkCard
+from utils.utils import DEVNULL
 
 
 cipher_suites = { 'GROUP'   : '\x00\x0f\xac\x00',
@@ -72,6 +76,8 @@ class AirScanner(object):
         self.access_points = {}
         self.probes = {}
 
+        self.packet_logger = PacketLogger()
+
     def set_probe_sniffing(self, option):
         self.sniff_probes = option
 
@@ -110,9 +116,15 @@ class AirScanner(object):
         print "[+] Starting packet sniffer on interface '{}'".format(self.running_interface)
 
         try:
+            self.packet_logger.refresh()
             sniff(iface=self.running_interface, store=0, prn=self.handle_packets, stop_filter= (lambda pkt: not self.sniffer_running))
+        except socket_error as e:
+            if not e.errno == 100:
+                print e
+                traceback.print_exc()
         except Exception as e:
             print e
+            traceback.print_exc()
             print "[-] Exception occurred while sniffing on interface '{}'".format(self.running_interface)
 
         print "[+] Packet sniffer on interface '{}' has finished".format(self.running_interface)
@@ -134,7 +146,6 @@ class AirScanner(object):
             pass # The sniffer has already been aborted
 
     def handle_packets(self, packet):
-
         if self.sniff_beacons and (Dot11Beacon in packet or Dot11ProbeResp in packet):
             self.handle_beacon_packets(packet)
         elif self.sniff_probes and Dot11ProbeReq in packet:
@@ -248,7 +259,7 @@ class AirScanner(object):
         auth_suite = None
 
         # Figure out cypher suite
-        if crypto_methods:
+        if crypto_methods and info:
             if "wpa2" in crypto_methods and cipher_suites['CCMP'] in info:
                 cipher_suite = 'CCMP'
             elif ("wpa" in crypto_methods or "wpa2" in crypto_methods) and cipher_suites['TKIP'] in info:
@@ -299,4 +310,3 @@ class AirScanner(object):
         for probe in self.get_probe_requests():
             if probe.ap_ssid:
                 probe.ap_bssid = self.get_bssid_from_ssid(probe.ap_ssid)
-

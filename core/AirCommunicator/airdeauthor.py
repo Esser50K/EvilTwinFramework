@@ -105,9 +105,9 @@ class AirDeauthenticator(object):
         if self._previous_mode != 'monitor':
             card.set_mode('monitor')
 
+        self.deauth_running = True
         deauth_thread = Thread(target=self.deauthentication_attack)
         deauth_thread.start()
-        self.deauth_running = True
 
 
     def stop_deauthentication_attack(self):

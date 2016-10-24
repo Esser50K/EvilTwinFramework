@@ -18,6 +18,7 @@ class SSLStripSpawner(Spawner):
             pass
         
         NetUtils().set_port_redirection_rule("tcp", "80", self.redirection_port, True) # Adds the iptable rule
+        NetUtils().set_port_redirection_rule("tcp", "443", self.redirection_port, True) # Adds the iptable rule
 
     def restore_process(self):
         aplauncher_configs  = ConfigurationManager().config["etf"]["aircommunicator"]["aplauncher"]

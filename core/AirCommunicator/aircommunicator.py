@@ -7,7 +7,7 @@ as sniffing the packets in the air
 '''
 
 from pyric.pyw import interfaces, winterfaces
-from aplauncher import APLauncher
+from airhost import AirHost
 from airscanner import AirScanner
 from airdeauthor import AirDeauthenticator
 from ConfigurationManager.configmanager import ConfigurationManager
@@ -21,7 +21,9 @@ class AirCommunicator(object):
     def __init__(self):
         self.configs = ConfigurationManager().config["etf"]["aircommunicator"]
         config_locations = ConfigurationManager().config["etf"]["config_location"]
-        self.ap_launcher = APLauncher(config_locations["dnsmasq_conf"], config_locations["hostapd_conf"])
+        self.air_host = AirHost(config_locations["hostapd_conf"], 
+                                config_locations["dnsmasq_conf"], 
+                                config_locations["hosts_conf"])
         self.air_scanner = AirScanner()
         self.air_deauthenticator = AirDeauthenticator()
         self.network_manager = NetworkManager(config_locations["networkmanager_conf"])
@@ -29,7 +31,7 @@ class AirCommunicator(object):
     def start_deauthentication_attack(self):
         if not self.air_deauthenticator.deauth_running:
             jamming_interface = self.configs["airdeauthor"]["jamming_interface"]
-            if  jamming_interface not in winterfaces():
+            if jamming_interface not in winterfaces():
                 print "[-] jamming_interface '{}' does not exist".format(jamming_interface)
                 return
 
@@ -40,6 +42,8 @@ class AirCommunicator(object):
                     val = self.configs["airdeauthor"][arg]
                     if arg == "burst_count":    burst_count = int(val)
                     else:                       targeted_only = True if val.lower() == "true" else False
+                except ValueError:
+                    print "[-] Burst count must be in integer form, not changing value."
                 except KeyError:
                     pass
         
@@ -60,18 +64,15 @@ class AirCommunicator(object):
 
         # Start by getting all the info from the configuration file
         try:
-            ap_interface = self.configs["aplauncher"]["ap_interface"]
-            internet_interface = self.configs["aplauncher"]["internet_interface"]
-            gateway = self.configs["aplauncher"]["dnsmasq"]["gateway"]
-            dhcp_range = self.configs["aplauncher"]["dnsmasq"]["dhcp_range"]
-            ssid = self.configs["aplauncher"]["hostapd"]["ssid"]
-            bssid = self.configs["aplauncher"]["hostapd"]["bssid"]
-            channel = self.configs["aplauncher"]["hostapd"]["channel"]
-            hw_mode = self.configs["aplauncher"]["hostapd"]["hw_mode"]
-
-            dns_servers = self.configs["aplauncher"]["dnsmasq"]["dns_server"]
-            if type(dns_servers) is not list:
-                dns_servers = [dns_servers]
+            ap_interface = self.configs["airhost"]["ap_interface"]
+            internet_interface = self.configs["airhost"]["internet_interface"]
+            gateway = self.configs["airhost"]["dnsspoofer"]["gateway"]
+            dhcp_range = self.configs["airhost"]["dnsspoofer"]["dhcp_range"]
+            ssid = self.configs["airhost"]["aplauncher"]["ssid"]
+            bssid = self.configs["airhost"]["aplauncher"]["bssid"]
+            channel = self.configs["airhost"]["aplauncher"]["channel"]
+            hw_mode = self.configs["airhost"]["aplauncher"]["hw_mode"]
+            dns_servers = self.configs["airhost"]["dnsspoofer"]["dns_server"]
         except KeyError as e:
             print "[-] Unable to start Access Point, too few configurations"
             return False
@@ -90,23 +91,29 @@ class AirCommunicator(object):
             self.network_manager.configure_interface(ap_interface, gateway)
             
             # dnsmasq and hostapd setup
-            self.ap_launcher.write_dnsmasq_configurations(ap_interface, gateway, dhcp_range, dns_servers)
             try:
-                self.ap_launcher.write_hostapd_configurations(
-                    interface=ap_interface, ssid=ssid, bssid=bssid, channel=channel, hw_mode=hw_mode,
-                    encryption=self.configs["aplauncher"]["hostapd"]["encryption"], 
-                    auth=self.configs["aplauncher"]["hostapd"]["auth"],
-                    cipher=self.configs["aplauncher"]["hostapd"]["cipher"],
-                    password=self.configs["aplauncher"]["hostapd"]["password"])
+                captive_portal_mode = self.configs["airhost"]["dnsspoofer"]["captive_portal_mode"].lower() == "true"
             except KeyError:
-                self.ap_launcher.write_hostapd_configurations(
+                captive_portal_mode = False
+
+            self.air_host.dnsspoofer.captive_portal_mode = captive_portal_mode
+            self.air_host.dnsspoofer.write_dnsmasq_configurations(ap_interface, gateway, dhcp_range, dns_servers)
+            try:
+                self.air_host.aplauncher.write_hostapd_configurations(
+                    interface=ap_interface, ssid=ssid, bssid=bssid, channel=channel, hw_mode=hw_mode,
+                    encryption=self.configs["airhost"]["aplauncher"]["encryption"], 
+                    auth=self.configs["airhost"]["aplauncher"]["auth"],
+                    cipher=self.configs["airhost"]["aplauncher"]["cipher"],
+                    password=self.configs["airhost"]["aplauncher"]["password"])
+            except KeyError:
+                self.air_host.aplauncher.write_hostapd_configurations(
                     interface=ap_interface, ssid=ssid, bssid=bssid, channel=channel, hw_mode=hw_mode)
             except Exception as e:
                 print e
                 return
 
             # Start services
-            self.ap_launcher.start_access_point(ap_interface)
+            self.air_host.start_access_point(ap_interface)
             return True
 
         print dedent("""
@@ -125,7 +132,7 @@ class AirCommunicator(object):
                 print "[-] sniffing_interface '{}' does not exist".format(sniffing_interface)
                 return
 
-            mac = self.configs["aplauncher"]["hostapd"]["bssid"]
+            mac = self.configs["airhost"]["aplauncher"]["bssid"]
 
             if not self.network_manager.set_mac_and_unmanage(sniffing_interface, mac, retry = True):
                 print "[-] Unable to set mac and unmanage, resetting interface and retrying."
@@ -143,9 +150,9 @@ class AirCommunicator(object):
             self.air_scanner.stop_sniffer()
             self.network_manager.cleanup_filehandler()
 
-        if stop_ap and self.ap_launcher.ap_running:
-            self.ap_launcher.stop_access_point()
-            self.ap_launcher.restore_config_files()
+        if stop_ap and self.air_host.is_running():
+            self.air_host.stop_access_point()
+            self.air_host.cleanup()
             self.network_manager.cleanup()
 
         if stop_deauth and self.air_deauthenticator.deauth_running:
@@ -157,7 +164,7 @@ class AirCommunicator(object):
                 self.start_deauthentication_attack()
             else:
                 self.stop_air_communications(False, False, True)
-        elif service == "aplauncher":
+        elif service == "airhost":
             if option == "start":
                 self.start_access_point()
             else:
@@ -171,10 +178,10 @@ class AirCommunicator(object):
 
 
     # APLauncher action methods
-    def aplauncher_copy_ap(self, index):
+    def airhost_copy_ap(self, index):
         password_info = dedent( """ 
                                 Note:   The AP you want to copy uses encryption, 
-                                        you have to specify the password in the aplauncher configurations.
+                                        you have to specify the password in the airhost configurations.
                                 """)
         bssid_info = dedent("""
                             Note:   When starting the rogue access point 
@@ -182,20 +189,20 @@ class AirCommunicator(object):
                             """)
         try:
             access_point = self.air_scanner.get_access_points()[index]
-            self.configs["aplauncher"]["hostapd"]["ssid"] = access_point.ssid
-            self.configs["aplauncher"]["hostapd"]["bssid"] = access_point.bssid
-            self.configs["aplauncher"]["hostapd"]["channel"] = access_point.channel
+            self.configs["airhost"]["aplauncher"]["ssid"] = access_point.ssid
+            self.configs["airhost"]["aplauncher"]["bssid"] = access_point.bssid
+            self.configs["airhost"]["aplauncher"]["channel"] = access_point.channel
 
-            self.configs["aplauncher"]["hostapd"]["encryption"] =   "wpa/wpa2" if   "wpa" in access_point.encryption_methods and    \
+            self.configs["airhost"]["aplauncher"]["encryption"] =   "wpa/wpa2" if   "wpa" in access_point.encryption_methods and    \
                                                                                     "wpa2" in access_point.encryption_methods       \
                                                                     else "wpa2" if "wpa2" in access_point.encryption_methods        \
                                                                     else "wpa" if "wpa" in access_point.encryption_methods          \
                                                                     else "wep" if "wep" in access_point.encryption_methods          \
                                                                     else "None"
-            self.configs["aplauncher"]["hostapd"]["auth"] = access_point.authentication_method
-            self.configs["aplauncher"]["hostapd"]["cipher"] = access_point.encyption_cypher
+            self.configs["airhost"]["aplauncher"]["auth"] = access_point.authentication_method
+            self.configs["airhost"]["aplauncher"]["cipher"] = access_point.encyption_cypher
 
-            if self.configs["aplauncher"]["hostapd"]["encryption"] != "None":
+            if self.configs["airhost"]["aplauncher"]["encryption"] != "None":
                 print password_info
 
             print bssid_info
@@ -203,7 +210,7 @@ class AirCommunicator(object):
         except IndexError as e:
             print e, "\n[-] Specified index '{}' is out of bounds".format(str(index))
 
-    def aplauncher_copy_probe(self, index):
+    def airhost_copy_probe(self, index):
         try:
             probe = self.air_scanner.get_probe_requests()[index]
 
@@ -211,13 +218,13 @@ class AirCommunicator(object):
                 print "[-] Probe request needs to specify SSID or it cannot be copied."
                 return
 
-            self.configs["aplauncher"]["hostapd"]["ssid"] = probe.ap_ssid
+            self.configs["airhost"]["aplauncher"]["ssid"] = probe.ap_ssid
 
             # TODO if it has bssid it's because the AP is listed in the AP list
             if probe.ap_bssids:
-                self.configs["aplauncher"]["hostapd"]["bssid"] = probe.ap_bssids[0]
+                self.configs["airhost"]["aplauncher"]["bssid"] = probe.ap_bssids[0]
 
-            self.configs["aplauncher"]["hostapd"]["encryption"] = "None"
+            self.configs["airhost"]["aplauncher"]["encryption"] = "None"
 
             ConfigurationManager().config.write() # Singleton perks ;)
         except IndexError as e:
@@ -328,10 +335,10 @@ class AirCommunicator(object):
         print unicode(str(table), errors='ignore')
 
     def print_connected_clients(self):
-        client_list = self.ap_launcher.connected_clients.keys()
+        client_list = self.air_host.aplauncher.connected_clients.keys()
         client_arg_list = []
         for cmac in client_list:
-            client = self.ap_launcher.connected_clients[cmac]
+            client = self.air_host.aplauncher.connected_clients[cmac]
             client_arg_list.append([client.name, cmac, 
                                     client.ip_address, client.vendor, 
                                     client.rx_packets, client.tx_packets, client.signal])
