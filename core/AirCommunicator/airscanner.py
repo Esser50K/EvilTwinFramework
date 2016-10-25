@@ -224,7 +224,7 @@ class AirScanner(object):
 
     def handle_probe_req_packets(self, packet): # TODO
         rssi_string = self._get_rssi_from_packet(packet)
-        client_mac = packet.addr2 # TODO: Address 1 and 3 are usually broadcst, but could be specific client_mac address
+        client_mac = packet.addr2 # TODO: Address 1 and 3 are usually broadcast, but could be specific client_mac address
         if packet.haslayer(Dot11Elt):                          
             if packet.ID == 0: 
                 ssid = packet.info
@@ -238,7 +238,7 @@ class AirScanner(object):
                         macf = maco.oui.registration().org      # OUI - Organizational Unique Identifier
                     except Exception as e:                      # OUI not registered exception
                         pass
-                    ap_bssid = self.get_bssid_from_ssid(ssid)   # Returns a list with all the bssids
+                    ap_bssid = self.get_bssids_from_ssid(ssid)   # Returns a list with all the bssids
 
                     id = len(self.probes.keys())
                     probe = ProbeInfo(id, client_mac, macf, ssid, ap_bssid, rssi_string, "REQ")
@@ -290,7 +290,7 @@ class AirScanner(object):
                 for client_mac in self.probes.keys() 
                 for probe in self.probes[client_mac]]
         
-    def get_bssid_from_ssid(self, ssid):
+    def get_bssids_from_ssid(self, ssid):
         if not (ssid and ssid != ""):
             return None
 
@@ -311,7 +311,7 @@ class AirScanner(object):
 
         return None
 
-    def update_bssid_in_probes(self):
+    def update_bssids_in_probes(self):
         for probe in self.get_probe_requests():
             if probe.ap_ssid:
-                probe.ap_bssid = self.get_bssid_from_ssid(probe.ap_ssid)
+                probe.ap_bssids = self.get_bssids_from_ssid(probe.ap_ssid)

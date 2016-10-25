@@ -238,10 +238,9 @@ class AirCommunicator(object):
             if add_type == "bssid":
                 self.air_deauthenticator.add_bssid(self.air_scanner.get_access_points()[index].bssid)
             elif add_type == "client":
-                self.air_scanner.update_bssid_in_probes()
+                self.air_scanner.update_bssids_in_probes()
                 client = self.air_scanner.get_probe_requests()[index]
                 client_mac = client.client_mac
-                print client.ap_bssids
                 if len(client.ap_bssids) > 0:
                     for bssid in client.ap_bssids:
                         if bssid and bssid != "":
@@ -273,9 +272,9 @@ class AirCommunicator(object):
         self.info_printer.print_info("sniffed_ap", filter_string)
 
     def print_sniffed_probes(self, filter_string = None):
-        self.air_scanner.update_bssid_in_probes()
+        self.air_scanner.update_bssids_in_probes()
         probe_list = self.air_scanner.get_probe_requests()
-        probe_arg_list = ["id","client_mac","client_org","ap_ssid","ap_bssid","rssi","type"]
+        probe_arg_list = ["id","client_mac","client_org","ap_ssid","ap_bssids","rssi","type"]
         headers = ["ID:", "CLIENT MAC:", "CLIENT ORG:", "AP SSID:", "AP BSSID:", "SIGNAL:", "TYPE:"]
         self.info_printer.add_info("sniffed_probe", probe_list, probe_arg_list, headers)
         self.info_printer.print_info("sniffed_probe", filter_string)
@@ -283,7 +282,7 @@ class AirCommunicator(object):
     def print_bssids_to_deauth(self, filter_string = None):
         bssid_list = self.air_deauthenticator.bssids_to_deauth
         bssid_arg_list = ["id","bssid","ssid"]
-        header = ["ID:", "AP BSSID:", "AP SSID"]
+        headers = ["ID:", "AP BSSID:", "AP SSID"]
         self.info_printer.add_info("deauth_bssid", bssid_list, bssid_arg_list, headers)
         self.info_printer.print_info("deauth_bssid", filter_string)
 
