@@ -15,7 +15,7 @@ class PacketLogger(object):
 		if os.path.exists("data/captures/"):
 			return len(filter(lambda x: x.startswith("packet_log"), os.listdir("data/captures/")))
 		else:
-			os.mkdirs("data/captures/")
+			os.mkdir("data/captures/")
 			return 0
 
 	def add_filter(self, filter):

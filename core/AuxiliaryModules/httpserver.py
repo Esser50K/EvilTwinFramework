@@ -40,6 +40,7 @@ class HTTPServer(object):
 		if os.path.exists(apache_path):
 			shutil.rmtree(apache_path)
 		shutil.copytree(spoofpage_path, apache_path)
+		os.system("chmod 777 {apache_path}/*".format(apache_path = apache_path))
 
 	def configure_page_in_apache(	self, domain_name, domain_alias = [], 
 									ssl = False, captive_portal_mode = False):

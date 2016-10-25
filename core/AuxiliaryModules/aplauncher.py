@@ -105,7 +105,7 @@ class APLauncher(object):
 		self.connected_clients_updator = Thread(target=self.update_connected_clients, args=(interface, ))
 		self.connected_clients_updator.start()
 
-	def stop_access_point(self):
+	def stop_access_point(self, wait = True):
 		if self.ap_process != None:
 			print "[+] Killing hostapd background process"
 			self.ap_process.send_signal(9)  # Send SIGINT to process running hostapd
@@ -115,7 +115,8 @@ class APLauncher(object):
 		os.system('pkill hostapd')      # Cleanup
 		self.ap_running = False
 		if self.connected_clients_updator != None:
-			self.connected_clients_updator.join()
+			if wait:
+				self.connected_clients_updator.join()
 			self.connected_clients_updator = None
 
 	def cleanup(self):
@@ -124,17 +125,26 @@ class APLauncher(object):
 			self.file_handler = None
 
 	def update_connected_clients(self, interface):
+		fail_count = 0
 		while self.ap_running:
-			self._parse_connected_clients(interface)
+			if not self._parse_connected_clients(interface):
+				fail_count += 1
+
+			if fail_count > 3:
+				print "[-] hostapd was unable to start the access point,"
+				print "check configuration file or try restarting. Stopping now."
+				self.stop_access_point(wait = False)
+				print "stop airhost manually to stop other services"
+				break
 			sleep(3)
 
 	def _parse_connected_clients(self, interface):
 		try:
 			if not pyw.modeget(pyw.getcard(interface)) == 'AP':
 				print "[-] '{}' is not on AP mode".format(interface)
-				return
+				return False
 		except Exception:
-			return
+			return False
 
 		client_dump = check_output("iw dev {} station dump".format(interface).split()).split('Station')
 		client_dump = [ map(str.strip, client.split("\n")) for client in client_dump if interface in client ]
@@ -162,6 +172,7 @@ class APLauncher(object):
 
 		self.connected_clients.clear() # Clear connected client list, some clients may have disconnected
 		self.connected_clients = temp_clients
+		return True
 		
 
 	def _get_ip_from_mac(self, interface, mac):
