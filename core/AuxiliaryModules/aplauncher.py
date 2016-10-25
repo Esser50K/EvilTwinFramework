@@ -19,7 +19,7 @@ class APLauncher(object):
 		self.ap_process = None
 
 		self.connected_clients_updator = None
-		self.connected_clients = {}
+		self.connected_clients = []
 
 		self.file_handler = None
 
@@ -149,7 +149,7 @@ class APLauncher(object):
 		client_dump = check_output("iw dev {} station dump".format(interface).split()).split('Station')
 		client_dump = [ map(str.strip, client.split("\n")) for client in client_dump if interface in client ]
 
-		temp_clients = {}
+		temp_clients = []
 		# At this point a client is a list of arguments to be parsed
 		for client in client_dump:
 			client_mac                  = client[0].split()[0].strip()
@@ -160,17 +160,17 @@ class APLauncher(object):
 			signal                      = client[8].split(":")[1].strip()
 			tx_bitrate                  = client[10].split(":")[1].strip()
 			rx_bitrate                  = client[11].split(":")[1].strip()
+			id = len(temp_clients)
 
-			client = Client(client_name, client_mac, client_ip, inactivity_time, 
+			client = Client(id, client_name, client_mac, client_ip, inactivity_time, 
 							rx_packets, tx_packets, rx_bitrate, tx_bitrate, signal)
 
-			if client_mac not in self.connected_clients:
+			if client not in self.connected_clients:
 				print "[+] New connected client with -> ip: {ip}, mac: {mac} ({vendor})".format(ip=client_ip, 
 																								mac=client_mac, 
 																								vendor=client.vendor)
-			temp_clients[client_mac] = client # Overriding entry means update
+			temp_clients.append(client)
 
-		self.connected_clients.clear() # Clear connected client list, some clients may have disconnected
 		self.connected_clients = temp_clients
 		return True
 		
@@ -193,11 +193,11 @@ class APLauncher(object):
 
 class Client(object):
 
-	def __init__(self,  name, mac_address, ip_address, inactivity_time, 
+	def __init__(self,  id, name, mac_address, ip_address, inactivity_time, 
 						rx_packets, tx_packets,
 						rx_bitrate, tx_bitrate,
 						signal):
-
+		self.id = id
 		self.name = name
 		self.mac_address = mac_address
 		self.ip_address = ip_address
@@ -212,3 +212,6 @@ class Client(object):
 			self.vendor = EUI(mac_address).oui.registration().org      # OUI - Organizational Unique Identifier
 		except Exception as e:
 			pass
+
+	def __eq__(self, other):
+		return (self.mac_address == other.mac_address)

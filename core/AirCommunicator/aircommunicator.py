@@ -10,6 +10,7 @@ from pyric.pyw import interfaces, winterfaces
 from airhost import AirHost
 from airscanner import AirScanner
 from airdeauthor import AirDeauthenticator
+from AuxiliaryModules.infoprinter import InfoPrinter
 from ConfigurationManager.configmanager import ConfigurationManager
 from utils.networkmanager import NetworkManager, NetworkCard
 from prettytable import PrettyTable
@@ -27,6 +28,8 @@ class AirCommunicator(object):
         self.air_scanner = AirScanner()
         self.air_deauthenticator = AirDeauthenticator()
         self.network_manager = NetworkManager(config_locations["networkmanager_conf"])
+
+        self.info_printer = InfoPrinter()
 
     def start_deauthentication_attack(self):
         if not self.air_deauthenticator.deauth_running:
@@ -193,12 +196,7 @@ class AirCommunicator(object):
             self.configs["airhost"]["aplauncher"]["bssid"] = access_point.bssid
             self.configs["airhost"]["aplauncher"]["channel"] = access_point.channel
 
-            self.configs["airhost"]["aplauncher"]["encryption"] =   "wpa/wpa2" if   "wpa" in access_point.encryption_methods and    \
-                                                                                    "wpa2" in access_point.encryption_methods       \
-                                                                    else "wpa2" if "wpa2" in access_point.encryption_methods        \
-                                                                    else "wpa" if "wpa" in access_point.encryption_methods          \
-                                                                    else "wep" if "wep" in access_point.encryption_methods          \
-                                                                    else "None"
+            self.configs["airhost"]["aplauncher"]["encryption"] =   access_point.encryption_methods
             self.configs["airhost"]["aplauncher"]["auth"] = access_point.authentication_method
             self.configs["airhost"]["aplauncher"]["cipher"] = access_point.encyption_cypher
 
@@ -266,88 +264,40 @@ class AirCommunicator(object):
 
 
     # Informational print methods
-    def print_sniffed_aps(self):
+    def print_sniffed_aps(self, filter_string = None):
         ap_list = self.air_scanner.get_access_points()
-        ap_arg_list = [ [   str(ap.bssid), 
-                            str(ap.ssid), 
-                            str(ap.channel),
-                            str(ap.rssi),
-                            "/".join(ap.encryption_methods), 
-                            str(ap.encyption_cypher),
-                            str(ap.authentication_method)] for ap in ap_list]
+        ap_arg_list = [ "id","bssid","ssid","channel","rssi",
+                        "encryption_methods","encyption_cypher","authentication_method"]
+        headers = ["ID:", "BSSID:", "SSID:", "CHANNEL:", "SIGNAL:", "CRYPTO:", "CIPHER:", "AUTH:"]
+        self.info_printer.add_info("sniffed_ap", ap_list, ap_arg_list, headers)
+        self.info_printer.print_info("sniffed_ap", filter_string)
 
-        table = PrettyTable(["ID:", "BSSID:", "SSID:", "CHANNEL:", "SIGNAL:", "CRYPTO:", "CIPHER:", "AUTH:"])
-        i = 0
-        for ap in ap_arg_list:
-            table.add_row([str(i)] + ap)
-            i += 1
-
-        print unicode(str(table), errors='ignore')
-
-    def print_sniffed_probes(self):
+    def print_sniffed_probes(self, filter_string = None):
         self.air_scanner.update_bssid_in_probes()
-        probe_arg_list = []
+        probe_list = self.air_scanner.get_probe_requests()
+        probe_arg_list = ["id","client_mac","client_org","ap_ssid","ap_bssid","rssi","type"]
+        headers = ["ID:", "CLIENT MAC:", "CLIENT ORG:", "AP SSID:", "AP BSSID:", "SIGNAL:", "TYPE:"]
+        self.info_printer.add_info("sniffed_probe", probe_list, probe_arg_list, headers)
+        self.info_printer.print_info("sniffed_probe", filter_string)
 
-        for probe in self.air_scanner.get_probe_requests():
-            probe_arg_list.append([ probe.client_mac, probe.client_org, 
-                                    probe.ap_ssid, "\n".join(probe.ap_bssid), 
-                                    probe.rssi, probe.type ])
-
-        table = PrettyTable(["ID:", "CLIENT MAC:", "CLIENT ORG:", "AP SSID:", "AP BSSID:", "SIGNAL:", "TYPE:"])
-        i = 0
-        for probe in probe_arg_list:
-            table.add_row([str(i)] + probe)
-            i += 1
-
-        print unicode(str(table), errors='ignore')
-
-    def print_bssids_to_deauth(self):
+    def print_bssids_to_deauth(self, filter_string = None):
         bssid_list = self.air_deauthenticator.bssids_to_deauth
-        bssid_arg_list = []
-        for bssid in bssid_list:
-            ap_ssid = self.air_scanner.get_ssid_from_bssid(bssid)
-            bssid_arg_list.append([bssid, ap_ssid])
+        bssid_arg_list = ["id","bssid","ssid"]
+        header = ["ID:", "AP BSSID:", "AP SSID"]
+        self.info_printer.add_info("deauth_bssid", bssid_list, bssid_arg_list, headers)
+        self.info_printer.print_info("deauth_bssid", filter_string)
 
-        table = PrettyTable(["ID:", "AP BSSID:", "AP SSID"])
+    def print_clients_to_deauth(self, filter_string = None):
+        client_list = self.air_deauthenticator.clients_to_deauth
+        client_arg_list = ["id","client_mac","ap_bssid","ap_ssid"]
+        headers = ["ID:", "CLIENT MAC:", "AP BSSID:", "AP SSID:"]
+        self.info_printer.add_info("deauth_client", client_list, client_arg_list, headers)
+        self.info_printer.print_info("deauth_client", filter_string)
 
-        i = 0
-        for bssid in bssid_arg_list:
-            table.add_row([str(i)] + bssid)
-            i += 1
 
-        print unicode(str(table), errors='ignore')
-
-    def print_clients_to_deauth(self):
-        client_list = self.air_deauthenticator.clients_to_deauth.keys()
-        client_arg_list = []
-        for cmac in client_list:
-            ap_bssid = self.air_deauthenticator.clients_to_deauth[cmac]
-            ap_ssid = self.air_scanner.get_ssid_from_bssid(ap_bssid[0])
-            client_arg_list.append([cmac, "\n".join(ap_bssid), ap_ssid])
-
-        table = PrettyTable(["ID:", "CLIENT MAC:", "AP BSSID:", "AP SSID:"])
-
-        i = 0
-        for client in client_arg_list:
-            table.add_row([str(i)] + client)
-            i += 1
-
-        print unicode(str(table), errors='ignore')
-
-    def print_connected_clients(self):
-        client_list = self.air_host.aplauncher.connected_clients.keys()
-        client_arg_list = []
-        for cmac in client_list:
-            client = self.air_host.aplauncher.connected_clients[cmac]
-            client_arg_list.append([client.name, cmac, 
-                                    client.ip_address, client.vendor, 
-                                    client.rx_packets, client.tx_packets, client.signal])
-
-        table = PrettyTable(["ID:", "CLIENT NAME:", "CLIENT MAC:", "CLIENT IP:", "VENDOR:", "RX PACKETS:", "TX PACKETS:", "SIGNAL:"])
-
-        i = 0
-        for client in client_arg_list:
-            table.add_row([str(i)] + client)
-            i += 1
-
-        print unicode(str(table), errors='ignore')
+    def print_connected_clients(self, filter_string = None):
+        client_list = self.air_host.aplauncher.connected_clients
+        client_arg_list = ["id","name","mac_address","ip_address","vendor","rx_packets","tx_packets","signal"]
+        headers = ["ID:", "CLIENT NAME:", "CLIENT MAC:", "CLIENT IP:", "VENDOR:", "RX PACKETS:", "TX PACKETS:", "SIGNAL:"]
+        self.info_printer.add_info("connected_client", client_list, client_arg_list, headers)
+        self.info_printer.print_info("connected_client", filter_string)

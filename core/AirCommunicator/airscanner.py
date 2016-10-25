@@ -35,13 +35,14 @@ class AccessPoint(object):
     The wpa/wpa2 key has to be specified
     """
 
-    def __init__(self,  ssid=None, bssid=None, channel=None, rssi=None,
+    def __init__(self,  id, ssid=None, bssid=None, channel=None, rssi=None,
                         encryption_methods=(), encyption_cypher=None, authentication_method=None):
+        self.id = id
         self.ssid = ssid
         self.bssid = bssid
         self.channel = channel
         self.rssi = rssi
-        self.encryption_methods = encryption_methods
+        self.encryption_methods = "/".join(encryption_methods)
         self.encyption_cypher = encyption_cypher
         self.authentication_method = authentication_method
         self.psk = None 
@@ -52,7 +53,8 @@ class AccessPoint(object):
 
 class ProbeInfo(object):
 
-    def __init__(self, client_mac, client_org, ap_ssid, ap_bssids, rssi, ptype):
+    def __init__(self, id, client_mac, client_org, ap_ssid, ap_bssids, rssi, ptype):
+        self.id = id
         self.client_mac = client_mac
         self.client_org = client_org
         self.ap_bssids = ap_bssids
@@ -195,7 +197,8 @@ class AirScanner(object):
         if rsn_info or crypto:
             cipher_suite, auth_suite = self.find_auth_and_cipher(rsn_info, crypto)
 
-        new_ap = AccessPoint(ssid, bssid, channel, rssi_string, crypto, cipher_suite, auth_suite)
+        id = len(self.access_points.keys())
+        new_ap = AccessPoint(id, ssid, bssid, channel, rssi_string, crypto, cipher_suite, auth_suite)
         with self.ap_lock:
             self.access_points[bssid] = new_ap
 
@@ -209,7 +212,8 @@ class AirScanner(object):
                 except Exception as e:
                     pass
 
-                probe = ProbeInfo(client_mac, macf, ssid, [bssid], rssi_string, "RESP")
+                id = len(self.probes.keys())
+                probe = ProbeInfo(id, client_mac, macf, ssid, [bssid], rssi_string, "RESP")
                 with self.probe_lock:
                     try:
                         if probe not in self.probes[client_mac]:
@@ -236,7 +240,8 @@ class AirScanner(object):
                         pass
                     ap_bssid = self.get_bssid_from_ssid(ssid)   # Returns a list with all the bssids
 
-                    probe = ProbeInfo(client_mac, macf, ssid, ap_bssid, rssi_string, "REQ")
+                    id = len(self.probes.keys())
+                    probe = ProbeInfo(id, client_mac, macf, ssid, ap_bssid, rssi_string, "REQ")
                     with self.probe_lock:
                         try:
                             if probe not in self.probes[client_mac]:
