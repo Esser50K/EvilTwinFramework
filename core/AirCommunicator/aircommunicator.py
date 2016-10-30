@@ -12,7 +12,7 @@ from airscanner import AirScanner
 from airdeauthor import AirDeauthenticator
 from AuxiliaryModules.infoprinter import InfoPrinter, ObjectFilter
 from AuxiliaryModules.httpserver import HTTPServer
-from AuxiliaryServices.dnsspoofer import DNSSpoofer
+from Plugins.dnsspoofer import DNSSpoofer
 from ConfigurationManager.configmanager import ConfigurationManager
 from utils.networkmanager import NetworkManager, NetworkCard
 from prettytable import PrettyTable

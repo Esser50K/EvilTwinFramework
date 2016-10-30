@@ -2,7 +2,7 @@
 Template Plugin class to be subclassed
 """
 
-class AuxiliaryService(object):
+class Plugin(object):
 
 	def __init__(self):
 		pass
@@ -13,19 +13,19 @@ class AuxiliaryService(object):
 		"""
 		pass
 
-class AirScannerAuxService(AuxiliaryService):
+class AirScannerPlugin(Plugin):
 
 	def __init__(self):
-		super(AirScannerAuxService, self).__init__()
+		super(AirScannerPlugin, self).__init__()
 
 	def handle_packet(self, packet):
 		pass
 
 
-class AirHostAuxService(AuxiliaryService):
+class AirHostPlugin(Plugin):
 
 	def __init__(self):
-		super(AirHostAuxService, self).__init__()
+		super(AirHostPlugin, self).__init__()
 
 	def start(self):
 		pass

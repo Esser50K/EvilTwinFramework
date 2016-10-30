@@ -1,9 +1,9 @@
 import os
-from auxiliaryservice import AirHostAuxService
+from plugin import AirHostPlugin
 from AuxiliaryModules.httpserver import HTTPServer
 from utils.utils import FileHandler
 
-class DNSSpoofer(AirHostAuxService):
+class DNSSpoofer(AirHostPlugin):
 
 	def __init__(self, spoof_ip, hosts_config_path, httpserver = None, spoofpages = []):
 		super(DNSSpoofer, self).__init__()
