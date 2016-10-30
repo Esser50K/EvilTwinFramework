@@ -27,6 +27,9 @@ class DNSMasqHandler(object):
 			nameservers = [nameservers]
 
 		configurations = dedent("""
+								authoritative
+								default-lease-time 600
+								max-lease-time 7200
 								interface={interface}
 								dhcp-range={dhcp_start}, {dhcp_end}, 12h
 								dhcp-option=3,{ip_gw}
