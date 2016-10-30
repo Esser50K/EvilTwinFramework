@@ -42,7 +42,7 @@ class AccessPoint(object):
         self.bssid = bssid
         self.channel = channel
         self.rssi = rssi
-        self.encryption = "/".join(encryption_methods)
+        self.crypto = "/".join(encryption_methods)
         self.cipher = encryption_cipher
         self.auth = authentication_method
         self.psk = None 

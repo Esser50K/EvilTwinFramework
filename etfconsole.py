@@ -77,9 +77,9 @@ class ETFConsole(Cmd):
 		entered = line.split()
 		out = None
 		if len(entered) == 1:
-			out = self.spawner_options
+			out = self.spawners
 		elif len(entered) == 2:
-			out = [option for option in self.spawner_options if option.startswith(text)]
+			out = [option for option in self.spawners if option.startswith(text)]
 
 		return out
 
@@ -191,16 +191,16 @@ class ETFConsole(Cmd):
 	# Copy Add Del
 	def do_copy(self, args):
 		args = args.split()
-		if len(args) == 3:
+		if len(args) == 2:
 			try:
 				id = int(args[-1]) # line should be something like "copy ap 4"
 			except ValueError:
 				print "[-] ID must be an integer value"
 				print "Copy syntax: copy [option] [ID]"
 				return 
-			if args[1] == "ap":
+			if args[0] == "ap":
 				self.aircommunicator.airhost_copy_ap(id)
-			elif args[1] == "probe":
+			elif args[0] == "probe":
 				self.aircommunicator.airhost_copy_probe(id)
 
 

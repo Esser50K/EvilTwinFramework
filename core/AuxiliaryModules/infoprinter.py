@@ -90,9 +90,10 @@ class ObjectFilter(object):
 			add = True
 			for filter_arg in filter_map:
 				try:
-					if not obj.__dict__[filter_arg] == filter_map[filter_arg]:
-						add = False
-						break
+					for filter_value in filter_map[filter_arg]:
+						if not str(obj.__dict__[filter_arg]) == str(filter_value):
+							add = False
+							break
 				except KeyError: # Don't judge if obj does not have a certain attribute
 					pass
 

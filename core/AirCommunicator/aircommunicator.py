@@ -207,11 +207,11 @@ class AirCommunicator(object):
     def airhost_copy_ap(self, id):
         password_info = dedent( """ 
                                 Note:   The AP you want to copy uses encryption, 
-                                        you have to specify the password in the airhost configurations.
+                                        you have to specify the password in the airhost/aplauncher configurations.
                                 """)
         bssid_info = dedent("""
-                            Note:   When starting the rogue access point 
-                                    with a bssid that already nearby issues will arise.
+                            Note:   Issues will arise when starting the 
+                                    rogue access point with a bssid that exists nearby.
                             """)
         access_point = self.air_scanner.get_access_point(id)
         if access_point:
@@ -219,9 +219,9 @@ class AirCommunicator(object):
             self.configs["airhost"]["aplauncher"]["bssid"] = access_point.bssid
             self.configs["airhost"]["aplauncher"]["channel"] = access_point.channel
 
-            self.configs["airhost"]["aplauncher"]["encryption"] =   access_point.encryption_methods
-            self.configs["airhost"]["aplauncher"]["auth"] = access_point.authentication_method
-            self.configs["airhost"]["aplauncher"]["cipher"] = access_point.encyption_cypher
+            self.configs["airhost"]["aplauncher"]["encryption"] =   access_point.crypto
+            self.configs["airhost"]["aplauncher"]["auth"] = access_point.auth
+            self.configs["airhost"]["aplauncher"]["cipher"] = access_point.cipher
 
             if self.configs["airhost"]["aplauncher"]["encryption"] != "None":
                 print password_info
@@ -275,15 +275,14 @@ class AirCommunicator(object):
             self.air_deauthenticator.del_aps(del_list)
         elif del_type == "clients":
             del_list = ObjectFilter().filter(self.air_deauthenticator.clients_to_deauth, filter_string)
-            for client in del_list:
-                self.air_deauthenticator.del_ap(client.id)
+            self.air_deauthenticator.del_clients(del_list)
 
 
     # Informational print methods
     def print_sniffed_aps(self, filter_string = None):
         ap_list = self.air_scanner.get_access_points()
         ap_arg_list = [ "id","bssid","ssid","channel","rssi",
-                        "encryption","cipher","auth"]
+                        "crypto","cipher","auth"]
         headers = ["ID:", "BSSID:", "SSID:", "CHANNEL:", "SIGNAL:", "CRYPTO:", "CIPHER:", "AUTH:"]
         self.info_printer.add_info("sniffed_ap", ap_list, ap_arg_list, headers)
         self.info_printer.print_info("sniffed_ap", filter_string)
