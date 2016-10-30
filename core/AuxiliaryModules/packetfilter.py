@@ -11,11 +11,11 @@ class PacketFilter(object):
 
 class BSSIDPacketFilter(PacketFilter):
 
-	def __init__(self, packet, bssid):
+	def __init__(self, bssid):
 		super(SSIDPacketFilter, self).__init__(packet)
 		self.bssid = bssid
 
-	def passes(self):
+	def passes(self, packet):
 		if Dot11Beacon in packet or Dot11ProbeResp in self.packet:
 			bssid = packet[Dot11].addr3		
 			return self.bssid == bssid
@@ -24,11 +24,11 @@ class BSSIDPacketFilter(PacketFilter):
 
 class SSIDPacketFilter(PacketFilter):
 
-	def __init__(self, packet, ssid):
+	def __init__(self, ssid):
 		super(SSIDPacketFilter, self).__init__(packet)
 		self.ssid = ssid
 
-	def passes(self):
+	def passes(self, packet):
 		if Dot11Beacon in packet or Dot11ProbeResp in self.packet:
 			elt_layer = self.packet[Dot11Elt]
 			while isinstance(elt_layer, Dot11Elt):
@@ -42,21 +42,21 @@ class SSIDPacketFilter(PacketFilter):
 
 class ChannelPacketFilter(PacketFilter):
 
-	def __init__(self, packet, channel):
+	def __init__(self, channel):
 		super(SSIDPacketFilter, self).__init__(packet)
 		self.channel = channel
 
-	def passes(self):
+	def passes(self, packet):
 		if Dot11Beacon in packet or Dot11ProbeResp in self.packet:
 			elt_layer = self.packet[Dot11Elt]
 			while isinstance(elt_layer, Dot11Elt):
 				if elt_layer.ID == 3:
-	                try:
-	                    channel = ord(elt_layer.info)
-	                except Exception:
-	                    channel = str(elt_layer.info)
-	                    
-	                return str(channel) == str(self.channel)
+					try:
+						channel = ord(elt_layer.info)
+					except Exception:
+						channel = str(elt_layer.info)
+						
+					return str(channel) == str(self.channel)
 
 				elt_layer = elt_layer.payload
 		else:

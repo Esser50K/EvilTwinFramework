@@ -9,7 +9,6 @@ import os
 import pyric.pyw as pyw
 import signal
 import traceback
-from AuxiliaryModules.packetlogger import PacketLogger
 from time import sleep
 from threading import Thread, Lock
 from netaddr import EUI, OUI
@@ -81,7 +80,10 @@ class AirScanner(object):
         self.access_points = {}
         self.probes = {}
 
-        self.packet_logger = PacketLogger()
+        self.plugins = []
+
+    def add_plugin(self, airscanner_plugin):
+        self.plugins.append(airscanner_plugin)
 
     def set_probe_sniffing(self, option):
         self.sniff_probes = option
@@ -106,6 +108,10 @@ class AirScanner(object):
 
     def _clean_quit(self, wait = True):
         self.sniffer_running = False
+        for plugin in self.plugins:
+            plugin.restore()
+        del self.plugins[:]
+        
         if wait:
             self.sniffing_thread.join() # The sniffing_thread will stop once it receives the next packet
 
@@ -121,7 +127,6 @@ class AirScanner(object):
         print "[+] Starting packet sniffer on interface '{}'".format(self.running_interface)
 
         try:
-            self.packet_logger.refresh()
             sniff(iface=self.running_interface, store=0, prn=self.handle_packets, stop_filter= (lambda pkt: not self.sniffer_running))
         except socket_error as e:
             if not e.errno == 100:
@@ -151,6 +156,10 @@ class AirScanner(object):
             pass # The sniffer has already been aborted
 
     def handle_packets(self, packet):
+        # Pass packets through plugins before filtering
+        for plugin in self.plugins:
+            plugin.handle(packet)
+
         if self.sniff_beacons and (Dot11Beacon in packet or Dot11ProbeResp in packet):
             self.handle_beacon_packets(packet)
         elif self.sniff_probes and Dot11ProbeReq in packet:

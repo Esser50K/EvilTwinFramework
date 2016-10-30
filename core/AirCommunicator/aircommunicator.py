@@ -13,6 +13,7 @@ from airdeauthor import AirDeauthenticator
 from AuxiliaryModules.infoprinter import InfoPrinter, ObjectFilter
 from AuxiliaryModules.httpserver import HTTPServer
 from Plugins.dnsspoofer import DNSSpoofer
+from Plugins.packetlogger import PacketLogger
 from ConfigurationManager.configmanager import ConfigurationManager
 from utils.networkmanager import NetworkManager, NetworkCard
 from prettytable import PrettyTable
@@ -134,23 +135,26 @@ class AirCommunicator(object):
     def add_airhost_plugins(self, plugins):
         for plugin in plugins:
             if plugin == "dnsspoofer":
-                if self.plugins["dnsspoofer"]:
-                    self.air_host.add_plugin(self.plugins["dnsspoofer"])
-                else:
-                    hosts_path = self.config_files["hosts_conf"]
+                hosts_path = self.config_files["hosts_conf"]
+                spoof_ip = self.configs["airhost"]["plugins"]["dnsspoofer"]["spoof_ip"]
+                spoof_pages = self.configs["airhost"]["plugins"]["dnsspoofer"]["spoof_pages"]
+
+                httpserver = None
+                if self.configs["airhost"]["plugins"]["dnsspoofer"]["httpserver"].lower() == "true":
                     apache_config_path = self.config_files["apache_conf"]
                     apache_root_path = self.config_files["apache_root"]
-                    spoof_ip = self.configs["airhost"]["plugins"]["dnsspoofer"]["spoof_ip"]
-                    spoof_pages = self.configs["airhost"]["plugins"]["dnsspoofer"]["spoof_pages"]
                     httpserver = HTTPServer(apache_config_path, apache_root_path)
-                    dnsspoofer = DNSSpoofer(spoof_ip, hosts_path, httpserver, spoof_pages)
 
-                    self.plugins["dnsspoofer"] = dnsspoofer
-                    self.air_host.add_plugin(dnsspoofer)
+                dnsspoofer = DNSSpoofer(spoof_ip, hosts_path, httpserver, spoof_pages)
+
+                self.plugins["dnsspoofer"] = dnsspoofer
+                self.air_host.add_plugin(dnsspoofer)
         
     def start_sniffer(self, plugins = []):
         # Sniffing options
         if not self.air_scanner.sniffer_running:
+            self.add_airscanner_plugins(plugins)
+
             sniff_probes = self.configs["airscanner"]["probes"].lower() == "true"
             sniff_beacons = self.configs["airscanner"]["beacons"].lower() == "true"
 
@@ -171,6 +175,22 @@ class AirCommunicator(object):
                 
         else:
             print "[-] Sniffer already running"
+
+    def add_airscanner_plugins(self, plugins):
+        plugin_configs = self.configs["airscanner"]["plugins"]
+        for plugin in plugins:
+            if plugin == "packetlogger":
+                packetlogger_configs = plugin_configs["packetlogger"]
+                destination_folder = packetlogger_configs["destination_folder"]
+                filter_list = packetlogger_configs["filters"]
+                or_filter = packetlogger_configs["filter_mode"].lower() == "or"
+
+                packetlogger = PacketLogger(destination_folder, filter_list, or_filter)
+
+                self.plugins["packetlogger"] = packetlogger
+                self.air_scanner.add_plugin(packetlogger)
+
+
 
     def stop_air_communications(self, stop_sniffer, stop_ap, stop_deauth):
         if stop_sniffer and self.air_scanner.sniffer_running:
