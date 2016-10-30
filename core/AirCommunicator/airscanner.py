@@ -35,25 +35,28 @@ class AccessPoint(object):
     The wpa/wpa2 key has to be specified
     """
 
-    def __init__(self,  id, ssid=None, bssid=None, channel=None, rssi=None,
-                        encryption_methods=(), encyption_cypher=None, authentication_method=None):
+    def __init__(self,  id = 0, ssid=None, bssid=None, channel=None, rssi=None,
+                        encryption_methods=(), encryption_cipher=None, authentication_method=None):
         self.id = id
         self.ssid = ssid
         self.bssid = bssid
         self.channel = channel
         self.rssi = rssi
-        self.encryption_methods = "/".join(encryption_methods)
-        self.encyption_cypher = encyption_cypher
-        self.authentication_method = authentication_method
+        self.encryption = "/".join(encryption_methods)
+        self.cipher = encryption_cipher
+        self.auth = authentication_method
         self.psk = None 
 
     def __str__(self):
-        return  " ".join(   [str(self.bssid), str(self.ssid), "/".join(self.encryption_methods), \
-                            str(self.encyption_cypher), str(self.authentication_method)])
+        return  " ".join(   [str(self.bssid), str(self.ssid), "/".join(self.encryption), \
+                            str(self.cipher), str(self.auth)])
 
 class ProbeInfo(object):
 
-    def __init__(self, id, client_mac, client_org, ap_ssid, ap_bssids, rssi, ptype):
+    def __init__(self,  id = 0, 
+                        client_mac = None, client_org = None, 
+                        ap_ssid = None, ap_bssids = None, 
+                        rssi = None, ptype = None):
         self.id = id
         self.client_mac = client_mac
         self.client_org = client_org
@@ -285,10 +288,24 @@ class AirScanner(object):
         return [self.access_points[mac] 
                 for mac in self.access_points.keys()]
 
+    def get_access_point(self, id):
+        for ap in self.get_access_points():
+            if str(ap.id) == str(id):
+                return ap
+
+        return None
+
     def get_probe_requests(self):
         return [probe 
                 for client_mac in self.probes.keys() 
                 for probe in self.probes[client_mac]]
+
+    def get_probe_request(self, id):
+        for probe in self.get_probe_requests():
+            if str(probe.id) == str(id):
+                return probe
+
+        return None
         
     def get_bssids_from_ssid(self, ssid):
         if not (ssid and ssid != ""):

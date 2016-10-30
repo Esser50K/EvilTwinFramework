@@ -9,6 +9,19 @@ class PacketFilter(object):
 	def passes(self):
 		pass
 
+class BSSIDPacketFilter(PacketFilter):
+
+	def __init__(self, packet, bssid):
+		super(SSIDPacketFilter, self).__init__(packet)
+		self.bssid = bssid
+
+	def passes(self):
+		if Dot11Beacon in packet or Dot11ProbeResp in self.packet:
+			bssid = packet[Dot11].addr3		
+			return self.bssid == bssid
+		else:
+			return False
+
 class SSIDPacketFilter(PacketFilter):
 
 	def __init__(self, packet, ssid):
@@ -24,8 +37,10 @@ class SSIDPacketFilter(PacketFilter):
 					return self.ssid == ssid
 
 				elt_layer = elt_layer.payload
+		else:
+			return False
 
-class SSIDPacketFilter(PacketFilter):
+class ChannelPacketFilter(PacketFilter):
 
 	def __init__(self, packet, channel):
 		super(SSIDPacketFilter, self).__init__(packet)
@@ -44,15 +59,7 @@ class SSIDPacketFilter(PacketFilter):
 	                return str(channel) == str(self.channel)
 
 				elt_layer = elt_layer.payload
+		else:
+			return False
 
-class BSSIDPacketFilter(PacketFilter):
-
-	def __init__(self, packet, bssid):
-		super(SSIDPacketFilter, self).__init__(packet)
-		self.bssid = bssid
-
-	def passes(self):
-		if Dot11Beacon in packet or Dot11ProbeResp in self.packet:
-			bssid = packet[Dot11].addr3		
-			return self.bssid == bssid
 

@@ -193,10 +193,10 @@ class APLauncher(object):
 
 class Client(object):
 
-	def __init__(self,  id, name, mac_address, ip_address, inactivity_time, 
-						rx_packets, tx_packets,
-						rx_bitrate, tx_bitrate,
-						signal):
+	def __init__(self,  id = 0, name=None, mac_address=None, ip_address=None, inactivity_time=None, 
+						rx_packets=None, tx_packets=None,
+						rx_bitrate=None, tx_bitrate=None,
+						signal=None):
 		self.id = id
 		self.name = name
 		self.mac_address = mac_address

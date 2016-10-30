@@ -29,7 +29,7 @@ class HTTPServer(object):
 			Popen("a2dissite {}".format(page).split(), stdout=DEVNULL, stderr=DEVNULL)
 
 	# This method grabs the pages present in the data/spoofpages/{domain_name}
-	def add_site(self, domain_name):
+	def add_site(self, domain_name, override = False):
 		if not os.path.exists("data/spoofpages/" + domain_name):
 			print "[-] Cannot add '{}' because corresponding folder is missing from 'data/spoofpages/'".format(domain_name)
 			return
@@ -38,7 +38,11 @@ class HTTPServer(object):
 		apache_path = self.apache_root_path + domain_name
 
 		if os.path.exists(apache_path):
-			shutil.rmtree(apache_path)
+			if override:
+				shutil.rmtree(apache_path)
+			else: 
+				return
+
 		shutil.copytree(spoofpage_path, apache_path)
 		os.system("chmod 777 {apache_path}/*".format(apache_path = apache_path))
 

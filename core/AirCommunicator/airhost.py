@@ -5,30 +5,38 @@ and dhcp and dns services
 '''
 
 import os
-from AuxiliaryModules.dnsspoofer import DNSSpoofer
+from AuxiliaryModules.dnsmasqhandler import DNSMasqHandler
 from AuxiliaryModules.aplauncher import APLauncher
 from etfexceptions import MissingConfigurationFileException
 
-# TODO: makes sense to refactor this so the class actually holds the interface that it is running on, like the airscanner and deauthor
+
 class AirHost(object):
 
-    def __init__(self, hostapd_config_path, dnsmasq_config_path, hosts_config_path):
+    def __init__(self, hostapd_config_path, dnsmasq_config_path):
         # Mandatory configuration files to start the access point successfully
         if (dnsmasq_config_path == None or hostapd_config_path == None) :
             raise MissingConfigurationFileException("dnsmasq and hostapd configuration files must be specified\n \
                                                     either by argument in the command line or in the etf.conf file")
 
         self.aplauncher = APLauncher(hostapd_config_path)
-        self.dnsspoofer = DNSSpoofer(dnsmasq_config_path, hosts_config_path)
+        self.dnsmasqhandler = DNSMasqHandler(dnsmasq_config_path)
 
         self.running_interface = None
 
+        self.plugins = []
+
+    def add_plugin(self, airhost_plugin):
+        self.plugins.append(airhost_plugin)
+
     def start_access_point(self, interface):
         print "[+] Killing already started processes and restarting network services"
-        self.stop_access_point() # Restarting services helps avoiding some conflicts with dnsmasq
+        self.stop_access_point(False) # Restarting services helps avoiding some conflicts with dnsmasq
+
+        for plugin in self.plugins:
+            plugin.start()
 
         self.aplauncher.start_access_point(interface)
-        if not self.dnsspoofer.start_dnsmasq():
+        if not self.dnsmasqhandler.start_dnsmasq():
             print "[-] Error starting dnsmasq, aborting AP launch"
             return False
 
@@ -36,19 +44,22 @@ class AirHost(object):
         print "[+] Access Point launched successfully"
         return True
 
-    def stop_access_point(self):
+    def stop_access_point(self, free_plugins = True):
         print "[+] Stopping dnsmasq and hostapd services"
         self.aplauncher.stop_access_point()
-        self.dnsspoofer.stop_dnsmasq()
-        self.dnsspoofer.stop_spoofing()
+        self.dnsmasqhandler.stop_dnsmasq()
         self.running_interface = None
         print "[+] Access Point stopped, restarting network services..."
         os.system('service networking restart')
         os.system('service NetworkManager restart')
 
+        if free_plugins:
+            for plugin in self.plugins:
+                plugin.restore()
+
     def is_running(self):
         return self.running_interface != None
 
     def cleanup(self):
-        self.dnsspoofer.cleanup()
+        self.dnsmasqhandler.cleanup()
         self.aplauncher.cleanup()

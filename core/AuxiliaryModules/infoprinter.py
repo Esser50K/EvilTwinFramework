@@ -67,15 +67,11 @@ class InfoFilter(object):
 		return self.obj_filter.filter(self._info[key], filter_string)
 
 
-
-
-
-
 class ObjectFilter(object):
 
 	def __init__(self):
 		self.AND_keyword = "only"
-		self.OR_keyword = "with"
+		self.OR_keyword = "where"
 
 	def filter(self, objlist, filter_string):
 		if not filter_string or filter_string == "": #NoFilters
@@ -110,9 +106,10 @@ class ObjectFilter(object):
 		for obj in objlist:
 			for filter_arg in filter_map:
 				try:
-					if str(obj.__dict__[filter_arg]) == str(filter_map[filter_arg]):
-						filtered_objlist.append(obj)
-						break
+					for filter_value in filter_map[filter_arg]:
+						if str(obj.__dict__[filter_arg]) == str(filter_value):
+							filtered_objlist.append(obj)
+							break
 				except KeyError: # Don't judge if obj does not have a certain attribute
 					pass
 
@@ -140,7 +137,9 @@ class ObjectFilter(object):
 		for arg in split_args:
 			try:
 				key, value = arg.split("=")
-				filter_map[key] = value
+				filter_map[key].append(value)
+			except KeyError:
+				filter_map[key] = [value]
 			except Exception:
 				print "[-] Unable to parse arg '{}'".format(arg)
 
