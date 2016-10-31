@@ -1,2 +1,3 @@
 *.pyc
 *.cap
+/data/spoofpages/portal*
