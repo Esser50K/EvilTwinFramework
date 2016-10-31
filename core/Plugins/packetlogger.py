@@ -11,9 +11,11 @@ class PacketLogger(AirScannerPlugin):
 		self.packet_filters = []
 		for filter in filter_list:
 			try:
-				type, value = map(strip, filter.split("="))
-				self.add_filter()
-			except: pass
+				type, value = map(str.strip, filter.split("="))
+				self.add_filter(type, value)
+			except Exception as e: 
+				print e
+				pass
 
 		self.or_filter = or_filter
 		self.current_log_file = "packet_log{n}.cap".format(n = self._nlogs)
