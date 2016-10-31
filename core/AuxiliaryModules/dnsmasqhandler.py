@@ -27,9 +27,6 @@ class DNSMasqHandler(object):
 			nameservers = [nameservers]
 
 		configurations = dedent("""
-								authoritative
-								default-lease-time 600
-								max-lease-time 7200
 								interface={interface}
 								dhcp-range={dhcp_start}, {dhcp_end}, 12h
 								dhcp-option=3,{ip_gw}
@@ -38,12 +35,13 @@ class DNSMasqHandler(object):
 											ip_gw = ip_gw,
 											dhcp_start = dhcp_range[0],
 											dhcp_end = dhcp_range[1]))
-		for server in nameservers:
-			configurations += "server={server}\n".format(server = server)
 
 		if self.captive_portal_mode:
 			configurations += "no-resolv\n"
 			configurations += "address=/#/{ip_gw}\n".format(ip_gw = ip_gw)
+		else:
+			for server in nameservers:
+				configurations += "server={server}\n".format(server = server)
 
 		return self._safe_write_config(configurations, self.dnsmasq_config_path)
 		

@@ -133,17 +133,21 @@ class AirCommunicator(object):
         return False
 
     def add_airhost_plugins(self, plugins):
+        airhost_plugins = self.configs["airhost"]["plugins"]
         for plugin in plugins:
             if plugin == "dnsspoofer":
+                dnsspoofer_plugin = airhost_plugins["dnsspoofer"]
                 hosts_path = self.config_files["hosts_conf"]
                 spoof_ip = self.configs["airhost"]["plugins"]["dnsspoofer"]["spoof_ip"]
                 spoof_pages = self.configs["airhost"]["plugins"]["dnsspoofer"]["spoof_pages"]
 
                 httpserver = None
-                if self.configs["airhost"]["plugins"]["dnsspoofer"]["httpserver"].lower() == "true":
+                if dnsspoofer_plugin["httpserver"].lower() == "true":
                     apache_config_path = self.config_files["apache_conf"]
                     apache_root_path = self.config_files["apache_root"]
-                    httpserver = HTTPServer(apache_config_path, apache_root_path)
+                    ssl = dnsspoofer_plugin["ssl_on"].lower() == "true"
+                    overwrite = dnsspoofer_plugin["overwrite_pages"].lower() == "true"
+                    httpserver = HTTPServer(apache_config_path, apache_root_path, ssl, overwrite)
 
                 dnsspoofer = DNSSpoofer(spoof_ip, hosts_path, httpserver, spoof_pages)
 
@@ -239,11 +243,11 @@ class AirCommunicator(object):
             self.configs["airhost"]["aplauncher"]["bssid"] = access_point.bssid
             self.configs["airhost"]["aplauncher"]["channel"] = access_point.channel
 
-            self.configs["airhost"]["aplauncher"]["encryption"] =   access_point.crypto
+            self.configs["airhost"]["aplauncher"]["encryption"] = access_point.crypto
             self.configs["airhost"]["aplauncher"]["auth"] = access_point.auth
             self.configs["airhost"]["aplauncher"]["cipher"] = access_point.cipher
 
-            if self.configs["airhost"]["aplauncher"]["encryption"] != "None":
+            if self.configs["airhost"]["aplauncher"]["encryption"] != "opn":
                 print password_info
 
             print bssid_info

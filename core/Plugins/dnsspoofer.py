@@ -78,8 +78,7 @@ class DNSSpoofer(AirHostPlugin):
 			self.httpserver.add_site(page)
 			self.httpserver.configure_page_in_apache(	domain_name = page, 
 														domain_alias = self._create_alias_list(page),
-														ssl = True,
-														captive_portal_mode = True)
+														captive_portal_mode = self.captive_portal_mode)
 		return self.httpserver.start_server(True)
 
 	def _create_alias_list(self, domain):

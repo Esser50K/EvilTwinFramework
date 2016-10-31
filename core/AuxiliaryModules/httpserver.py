@@ -11,11 +11,13 @@ from textwrap import dedent
 
 class HTTPServer(object):
 
-	def __init__(self, apache_config_path, apache_root_path):
+	def __init__(self, apache_config_path, apache_root_path, ssl = False, overwrite = False):
 
 		self.apache_config_path = apache_config_path
 		self.apache_root_path = apache_root_path
 		self.apache_running = False
+		self.ssl = ssl
+		self.overwrite = overwrite
 
 	def start_server(self, start = True):
 		success = os.system("service apache2 {start}".format(start = "restart" if start else "stop"))
@@ -29,7 +31,7 @@ class HTTPServer(object):
 			Popen("a2dissite {}".format(page).split(), stdout=DEVNULL, stderr=DEVNULL)
 
 	# This method grabs the pages present in the data/spoofpages/{domain_name}
-	def add_site(self, domain_name, override = False):
+	def add_site(self, domain_name):
 		if not os.path.exists("data/spoofpages/" + domain_name):
 			print "[-] Cannot add '{}' because corresponding folder is missing from 'data/spoofpages/'".format(domain_name)
 			return
@@ -38,16 +40,16 @@ class HTTPServer(object):
 		apache_path = self.apache_root_path + domain_name
 
 		if os.path.exists(apache_path):
-			if override:
+			if self.overwrite:
 				shutil.rmtree(apache_path)
 			else: 
 				return
 
 		shutil.copytree(spoofpage_path, apache_path)
-		os.system("chmod 777 {apache_path}/*".format(apache_path = apache_path))
+		os.system("chmod 666 {apache_path}/*".format(apache_path = apache_path))
 
 	def configure_page_in_apache(	self, domain_name, domain_alias = [], 
-									ssl = False, captive_portal_mode = False):
+									captive_portal_mode = False):
 		apache_http_config_file = "{conf_path}{domain}.http.conf".format(	conf_path = self.apache_config_path,
 																			domain = domain_name)
 		apache_https_config_file = "{conf_path}{domain}.https.conf".format(	conf_path = self.apache_config_path,
@@ -99,7 +101,7 @@ class HTTPServer(object):
 		openssl_keygen_string += "-keyout /var/www/html/{domain}/{domain}.key ".format(domain = domain_name)
 		openssl_keygen_string += "-out /var/www/html/{domain}/{domain}.cert".format(domain = domain_name)
 
-		if ssl:
+		if self.ssl:
 			print "[+] Creating ssl private key and certificate for '{}'".format(domain_name)
 			Popen(openssl_keygen_string.split(), stdout=DEVNULL, stderr=DEVNULL).wait()
 		with open(apache_http_config_file, "w") as http_config:
