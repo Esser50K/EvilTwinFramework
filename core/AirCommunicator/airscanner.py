@@ -214,7 +214,7 @@ class AirScanner(object):
         with self.ap_lock:
             self.access_points[bssid] = new_ap
 
-        if "Dot11ProbeResp" in packet:
+        if Dot11ProbeResp in packet:
             client_mac = packet.addr1
             if client_mac != "":
                 maco = EUI(client_mac)                      # EUI - Extended Unique Identifier
