@@ -127,7 +127,7 @@ class ETFConsole(Cmd):
 			self.current_config_mode = config 
 			self.config_mode_string = dict_string
 			self.update_prompt()
-		except KeyError:
+		except Exception:
 			print "'{key}' does not exist in the configuration file".format(key = config_key)
 
 	def _look_for_config(self, dict_string, dict_root, dict_key):
