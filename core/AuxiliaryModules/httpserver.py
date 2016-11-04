@@ -46,7 +46,7 @@ class HTTPServer(object):
 				return
 
 		shutil.copytree(spoofpage_path, apache_path)
-		os.system("chmod 666 {apache_path}/*".format(apache_path = apache_path))
+		os.system("chmod 777 {apache_path}/*".format(apache_path = apache_path))
 
 	def configure_page_in_apache(	self, domain_name, domain_alias = [], 
 									captive_portal_mode = False):
@@ -93,7 +93,7 @@ class HTTPServer(object):
 												</VirtualHost>
 											</IfModule>
 											""").format(domain_config = apache_domain_config,
-														ssl_config = ssl_config_string if ssl else "")
+														ssl_config = ssl_config_string if self.ssl else "")
 
 		# Command too long for single code line
 		openssl_keygen_string = "openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 "

@@ -195,16 +195,16 @@ class AirScanner(object):
                 except Exception:
                     channel = str(elt_layer.info)
             elif elt_layer.ID == 48:
-                crypto.add("wpa2")
+                crypto.add("WPA2")
                 rsn_info = elt_layer.info
             elif elt_layer.ID == 221 and elt_layer.info.startswith('\x00P\xf2\x01\x01\x00'):
-                crypto.add("wpa")
+                crypto.add("WPA")
             elt_layer = elt_layer.payload # Check for more Dot11Elt packets within
         if not crypto:
             if 'privacy' in cap:
-                crypto.add("wep")
+                crypto.add("WEP")
             else:
-                crypto.add("opn")
+                crypto.add("OPN")
 
         if rsn_info or crypto:
             cipher_suite, auth_suite = self.find_auth_and_cipher(rsn_info, crypto)
@@ -277,9 +277,10 @@ class AirScanner(object):
 
         # Figure out cypher suite
         if crypto_methods and info:
+            crypto_methods = map(str.lower, crypto_methods)
             if "wpa2" in crypto_methods and cipher_suites['CCMP'] in info:
                 cipher_suite = 'CCMP'
-            elif ("wpa" in crypto_methods or "wpa2" in crypto_methods) and cipher_suites['TKIP'] in info:
+            elif ("wpa" in crypto_methods or "wpa2" in crypto_methods):# and cipher_suites['TKIP'] in info:
                 cipher_suite = 'TKIP'
             elif "wep" in crypto_methods:
                 cipher_suite = 'WEP'
@@ -290,6 +291,9 @@ class AirScanner(object):
                 auth_suite = 'PSK'
             elif auth_suites['MGT'] in info:
                 auth_suite = 'MGT'
+        else:
+            auth_suite = 'OPN'
+
 
         return (cipher_suite, auth_suite)
 

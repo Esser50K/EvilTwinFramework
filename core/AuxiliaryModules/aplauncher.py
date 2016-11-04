@@ -60,6 +60,7 @@ class APLauncher(object):
 		# May even want to mirror the encryption type and key 
 		# so hosts can automatically connect if it is a known network
 		if encryption:
+			encryption = encryption.lower()
 			if ("wpa" in encryption):
 				if password is None: 
 					raise InvalidConfigurationException("Must specify a password when choosing wpa or wpa2 encryption!\n")
@@ -97,7 +98,7 @@ class APLauncher(object):
 
 	def start_access_point(self, interface):
 		print "[+] Starting hostapd background process"
-		self.ap_process = Popen("hostapd {config_path}".format( config_path=self.hostapd_config_path).split(), 
+		self.ap_process = Popen("hostapd -B {config_path}".format( config_path=self.hostapd_config_path).split(), 
 								stdout=DEVNULL,
 								stderr=DEVNULL)
 

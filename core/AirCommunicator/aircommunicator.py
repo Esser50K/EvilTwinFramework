@@ -247,7 +247,7 @@ class AirCommunicator(object):
             self.configs["airhost"]["aplauncher"]["auth"] = access_point.auth
             self.configs["airhost"]["aplauncher"]["cipher"] = access_point.cipher
 
-            if self.configs["airhost"]["aplauncher"]["encryption"] != "opn":
+            if self.configs["airhost"]["aplauncher"]["encryption"].lower() != "opn":
                 print password_info
 
             print bssid_info

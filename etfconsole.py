@@ -121,18 +121,42 @@ class ETFConsole(Cmd):
 			return
 
 		try:
-			mode = arg[0]
-			if not (isinstance(self.current_config_mode[mode], str) or \
-					isinstance(self.current_config_mode[mode], list)):
-				self.current_config_mode = self.current_config_mode[mode]
-				self.config_mode_string += mode + "/"
-				self.update_prompt()
+			config_key = arg[0]
+			dict_string, config = self._look_for_config("", self.configs, config_key)
+			dict_string = "/".join(dict_string[:-1].split("/")[::-1]) # the output string is from bottom to top, we reverse
+			self.current_config_mode = config 
+			self.config_mode_string = dict_string
+			self.update_prompt()
 		except KeyError:
-			print "'{key}' does not exist in the configuration file".format(key = mode)
+			print "'{key}' does not exist in the configuration file".format(key = config_key)
 
+	def _look_for_config(self, dict_string, dict_root, dict_key):
+		if dict_key in dict_root:
+			dict_string += dict_key + "/"
+			return (dict_string, dict_root[dict_key])
+
+		for key, value in dict_root.items():
+			if isinstance(value, dict):
+				try:
+					dict_string, item = self._look_for_config(dict_string, value, dict_key)
+					dict_string += key + "/"
+					if item is not None:
+						return (dict_string, item)
+				except: pass
+				
 
 	def complete_config(self, text, line, begidx, endidx):
-		return self.complete_modes(text)
+		args = line.split()
+		all_configs = self.services + \
+					self.spawners + \
+					self.airscanner_plugins + \
+					self.airhost_plugins + \
+					self.airdeauthor_plugins
+
+		if len(args) == 1:
+			return all_configs
+		elif len(args) == 2:
+			return [config for config in all_configs if config.startswith(args[1])]
 
 	def do_get(self, args):
 		var = args.split()
@@ -471,7 +495,7 @@ class ETFConsole(Cmd):
 
 	def update_prompt(self):
 		self.prompt = "ETF{mode_start}{mode}{mode_end}::> ".format( mode_start = colored("[", "cyan"),
-																	mode = colored(console.config_mode_string[:-1], "green"),
+																	mode = colored(console.config_mode_string, "green"),
 																	mode_end = colored("]", "cyan"))
 
 	def do_EOF(self, line): # control-D
