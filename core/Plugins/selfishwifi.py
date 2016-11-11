@@ -12,7 +12,7 @@ class SelfishWiFi(AirScannerPlugin):
 	def __init__(self, ssid, running_interface, internet_interface, ignore_clients = []):
 		super(SelfishWiFi, self).__init__()
 		self.running_interface = running_interface
-		self.ignore_clients = ignore_clients
+		self.ignore_clients = ignore_clients + ["ff:ff:ff:ff:ff:ff"]
 		internet_interface_mac = NetworkCard(internet_interface).get_mac()
 		if internet_interface_mac is not None:
 			self.ignore_clients.append(internet_interface_mac)
