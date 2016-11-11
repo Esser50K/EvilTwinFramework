@@ -86,12 +86,15 @@ class APLauncher(object):
 				configurations += "wpa_pairwise={cipher}\n".format(cipher=cipher)           # cipher: CCMP or TKIP
 
 			elif encryption == "wep":
-				if not (len(password) == 5 or len(password) == 13 or len(password) == 16):
-					raise InvalidConfigurationException("Specified must have 5 or 13 or 16 digits for WEP\n")
-
-				configurations += "wep_default_key=0\n"
-				configurations += "wep_key0=\"{key}\"".format(key=password)
-
+				if (len(password) == 5 or len(password) == 13 or len(password) == 16):
+					configurations += "wep_default_key=0\n"
+					configurations += "wep_key0=\"{key}\"".format(key=password)
+				elif (len(password) == 10 or len(password) == 23):
+					configurations += "wep_default_key=0\n"
+					configurations += "wep_key0={key}".format(key=password)
+				else:
+					error_msg = "WEP key must be either 5, 8, 13 ascii charachters or 10 or 23 HEX charachters.\n"
+					raise InvalidConfigurationException(error_msg)
 
 		self.file_handler.write(configurations)
 		return True

@@ -5,11 +5,13 @@ the deauthentication attacks, targeted or general
 
 import os
 import logging
+import traceback
 from scapy.all import Dot11, Dot11Deauth, RadioTap, sendp
 from time import sleep
 from threading import Thread, Lock
 from utils.utils import DEVNULL
 from utils.networkmanager import NetworkCard
+from socket import error as socket_error
 from textwrap import dedent
 
 class DeauthAP(object):
@@ -121,6 +123,10 @@ class AirDeauthenticator(object):
                     sendp(packet, iface = self.running_interface, count = 2, inter = 0.1, verbose=0)
                             
                 count -= 1
+        except socket_error as e:
+            if not e.errno == 100:
+                print e
+                traceback.print_exc()
         except Exception as e:
             print "Exception: {}".format(e)
             print "[-] Stopping deauthentication attack."

@@ -13,12 +13,12 @@ from airdeauthor import AirDeauthenticator
 from AuxiliaryModules.infoprinter import InfoPrinter, ObjectFilter
 from AuxiliaryModules.httpserver import HTTPServer
 from Plugins.dnsspoofer import DNSSpoofer
+from Plugins.selfishwifi import SelfishWiFi
 from Plugins.packetlogger import PacketLogger
 from ConfigurationManager.configmanager import ConfigurationManager
 from utils.networkmanager import NetworkManager, NetworkCard
 from prettytable import PrettyTable
 from textwrap import dedent
-from threading import Thread
 
 class AirCommunicator(object):
 
@@ -32,7 +32,8 @@ class AirCommunicator(object):
         self.network_manager = NetworkManager(self.config_files["networkmanager_conf"])
 
         self.plugins = {"dnsspoofer"    : None,
-                        "packetlogger"  : None} # name: plugin
+                        "packetlogger"  : None,
+                        "selfishwifi"   : None} # name: plugin
 
         self.info_printer = InfoPrinter()
 
@@ -193,6 +194,17 @@ class AirCommunicator(object):
 
                 self.plugins["packetlogger"] = packetlogger
                 self.air_scanner.add_plugin(packetlogger)
+            elif plugin == "selfishwifi":
+                selfishwifi_configs = plugin_configs["selfishwifi"]
+                running_interface = self.configs["airscanner"]["sniffing_interface"]
+                ignore_interface = selfishwifi_configs["ignore_interface"]
+                ignore_clients = selfishwifi_configs["ignore_clients"]
+                ssid = selfishwifi_configs["ssid"]
+
+                selfishwifi = SelfishWiFi(ssid, running_interface, ignore_interface, ignore_clients)
+
+                self.plugins["selfishwifi"] = selfishwifi
+                self.air_scanner.add_plugin(selfishwifi)
 
 
 

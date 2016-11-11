@@ -73,7 +73,7 @@ class HTTPServer(object):
 										ServerAdmin admin@{domain}
 										DocumentRoot /var/www/html/{domain}
 										{captive_portal_config}
-										ErrorDocument 404 {domain}/index.php
+										ErrorDocument 404 /index.php
 										""").format(domain = domain_name, alias = " ".join(map(str, domain_alias)),
 													captive_portal_config = (captive_portal_config if captive_portal_mode else ""))
 

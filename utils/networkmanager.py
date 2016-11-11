@@ -39,7 +39,10 @@ class NetworkCard(object):
             return False
 
     def get_mode(self):
-        return pyw.modeget(self.card)
+        try:
+            return pyw.modeget(self.card)
+        except Exception:
+            return None
 
     def set_mac(self, mac):
         try:

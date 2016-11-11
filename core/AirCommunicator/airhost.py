@@ -56,6 +56,7 @@ class AirHost(object):
         if free_plugins:
             for plugin in self.plugins:
                 plugin.restore()
+            del self.plugins[:]
 
     def is_running(self):
         return self.running_interface != None

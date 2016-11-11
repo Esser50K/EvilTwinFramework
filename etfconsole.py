@@ -29,7 +29,7 @@ class ETFConsole(Cmd):
 	basic_commands = [  "start", "stop", "status", 
 						"spawn", "restore",
 						"get", "set", "config", "back", "listargs",
-						"copy", "add", "del", "show"]
+						"copy", "add", "del", "show"  ]
 
 	services = ["airhost", "airscanner", "airdeauthor"]
 	spawners = ["mitmf", "beef", "ettercap", "sslstrip"]
@@ -38,7 +38,7 @@ class ETFConsole(Cmd):
 	plugin_keyword = ["with"]
 
 	airhost_plugins = ["dnsspoofer"]
-	airscanner_plugins = ["packetlogger"]
+	airscanner_plugins = ["packetlogger", "selfishwifi"]
 	airdeauthor_plugins = []
 
 	copy_options = ["ap", "probe"]
@@ -486,7 +486,7 @@ class ETFConsole(Cmd):
 			if entered[1] in self.services:
 				if entered[1] == "airhost":
 					out = [keyword for keyword in self.airhost_plugins if keyword.startswith(start)]
-				elif entered[1] == "airsniffer":
+				elif entered[1] == "airscanner":
 					out = [keyword for keyword in self.airscanner_plugins if keyword.startswith(start)]
 				elif entered[1] == "airdeauthor":
 					out = [keyword for keyword in self.airdeauthor_plugins if keyword.startswith(start)]

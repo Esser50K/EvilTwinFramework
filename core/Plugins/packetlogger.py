@@ -62,5 +62,5 @@ class PacketLogger(AirScannerPlugin):
 		self.packet_logger = PcapWriter(self.destination_folder + "packet_log{n}.cap".format(n = self._nlogs), 
 										append=True, sync=True)
 
-	def handle(self, packet):
+	def handle_packet(self, packet):
 		self.log(packet, self.or_filter)

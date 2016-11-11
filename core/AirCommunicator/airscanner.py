@@ -9,6 +9,7 @@ import os
 import pyric.pyw as pyw
 import signal
 import traceback
+from AuxiliaryModules.packet import Beacon, ProbeResponse, ProbeRequest
 from time import sleep
 from threading import Thread, Lock
 from netaddr import EUI, OUI
@@ -47,12 +48,13 @@ class AccessPoint(object):
         self.psk = None 
 
     def __str__(self):
-        return  " ".join(   [str(self.bssid), str(self.ssid), "/".join(self.encryption), \
-                            str(self.cipher), str(self.auth)])
+        return  " ".join(   [   str(self.bssid), str(self.ssid), \
+                                "/".join(self.encryption), \
+                                str(self.cipher), str(self.auth)    ]   )
 
 class ProbeInfo(object):
 
-    def __init__(self,  id = 0, 
+    def __init__(self,  id = 0,
                         client_mac = None, client_org = None, 
                         ap_ssid = None, ap_bssids = None, 
                         rssi = None, ptype = None):
@@ -65,7 +67,10 @@ class ProbeInfo(object):
         self.type = ptype
 
     def __eq__(self, other):
-        return (self.client_mac == other.client_mac) and (self.ap_ssid == other.ap_ssid)
+        return (self.client_mac == other.client_mac) and (self.ap_ssid == other.ap_ssid) and (self.type == other.type)
+
+    def __str__(self):
+        return "{}-{}-{}".format(self.client_mac, self.ap_ssid, self.type)
 
 class AirScanner(object):
 
@@ -78,7 +83,7 @@ class AirScanner(object):
 
         self.ap_lock, self.probe_lock = Lock(), Lock()
         self.access_points = {}
-        self.probes = {}
+        self.probes = []
 
         self.plugins = []
 
@@ -104,7 +109,7 @@ class AirScanner(object):
         hopper_thread.start()
 
     def stop_sniffer(self):
-        Thread(target=self._clean_quit).start() # Avoids blocking when executed via the command line
+        Thread(target=self._clean_quit).start() # Avoids blocking when executed via the console
 
     def _clean_quit(self, wait = True):
         self.sniffer_running = False
@@ -158,144 +163,62 @@ class AirScanner(object):
     def handle_packets(self, packet):
         # Pass packets through plugins before filtering
         for plugin in self.plugins:
-            plugin.handle(packet)
+            plugin.handle_packet(packet)
 
-        if self.sniff_beacons and (Dot11Beacon in packet or Dot11ProbeResp in packet):
+        if self.sniff_beacons and Dot11Beacon in packet:
             self.handle_beacon_packets(packet)
-        elif self.sniff_probes and Dot11ProbeReq in packet:
-            self.handle_probe_req_packets(packet)
+
+        if self.sniff_probes:
+            if Dot11ProbeReq in packet:
+                self.handle_probe_req_packets(packet)
+            if Dot11ProbeResp in packet:
+                self.handle_probe_resp_packets(packet)
 
     def handle_beacon_packets(self, packet):
         # Based on an answer from stack-overflow: 
         # https://stackoverflow.com/questions/21613091/how-to-use-scapy-to-determine-wireless-encryption-type
-
-        bssid = packet[Dot11].addr3
-        rssi_string = self._get_rssi_from_packet(packet)
-        if bssid in self.access_points: # Repetition check
-            self.access_points[bssid].rssi = rssi_string
+        beacon = Beacon(packet)
+        if beacon.bssid in self.access_points:
+            self.access_points[beacon.bssid].rssi = beacon.rssi
             return
 
-        # Args for AccessPoint object
-        encryption = None
-        auth_suite = None
-        cipher_suite = None
-        elt_layer = packet[Dot11Elt]
-
-        cap = packet.sprintf(   "{Dot11Beacon:%Dot11Beacon.cap%}"
-                                "{Dot11ProbeResp:%Dot11ProbeResp.cap%}").split('+')
-        rsn_info = None
-        ssid, channel = None, None
-        crypto = set()
-        while isinstance(elt_layer, Dot11Elt):
-            if elt_layer.ID == 0:
-                ssid = elt_layer.info
-            elif elt_layer.ID == 3:
-                try:
-                    channel = ord(elt_layer.info)
-                except Exception:
-                    channel = str(elt_layer.info)
-            elif elt_layer.ID == 48:
-                crypto.add("WPA2")
-                rsn_info = elt_layer.info
-            elif elt_layer.ID == 221 and elt_layer.info.startswith('\x00P\xf2\x01\x01\x00'):
-                crypto.add("WPA")
-            elt_layer = elt_layer.payload # Check for more Dot11Elt packets within
-        if not crypto:
-            if 'privacy' in cap:
-                crypto.add("WEP")
-            else:
-                crypto.add("OPN")
-
-        if rsn_info or crypto:
-            cipher_suite, auth_suite = self.find_auth_and_cipher(rsn_info, crypto)
-
         id = len(self.access_points.keys())
-        new_ap = AccessPoint(id, ssid, bssid, channel, rssi_string, crypto, cipher_suite, auth_suite)
+        new_ap = AccessPoint(id, beacon.ssid, beacon.bssid, beacon.channel, beacon.rssi, \
+                            beacon.encryption, beacon.cipher, beacon.auth)
         with self.ap_lock:
-            self.access_points[bssid] = new_ap
-
-        if Dot11ProbeResp in packet:
-            client_mac = packet.addr1
-            if client_mac != "":
-                maco = EUI(client_mac)                      # EUI - Extended Unique Identifier
-                macf = None
-                try:
-                    macf = maco.oui.registration().org      # OUI - Organizational Unique Identifier
-                except Exception as e:
-                    pass
-
-                id = len(self.probes.keys())
-                probe = ProbeInfo(id, client_mac, macf, ssid, [bssid], rssi_string, "RESP")
-                with self.probe_lock:
-                    try:
-                        if probe not in self.probes[client_mac]:
-                            self.probes[client_mac].append(probe)
-                    except Exception:
-                        self.probes[client_mac] = [probe]
-
+            self.access_points[beacon.bssid] = new_ap
 
     def handle_probe_req_packets(self, packet): # TODO
-        rssi_string = self._get_rssi_from_packet(packet)
-        client_mac = packet.addr2 # TODO: Address 1 and 3 are usually broadcast, but could be specific client_mac address
-        if packet.haslayer(Dot11Elt):                          
-            if packet.ID == 0: 
-                ssid = packet.info
-                if not ssid or ssid == "":
-                    return
-                    
-                if client_mac != "":
-                    maco = EUI(client_mac)                      # EUI - Extended Unique Identifier
-                    macf = None
-                    try:
-                        macf = maco.oui.registration().org      # OUI - Organizational Unique Identifier
-                    except Exception as e:                      # OUI not registered exception
-                        pass
-                    ap_bssid = self.get_bssids_from_ssid(ssid)   # Returns a list with all the bssids
+        probe_req = ProbeRequest(packet)
+        probe_req.ap_bssid = self.get_bssids_from_ssid(probe_req.ap_ssid)   # Returns a list with all the bssids
 
-                    id = len(self.probes.keys())
-                    probe = ProbeInfo(id, client_mac, macf, ssid, ap_bssid, rssi_string, "REQ")
-                    with self.probe_lock:
-                        try:
-                            if probe not in self.probes[client_mac]:
-                                self.probes[client_mac].append(probe)
-                        except Exception:
-                            self.probes[client_mac] = [probe]
+        id = len(self.get_probe_requests())
+        probe = ProbeInfo(  id, probe_req.client_mac, probe_req.client_vendor, 
+                            probe_req.ssid, probe_req.ap_bssid, probe_req.rssi, "REQ")
+        with self.probe_lock:
+            try:
+                if probe not in self.probes:
+                    self.probes.append(probe)
+                else:
+                    self.probes[self.probes.index(probe)].rssi = probe.rssi
+            except Exception:
+                pass
 
+    def handle_probe_resp_packets(self, packet):
+        probe_resp = ProbeResponse(packet)
 
-    def _get_rssi_from_packet(self, packet):
-        # Found at http://comments.gmane.org/gmane.comp.security.scapy.general/4673
-        try:
-            return str(-(256-ord(packet.notdecoded[-4:-3]))) + " dbm"
-        except Exception:
-            return None
+        id = len(self.get_probe_requests())
+        probe = ProbeInfo(  id, probe_resp.client_mac, probe_resp.client_vendor, 
+                            probe_resp.ssid, [probe_resp.bssid], probe_resp.rssi, "RESP")
+        with self.probe_lock:
+            try:
+                if probe not in self.probes:
+                    self.probes.append(probe)
+                else:
+                    self.probes[self.probes.index(probe)].rssi = probe.rssi #Just update the rssi
+            except Exception:
+                pass
 
-                        
-    # TODO: Could be better and actually parse the packet instead of searching for byte sequences within
-    def find_auth_and_cipher(self, info, crypto_methods):
-        cipher_suite = None
-        auth_suite = None
-
-        # Figure out cypher suite
-        if crypto_methods and info:
-            crypto_methods = map(str.lower, crypto_methods)
-            if "wpa2" in crypto_methods and cipher_suites['CCMP'] in info:
-                cipher_suite = 'CCMP'
-            elif ("wpa" in crypto_methods or "wpa2" in crypto_methods):# and cipher_suites['TKIP'] in info:
-                cipher_suite = 'TKIP'
-            elif "wep" in crypto_methods:
-                cipher_suite = 'WEP'
-
-        # Figure out authentication method
-        if info:
-            if auth_suites['PSK'] in info:
-                auth_suite = 'PSK'
-            elif auth_suites['MGT'] in info:
-                auth_suite = 'MGT'
-        else:
-            auth_suite = 'OPN'
-
-
-        return (cipher_suite, auth_suite)
 
     def get_access_points(self):
         return [self.access_points[mac] 
@@ -309,9 +232,7 @@ class AirScanner(object):
         return None
 
     def get_probe_requests(self):
-        return [probe 
-                for client_mac in self.probes.keys() 
-                for probe in self.probes[client_mac]]
+        return [probe for probe in self.probes]
 
     def get_probe_request(self, id):
         for probe in self.get_probe_requests():
