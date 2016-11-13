@@ -1,8 +1,9 @@
 
-from AuxiliaryModules.packet import ProbeResponse, AssociationResponse, AuthenticationResponse
+from AuxiliaryModules.packet import ClientPacket, AccessPointPacket
 from plugin import AirScannerPlugin
 from utils.networkmanager import NetworkCard
-from scapy.all import RadioTap, Dot11, Dot11Auth, Dot11Deauth, Dot11ProbeResp, Dot11AssoResp, Dot11ReassoResp, sendp
+from scapy.all import 	RadioTap, Dot11, Dot11Auth, Dot11Deauth, Dot11ProbeReq, Dot11ProbeResp, \
+						Dot11AssoReq, Dot11AssoResp, Dot11ReassoReq, Dot11ReassoResp, sendp
 from socket import error as socket_error
 from time import sleep
 from threading import Thread
@@ -67,27 +68,33 @@ class SelfishWiFi(AirScannerPlugin):
 			for client in self.clients_to_deauth:
 				print "[+] Periodic attack on {} vs {}".format(client, self.deauth_ssid)
 				self.reactive_attack(client)
-
-			sleep(30)
-
+				sleep(5)
 
 	def restore(self):
 		self.is_running = False
 
-
-
 	def handle_packet(self, packet):
 		parsed_packet = None
-		if Dot11ProbeResp in packet:
-			parsed_packet = ProbeResponse(packet)
-		elif Dot11AssoResp in packet or Dot11ReassoResp:
-			parsed_packet = AssociationResponse(packet)
-		elif Dot11Auth in packet and not packet[Dot11Auth].status:
-			parsed_packet = AuthenticationResponse(packet)
 
+		if 	(Dot11ProbeResp in packet) or \
+			(Dot11AssoResp in packet) or \
+			(Dot11ReassoResp in packet) or \
+			(Dot11Auth in packet and not packet[Dot11Auth].status):
+
+			parsed_packet = AccessPointPacket(packet)
+
+		elif (Dot11ProbeReq in packet) or \
+			 (Dot11AssoReq in packet) or \
+			 (Dot11ReassoReq in packet) or \
+			 (Dot11Auth in packet and packet[Dot11Auth].status):
+
+			parsed_packet = ClientPacket(packet)
+		
 		if 	parsed_packet is not None and \
 			parsed_packet.client_mac not in self.ignore_clients and \
 			parsed_packet.ssid == self.deauth_ssid:
+
+			# TODO: Multiple bssids with same ssid support!
 			if self.deauth_bssid is None:
 				self.deauth_bssid = parsed_packet.bssid
 

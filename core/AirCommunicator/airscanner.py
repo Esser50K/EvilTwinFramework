@@ -190,34 +190,36 @@ class AirScanner(object):
 
     def handle_probe_req_packets(self, packet): # TODO
         probe_req = ProbeRequest(packet)
-        probe_req.ap_bssid = self.get_bssids_from_ssid(probe_req.ap_ssid)   # Returns a list with all the bssids
-
-        id = len(self.get_probe_requests())
-        probe = ProbeInfo(  id, probe_req.client_mac, probe_req.client_vendor, 
-                            probe_req.ssid, probe_req.ap_bssid, probe_req.rssi, "REQ")
-        with self.probe_lock:
-            try:
-                if probe not in self.probes:
-                    self.probes.append(probe)
-                else:
-                    self.probes[self.probes.index(probe)].rssi = probe.rssi
-            except Exception:
-                pass
+        
+        if probe_req.client_mac.lower() != "ff:ff:ff:ff:ff:ff":
+            probe_req.ap_bssid = self.get_bssids_from_ssid(probe_req.ap_ssid)   # Returns a list with all the bssids
+            id = len(self.get_probe_requests())
+            probe = ProbeInfo(  id, probe_req.client_mac, probe_req.client_vendor, 
+                                probe_req.ssid, probe_req.ap_bssid, probe_req.rssi, "REQ")
+            with self.probe_lock:
+                try:
+                    if probe not in self.probes:
+                        self.probes.append(probe)
+                    else:
+                        self.probes[self.probes.index(probe)].rssi = probe.rssi
+                except Exception:
+                    pass
 
     def handle_probe_resp_packets(self, packet):
         probe_resp = ProbeResponse(packet)
 
-        id = len(self.get_probe_requests())
-        probe = ProbeInfo(  id, probe_resp.client_mac, probe_resp.client_vendor, 
-                            probe_resp.ssid, [probe_resp.bssid], probe_resp.rssi, "RESP")
-        with self.probe_lock:
-            try:
-                if probe not in self.probes:
-                    self.probes.append(probe)
-                else:
-                    self.probes[self.probes.index(probe)].rssi = probe.rssi #Just update the rssi
-            except Exception:
-                pass
+        if probe_resp.client_mac.lower() != "ff:ff:ff:ff:ff:ff":
+            id = len(self.get_probe_requests())
+            probe = ProbeInfo(  id, probe_resp.client_mac, probe_resp.client_vendor, 
+                                probe_resp.ssid, [probe_resp.bssid], probe_resp.rssi, "RESP")
+            with self.probe_lock:
+                try:
+                    if probe not in self.probes:
+                        self.probes.append(probe)
+                    else:
+                        self.probes[self.probes.index(probe)].rssi = probe.rssi #Just update the rssi
+                except Exception:
+                    pass
 
 
     def get_access_points(self):

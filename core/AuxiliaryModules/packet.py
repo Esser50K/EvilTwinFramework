@@ -29,6 +29,19 @@ class Packet(object):
 		except Exception:
 			return None
 
+	def _get_ssid_from_packet(self, packet):
+		ssid = None
+		if packet.haslayer(Dot11Elt):                          
+			elt_layer = packet[Dot11Elt]
+
+			while isinstance(elt_layer, Dot11Elt):
+				if elt_layer.ID == 0:
+					ssid = elt_layer.info
+					break
+				elt_layer = elt_layer.payload # Check for more Dot11Elt packets within
+
+		return ssid
+
 	def _get_vendor(self, mac):
 		if mac != "":
 			maco = EUI(mac)                         # EUI - Extended Unique Identifier
@@ -39,11 +52,27 @@ class Packet(object):
 		return None
 
 
+class ClientPacket(Packet):
+	def __init__(self, packet):
+		self.client_mac = packet[Dot11].addr3
+		self.bssid = packet[Dot11].addr1
+		self.ssid = self._get_ssid_from_packet(packet)
+		self.client_vendor = self._get_vendor(self.client_mac)
+		super(ClientPacket, self).__init__(packet)
 
-class Beacon(Packet):
+
+class AccessPointPacket(Packet):
+	def __init__(self, packet):
+		self.ssid = self._get_ssid_from_packet(packet)
+		self.bssid = packet[Dot11].addr3
+		self.client_mac = packet[Dot11].addr1
+		self.client_vendor = self._get_vendor(self.client_mac)
+		super(AccessPointPacket, self).__init__(packet)
+
+
+class Beacon(AccessPointPacket):
 
 	def __init__(self, packet):
-		self.ssid = None
 		self.bssid = None
 		self.channel = None
 		self.encryption = None
@@ -52,7 +81,6 @@ class Beacon(Packet):
 		super(Beacon, self).__init__(packet)
 
 	def parse_packet(self):
-		self.bssid = self.packet[Dot11].addr3
 		elt_layer = self.packet[Dot11Elt]
 
 		cap = self.packet.sprintf(  "{Dot11Beacon:%Dot11Beacon.cap%}"
@@ -60,9 +88,7 @@ class Beacon(Packet):
 		rsn_info = None
 		crypto = set()
 		while isinstance(elt_layer, Dot11Elt):
-			if elt_layer.ID == 0:
-				self.ssid = elt_layer.info
-			elif elt_layer.ID == 3:
+			if elt_layer.ID == 3:
 				try:
 					self.channel = ord(elt_layer.info)
 				except Exception:
@@ -121,93 +147,25 @@ class Beacon(Packet):
 		return (cipher_suite, auth_suite)
 
 
-class ProbeResponse(Packet):
+class ProbeResponse(AccessPointPacket):
 
 	def __init__(self, packet):
-		self.client_mac = None
-		self.client_vendor = None
-		self.ssid = None
-		self.bssid = None
 		super(ProbeResponse, self).__init__(packet)
 
-	def parse_packet(self):
-		self.bssid = self.packet[Dot11].addr3
-		self.client_mac = self.packet.addr1
-		self.client_vendor = self._get_vendor(self.client_mac)
 
-		if self.packet.haslayer(Dot11Elt):                          
-			elt_layer = self.packet[Dot11Elt]    
-
-			while isinstance(elt_layer, Dot11Elt):
-				if elt_layer.ID == 0:
-					self.ssid = elt_layer.info
-				elt_layer = elt_layer.payload # Check for more Dot11Elt packets within
-   
-
-
-class ProbeRequest(Packet):
+class ProbeRequest(ClientPacket):
 
 	def __init__(self, packet):
-		self.client_mac = None
-		self.client_vendor = None
-		self.ap_ssid = None
-		self.ap_bssid = None
 		super(ProbeRequest, self).__init__(packet)
 
-	def parse_packet(self):
-		self.client_mac = self.packet.addr2 # TODO: Address 1 and 3 are usually broadcast, but could be specific client_mac address
-		self.client_vendor = self._get_vendor(self.client_mac)
-		if self.packet.haslayer(Dot11Elt):                          
-			elt_layer = self.packet[Dot11Elt]    
 
-			while isinstance(elt_layer, Dot11Elt):
-				if elt_layer.ID == 0:
-					self.ssid = elt_layer.info
-				elt_layer = elt_layer.payload # Check for more Dot11Elt packets within
-
-class AuthenticationResponse(Packet):
+class AuthenticationResponse(AccessPointPacket):
 
 	def __init__(self, packet):
-		self.ssid = None
-		self.bssid = None
-		self.client_mac = None
 		super(AuthenticationResponse, self).__init__(packet)
 
-	def parse_packet(self):
-		self.client_mac = self.packet.addr1
-		self.bssid = self.packet.addr1
-		if not self.bssid or self.bssid == "":
-			self.bssid = self.packet.addr3
-		self.client_vendor = self._get_vendor(self.client_mac)
 
-		if self.packet.haslayer(Dot11Elt):                          
-			elt_layer = self.packet[Dot11Elt]    
-
-			while isinstance(elt_layer, Dot11Elt):
-				if elt_layer.ID == 0:
-					self.ssid = elt_layer.info
-				elt_layer = elt_layer.payload # Check for more Dot11Elt packets within
-
-class AssociationResponse(Packet):
+class AssociationResponse(AccessPointPacket):
 
 	def __init__(self, packet):
-		self.ssid = None
-		self.bssid = None
-		self.client_mac = None
 		super(AssociationResponse, self).__init__(packet)
-
-	def parse_packet(self):
-		self.client_mac = self.packet.addr1
-		self.bssid = self.packet.addr1
-		if not self.bssid or self.bssid == "":
-			self.bssid = self.packet.addr3
-		self.client_vendor = self._get_vendor(self.client_mac)
-
-		if self.packet.haslayer(Dot11Elt):                          
-			elt_layer = self.packet[Dot11Elt]    
-
-			while isinstance(elt_layer, Dot11Elt):
-				if elt_layer.ID == 0:
-					self.ssid = elt_layer.info
-				elt_layer = elt_layer.payload # Check for more Dot11Elt packets within
-
