@@ -192,7 +192,7 @@ class AirScanner(object):
         probe_req = ProbeRequest(packet)
         
         if probe_req.client_mac.lower() != "ff:ff:ff:ff:ff:ff":
-            probe_req.ap_bssid = self.get_bssids_from_ssid(probe_req.ap_ssid)   # Returns a list with all the bssids
+            probe_req.ap_bssid = self.get_bssids_from_ssid(probe_req.ssid)   # Returns a list with all the bssids
             id = len(self.get_probe_requests())
             probe = ProbeInfo(  id, probe_req.client_mac, probe_req.client_vendor, 
                                 probe_req.ssid, probe_req.ap_bssid, probe_req.rssi, "REQ")

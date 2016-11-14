@@ -111,6 +111,7 @@ class NetworkManager(object):
             NetUtils().flush_iptables()
             NetUtils().accept_forwarding(from_if)
             NetUtils().set_postrouting_interface(to_if)
+            NetUtils().add_routing_rule(card.get_subnet(), card.get_mask(), card.get_ip())
 
     def configure_interface(self, interface, ip, netmask=None, broadcast=None, mtu=1800):
         card = self.get_netcard(interface) # Get NetCard object
@@ -118,7 +119,6 @@ class NetworkManager(object):
         if card != None:
             card.ifconfig(ip, netmask, broadcast)
             card.set_mtu_size(mtu)
-            NetUtils().add_routing_rule(card.get_subnet(), card.get_mask(), card.get_ip())
 
     def set_mac_and_unmanage(self, interface, mac, retry = False):
         card = self.get_netcard(interface)

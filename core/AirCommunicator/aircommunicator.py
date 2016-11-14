@@ -96,8 +96,8 @@ class AirCommunicator(object):
 
         # NetworkManager setup
         if self.network_manager.set_mac_and_unmanage(ap_interface, bssid, retry = True):
-            self.network_manager.iptables_redirect(ap_interface, internet_interface)
             self.network_manager.configure_interface(ap_interface, gateway)
+            self.network_manager.iptables_redirect(ap_interface, internet_interface)
             
             # dnsmasq and hostapd setup
             try:

@@ -149,8 +149,8 @@ class AirDeauthenticator(object):
         self.running_interface = interface
         card = NetworkCard(interface)
         current_mode = card.get_mode()
+        self._previous_mode = current_mode
         if current_mode != 'monitor':
-            self._previous_mode = current_mode
             card.set_mode('monitor')
 
         self.deauth_running = True
