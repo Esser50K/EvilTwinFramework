@@ -94,7 +94,9 @@ class APLauncher(object):
 					configurations += "pac_key_lifetime=604800\n"
 					configurations += "pac_key_refresh_time=86400\n"
 					configurations += "pac_opaque_encr_key=000102030405060708090a0b0c0d0e0f\n"
-					configurations += "wpe_logfile=./data/hashes/eap_hashes.log\n"				
+					configurations += "wpe_logfile=./data/hashes/eap_hashes.log\n"
+					configurations += "auth_algs=3\n"
+				
 				else:
 					if password is None: 
 						raise InvalidConfigurationException("Must specify a password when choosing wpa or wpa2 encryption!\n")
