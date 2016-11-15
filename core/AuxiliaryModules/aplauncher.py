@@ -62,11 +62,6 @@ class APLauncher(object):
 		if encryption:
 			encryption = encryption.lower()
 			if ("wpa" in encryption):
-				if password is None: 
-					raise InvalidConfigurationException("Must specify a password when choosing wpa or wpa2 encryption!\n")
-				if len(password) < 8 or len(password) > 63: 
-					raise InvalidConfigurationException("Specified password must have at least 8 printable digits and a maximum of 63\n")
-
 				wpa_int = 1   
 
 				# Check if input is 'wpa/wpa2'
@@ -81,9 +76,34 @@ class APLauncher(object):
 					wpa_int += 1
 
 				configurations += "wpa={wpa_int}\n".format(wpa_int=wpa_int)                 # configure wpa or wpa2
-				configurations += "wpa_passphrase={password}\n".format(password=password)   # password minimum is 8 digits
-				configurations += "wpa_key_mgmt=WPA-{auth}\n".format(auth=auth)             # authentication method: PSK or EAP
-				configurations += "wpa_pairwise={cipher}\n".format(cipher=cipher)           # cipher: CCMP or TKIP
+				configurations += "wpa_key_mgmt=WPA-{auth}\n".format(auth=auth.upper())     # authentication method: PSK or EAP
+				configurations += "wpa_pairwise={cipher}\n".format(cipher=cipher.upper())   # cipher: CCMP or TKIP
+				
+				if auth.lower() == "eap":
+					configurations += "eap_user_file=utils/hostapd-2.2/hostapd/hostapd-wpe.eap_user\n"
+					configurations += "ca_cert=utils/hostapd-wpe/certs/certnew.cer\n"
+					configurations += "server_cert=utils/hostapd-wpe/certs/server.pem\n"
+					configurations += "private_key=utils/hostapd-wpe/certs/server.pem\n"
+					configurations += "private_key_passwd=whatever\n"
+					configurations += "dh_file=utils/hostapd-wpe/certs/dh\n"
+					configurations += "eap_server=1\n"
+					configurations += "eap_fast_a_id=101112131415161718191a1b1c1d1e1f\n"
+					configurations += "eap_fast_a_id_info=hostapd-wpe\n"
+					configurations += "eap_fast_prov=3\n"
+					configurations += "ieee8021x=1\n"
+					configurations += "pac_key_lifetime=604800\n"
+					configurations += "pac_key_refresh_time=86400\n"
+					configurations += "pac_opaque_encr_key=000102030405060708090a0b0c0d0e0f\n"
+					configurations += "macaddr_acl=0\n"
+					configurations += "auth_algs=3\n"
+					configurations += "wpe_logfile=data/hashes/eap_hashes.log\n"
+				
+				else:
+					if password is None: 
+						raise InvalidConfigurationException("Must specify a password when choosing wpa or wpa2 encryption!\n")
+					if len(password) < 8 or len(password) > 63: 
+						raise InvalidConfigurationException("Specified password must have at least 8 printable digits and a maximum of 63\n")
+					configurations += "wpa_passphrase={password}\n".format(password=password)   # password minimum is 8 digits
 
 			elif encryption == "wep":
 				if (len(password) == 5 or len(password) == 13 or len(password) == 16):
@@ -101,7 +121,7 @@ class APLauncher(object):
 
 	def start_access_point(self, interface):
 		print "[+] Starting hostapd background process"
-		self.ap_process = Popen("hostapd -B {config_path}".format( config_path=self.hostapd_config_path).split(), 
+		self.ap_process = Popen("utils/hostapd-2.2/hostapd/hostapd-wpe -s {config_path}".format( config_path=self.hostapd_config_path).split(), 
 								stdout=DEVNULL,
 								stderr=DEVNULL)
 
@@ -115,8 +135,7 @@ class APLauncher(object):
 			self.ap_process.send_signal(9)  # Send SIGINT to process running hostapd
 			self.ap_process = None
 
-		os.system('service hostapd stop')
-		os.system('pkill hostapd')      # Cleanup
+		os.system('pkill hostapd-wpe')      # Cleanup
 		self.ap_running = False
 		if self.connected_clients_updator != None:
 			if wait:
