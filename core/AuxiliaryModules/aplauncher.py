@@ -81,11 +81,11 @@ class APLauncher(object):
 				
 				if auth.lower() == "eap":
 					configurations += "eap_user_file=utils/hostapd-2.2/hostapd/hostapd-wpe.eap_user\n"
-					configurations += "ca_cert=utils/hostapd-wpe/certs/certnew.cer\n"
-					configurations += "server_cert=utils/hostapd-wpe/certs/server.pem\n"
-					configurations += "private_key=utils/hostapd-wpe/certs/server.pem\n"
+					configurations += "ca_cert=utils/hostapd-2.2/certs/certnew.cer\n"
+					configurations += "server_cert=utils/hostapd-2.2/certs/server.pem\n"
+					configurations += "private_key=utils/hostapd-2.2/certs/server.pem\n"
 					configurations += "private_key_passwd=whatever\n"
-					configurations += "dh_file=utils/hostapd-wpe/certs/dh\n"
+					configurations += "dh_file=utils/hostapd-2.2/certs/dh\n"
 					configurations += "eap_server=1\n"
 					configurations += "eap_fast_a_id=101112131415161718191a1b1c1d1e1f\n"
 					configurations += "eap_fast_a_id_info=hostapd-wpe\n"
@@ -94,9 +94,13 @@ class APLauncher(object):
 					configurations += "pac_key_lifetime=604800\n"
 					configurations += "pac_key_refresh_time=86400\n"
 					configurations += "pac_opaque_encr_key=000102030405060708090a0b0c0d0e0f\n"
-					configurations += "macaddr_acl=0\n"
+
+					configurations += "wpe_logfile=./data/hashes/eap_hashes.log\n"
+					configurations += "logger_syslog=-1\n"
+					configurations += "logger_syslog_level=2\n"
+					configurations += "logger_stdout=-1\n"
+					configurations += "logger_stdout_level=2\n"
 					configurations += "auth_algs=3\n"
-					configurations += "wpe_logfile=data/hashes/eap_hashes.log\n"
 				
 				else:
 					if password is None: 
@@ -121,9 +125,9 @@ class APLauncher(object):
 
 	def start_access_point(self, interface):
 		print "[+] Starting hostapd background process"
-		self.ap_process = Popen("utils/hostapd-2.2/hostapd/hostapd-wpe -s {config_path}".format( config_path=self.hostapd_config_path).split(), 
-								stdout=DEVNULL,
-								stderr=DEVNULL)
+		self.ap_process = Popen("utils/hostapd-2.2/hostapd/hostapd-wpe -s {config_path}".format( config_path=self.hostapd_config_path).split())#, 
+								#stdout=DEVNULL,
+								#stderr=DEVNULL)
 
 		self.ap_running = True
 		self.connected_clients_updator = Thread(target=self.update_connected_clients, args=(interface, ))

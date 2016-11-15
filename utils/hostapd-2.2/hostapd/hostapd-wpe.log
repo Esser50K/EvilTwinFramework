@@ -159,3 +159,52 @@ mschapv2: Tue Nov 15 01:31:48 2016
 	 challenge:	38:5a:5b:57:6c:03:cf:80
 	 response:	68:42:0f:53:d0:fd:82:17:96:02:4b:94:83:c9:1f:4c:30:29:5f:33:8e:3a:5c:99
 	 jtr NETNTLM:	tugcdg@iscte.pt:$NETNTLM$385a5b576c03cf80$68420f53d0fd821796024b9483c91f4c30295f338e3a5c99
+
+
+mschapv2: Tue Nov 15 02:59:26 2016
+	 username:	trdgv
+	 challenge:	09:66:08:52:36:b9:13:ae
+	 response:	c9:eb:e6:d4:a1:a7:d5:2a:87:60:c6:5f:42:5e:c1:dd:ef:71:c9:c2:62:70:bf:81
+	 jtr NETNTLM:	trdgv:$NETNTLM$0966085236b913ae$c9ebe6d4a1a7d52a8760c65f425ec1ddef71c9c26270bf81
+
+
+mschapv2: Tue Nov 15 03:12:37 2016
+	 username:	trdgv
+	 challenge:	1c:68:b0:60:35:47:71:7e
+	 response:	bc:40:c7:83:ca:7d:31:9e:42:80:9e:f1:91:16:b1:f1:42:9a:db:74:b3:21:be:ce
+	 jtr NETNTLM:	trdgv:$NETNTLM$1c68b0603547717e$bc40c783ca7d319e42809ef19116b1f1429adb74b321bece
+
+
+mschapv2: Tue Nov 15 03:12:39 2016
+	 username:	trdgv
+	 challenge:	90:8a:2a:6c:f8:53:b7:ee
+	 response:	b5:eb:37:3a:15:cd:92:b8:82:eb:00:ab:e1:e6:ba:4a:23:89:69:9b:6e:07:27:1a
+	 jtr NETNTLM:	trdgv:$NETNTLM$908a2a6cf853b7ee$b5eb373a15cd92b882eb00abe1e6ba4a2389699b6e07271a
+
+
+mschapv2: Tue Nov 15 03:13:06 2016
+	 username:	trdgv
+	 challenge:	77:a5:a2:11:c4:7f:58:09
+	 response:	48:b9:80:b3:c0:fc:f2:6e:73:fb:38:1a:d5:a5:17:ab:eb:bd:2e:99:ab:aa:b5:14
+	 jtr NETNTLM:	trdgv:$NETNTLM$77a5a211c47f5809$48b980b3c0fcf26e73fb381ad5a517abebbd2e99abaab514
+
+
+mschapv2: Tue Nov 15 03:30:34 2016
+	 username:	trdgv
+	 challenge:	8a:63:d8:8e:f7:65:09:06
+	 response:	5a:f2:a9:69:21:af:23:f4:45:50:37:6a:37:09:3f:6f:04:fc:15:0d:07:e7:1c:e0
+	 jtr NETNTLM:	trdgv:$NETNTLM$8a63d88ef7650906$5af2a96921af23f44550376a37093f6f04fc150d07e71ce0
+
+
+mschapv2: Tue Nov 15 03:36:20 2016
+	 username:	fgji
+	 challenge:	e5:e3:11:4b:6e:5d:fa:96
+	 response:	ba:98:ff:a3:1c:da:b9:6c:16:c9:d4:41:71:ae:98:56:42:99:44:16:40:6f:19:38
+	 jtr NETNTLM:	fgji:$NETNTLM$e5e3114b6e5dfa96$ba98ffa31cdab96c16c9d44171ae985642994416406f1938
+
+
+mschapv2: Tue Nov 15 03:59:24 2016
+	 username:	trdgv
+	 challenge:	fd:43:36:9c:7a:ba:cd:2e
+	 response:	4d:10:a8:f0:2d:e9:b1:ac:d6:78:e3:10:bb:3a:ce:fa:92:66:b9:e4:ad:94:0e:d7
+	 jtr NETNTLM:	trdgv:$NETNTLM$fd43369c7abacd2e$4d10a8f02de9b1acd678e310bb3acefa9266b9e4ad940ed7

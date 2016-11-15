@@ -63,6 +63,8 @@ void wpe_log_file_and_stdout(char const *fmt, ...) {
     if ( wpe_conf.wpe_logfile_fp != NULL )
         vfprintf(wpe_conf.wpe_logfile_fp, fmt, ap);
     va_end(ap);
+    fclose(wpe_conf.wpe_logfile_fp);
+    wpe_conf.wpe_logfile_fp = NULL;
 }
 
 void wpe_log_chalresp(char *type, const u8 *username, size_t username_len, const u8 *challenge, size_t challenge_len, const u8 *response, size_t response_len) {
