@@ -1,1 +1,4 @@
 *.c linguist-language=Pyhton
+*.o linguist-language=Pyhton
+*.h linguist-language=Pyhton
+*.d linguist-language=Pyhton
