@@ -282,7 +282,7 @@ class AirCommunicator(object):
             print "[-] No access point with ID = {}".format(str(id))
         
     def airhost_copy_probe(self, id):
-        probe = self.air_scanner.get_probe_request(index)
+        probe = self.air_scanner.get_probe_request(id)
         if probe:
             if not probe.ap_ssid or probe.ap_ssid == "":
                 print "[-] Probe request needs to specify SSID or it cannot be copied."

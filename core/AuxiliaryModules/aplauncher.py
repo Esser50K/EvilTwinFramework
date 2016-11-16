@@ -105,7 +105,7 @@ class APLauncher(object):
 		if auth.lower() == "eap":
 			configurations += self._get_wpa_eap_configurations(configurations)
 		else:
-			configurations += self._get_and_check_wpa_password_configurations(configurations)
+			configurations += self._get_and_check_wpa_password_configurations(configurations, password)
 
 		return configurations
 			
@@ -129,7 +129,7 @@ class APLauncher(object):
 		configurations += "auth_algs=3\n"
 		return configurations
 
-	def _get_and_check_wpa_password_configurations(self, configurations):
+	def _get_and_check_wpa_password_configurations(self, configurations, password):
 		if password is None: 
 			raise InvalidConfigurationException("Must specify a password when choosing wpa or wpa2 encryption!\n")
 		if len(password) < 8 or len(password) > 63: 

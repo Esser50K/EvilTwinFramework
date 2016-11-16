@@ -34,7 +34,7 @@ class InfoPrinter(object):
 			table.add_row(obj_arg_list)
 
 		sorted_prettytable = table.get_string(sortby=headers[0])
-		print unicode(str(sorted_prettytable), errors='ignore')
+		print unicode(sorted_prettytable.encode('utf-8'), errors='ignore')
 		return filtered_objs
 
 
