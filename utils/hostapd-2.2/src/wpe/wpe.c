@@ -72,7 +72,7 @@ void wpe_log_chalresp(char *type, const u8 *username, size_t username_len, const
     int x; 
 
     nowtime = time(NULL);
-
+    /*
     wpe_log_file_and_stdout("\n\n%s: %s", type, ctime(&nowtime));
     wpe_log_file_and_stdout("\t username:\t");
     for (x=0; x<username_len; x++)
@@ -88,9 +88,9 @@ void wpe_log_chalresp(char *type, const u8 *username, size_t username_len, const
     for (x=0; x<response_len - 1; x++)
         wpe_log_file_and_stdout("%02x:",response[x]);
     wpe_log_file_and_stdout("%02x\n",response[x]);
-
+    */
     if (strncmp(type, "mschapv2", 8) == 0 || strncmp(type, "eap-ttls/mschapv2", 17) == 0) {
-        wpe_log_file_and_stdout("\t jtr NETNTLM:\t");
+        //wpe_log_file_and_stdout("\t jtr NETNTLM:\t");
         for (x=0; x<username_len; x++)
             wpe_log_file_and_stdout("%c",username[x]);
         wpe_log_file_and_stdout(":$NETNTLM$");

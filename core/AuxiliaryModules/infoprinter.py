@@ -92,7 +92,7 @@ class ObjectFilter(object):
 			for filter_arg in filter_map:
 				try:
 					for filter_value in filter_map[filter_arg]:
-						if not str(obj.__dict__[filter_arg]) == str(filter_value):
+						if str(filter_value).lower() not in str(obj.__dict__[filter_arg]).lower():
 							add = False
 							break
 				except KeyError: # Don't judge if obj does not have a certain attribute
@@ -109,7 +109,7 @@ class ObjectFilter(object):
 			for filter_arg in filter_map:
 				try:
 					for filter_value in filter_map[filter_arg]:
-						if str(obj.__dict__[filter_arg]) == str(filter_value):
+						if str(filter_value).lower() in str(obj.__dict__[filter_arg]).lower():
 							filtered_objlist.append(obj)
 							break
 				except KeyError: # Don't judge if obj does not have a certain attribute

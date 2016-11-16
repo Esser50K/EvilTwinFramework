@@ -188,7 +188,7 @@ class AirScanner(object):
         with self.ap_lock:
             self.access_points[beacon.bssid] = new_ap
 
-    def handle_probe_req_packets(self, packet): # TODO
+    def handle_probe_req_packets(self, packet):
         probe_req = ProbeRequest(packet)
         
         if probe_req.client_mac.lower() != "ff:ff:ff:ff:ff:ff":

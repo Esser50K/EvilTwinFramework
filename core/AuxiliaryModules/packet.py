@@ -1,6 +1,6 @@
 
 from netaddr import EUI, OUI
-from scapy.all import Dot11, Dot11Beacon, Dot11Elt, Dot11ProbeReq, Dot11ProbeResp
+from scapy.all import Dot11, Dot11Beacon, Dot11Elt, Dot11ProbeReq, Dot11ProbeResp, EAP
 
 cipher_suites = { 'GROUP'   : '\x00\x0f\xac\x00',
 				  'WEP'     : '\x00\x0f\xac\x01',
@@ -55,6 +55,8 @@ class Packet(object):
 class ClientPacket(Packet):
 	def __init__(self, packet):
 		self.client_mac = packet[Dot11].addr3
+		if self.client_mac.lower() == "ff:ff:ff:ff:ff:ff":
+			self.client_mac = packet[Dot11].addr2
 		self.bssid = packet[Dot11].addr1
 		self.ssid = self._get_ssid_from_packet(packet)
 		self.client_vendor = self._get_vendor(self.client_mac)
@@ -65,6 +67,8 @@ class AccessPointPacket(Packet):
 	def __init__(self, packet):
 		self.ssid = self._get_ssid_from_packet(packet)
 		self.bssid = packet[Dot11].addr3
+		if self.bssid.lower() == "ff:ff:ff:ff:ff:ff":
+			self.bssid = packet[Dot11].addr2
 		self.client_mac = packet[Dot11].addr1
 		self.client_vendor = self._get_vendor(self.client_mac)
 		super(AccessPointPacket, self).__init__(packet)
@@ -140,6 +144,8 @@ class Beacon(AccessPointPacket):
 				auth_suite = 'PSK'
 			elif auth_suites['MGT'] in info:
 				auth_suite = 'MGT'
+		elif self.packet.haslayer(EAP):
+			auth_suite = 'EAP'
 		else:
 			auth_suite = 'OPN'
 

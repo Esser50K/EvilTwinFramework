@@ -15,6 +15,7 @@ from AuxiliaryModules.httpserver import HTTPServer
 from Plugins.dnsspoofer import DNSSpoofer
 from Plugins.selfishwifi import SelfishWiFi
 from Plugins.packetlogger import PacketLogger
+from Plugins.credentialprinter import CredentialPrinter
 from ConfigurationManager.configmanager import ConfigurationManager
 from utils.networkmanager import NetworkManager, NetworkCard
 from prettytable import PrettyTable
@@ -137,23 +138,36 @@ class AirCommunicator(object):
         airhost_plugins = self.configs["airhost"]["plugins"]
         for plugin in plugins:
             if plugin == "dnsspoofer":
-                dnsspoofer_plugin = airhost_plugins["dnsspoofer"]
-                hosts_path = self.config_files["hosts_conf"]
-                spoof_ip = self.configs["airhost"]["plugins"]["dnsspoofer"]["spoof_ip"]
-                spoof_pages = self.configs["airhost"]["plugins"]["dnsspoofer"]["spoof_pages"]
+                self._add_dnsspoofer_plugin(airhost_plugins)
+            elif plugin == "credentialprinter":
+                self._add_credentialprinter_plugin(airhost_plugins)
 
-                httpserver = None
-                if dnsspoofer_plugin["httpserver"].lower() == "true":
-                    apache_config_path = self.config_files["apache_conf"]
-                    apache_root_path = self.config_files["apache_root"]
-                    ssl = dnsspoofer_plugin["ssl_on"].lower() == "true"
-                    overwrite = dnsspoofer_plugin["overwrite_pages"].lower() == "true"
-                    httpserver = HTTPServer(apache_config_path, apache_root_path, ssl, overwrite)
+    def _add_dnsspoofer_plugin(self, airhost_plugins):
+        dnsspoofer_plugin = airhost_plugins["dnsspoofer"]
+        hosts_path = self.config_files["hosts_conf"]
+        spoof_ip = self.configs["airhost"]["plugins"]["dnsspoofer"]["spoof_ip"]
+        spoof_pages = self.configs["airhost"]["plugins"]["dnsspoofer"]["spoof_pages"]
 
-                dnsspoofer = DNSSpoofer(spoof_ip, hosts_path, httpserver, spoof_pages)
+        httpserver = None
+        if dnsspoofer_plugin["httpserver"].lower() == "true":
+            apache_config_path = self.config_files["apache_conf"]
+            apache_root_path = self.config_files["apache_root"]
+            ssl = dnsspoofer_plugin["ssl_on"].lower() == "true"
+            overwrite = dnsspoofer_plugin["overwrite_pages"].lower() == "true"
+            httpserver = HTTPServer(apache_config_path, apache_root_path, ssl, overwrite)
 
-                self.plugins["dnsspoofer"] = dnsspoofer
-                self.air_host.add_plugin(dnsspoofer)
+        dnsspoofer = DNSSpoofer(spoof_ip, hosts_path, httpserver, spoof_pages)
+
+        self.plugins["dnsspoofer"] = dnsspoofer
+        self.air_host.add_plugin(dnsspoofer)
+
+    def _add_credentialprinter_plugin(self, airhost_plugins):
+        credentialprinter_plugin = airhost_plugins["credentialprinter"]
+        log_folder = credentialprinter_plugin["log_folder"]
+        log_file_name = credentialprinter_plugin["log_file_name"]
+        credentialprinter = CredentialPrinter(log_folder, log_file_name)
+        self.plugins["credentialprinter"] = credentialprinter
+        self.air_host.add_plugin(credentialprinter)
         
     def start_sniffer(self, plugins = []):
         # Sniffing options

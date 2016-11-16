@@ -9,17 +9,18 @@ import signal
 import subprocess
 from shutil import copy
 from etfexceptions import InvalidFilePathException, InvalidConfigurationException
-from multiprocessing import Process
+from threading import Thread
 
 DEVNULL = open(os.devnull, 'wb') # Stream used to hide output from another process
 
-class AsyncTask(Process):
+class AsyncTask(Thread):
     def __init__(self, cmd=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, screen_output=False):
         self.stdout = stdout
         self.stderr = stderr
         self.cmd = cmd
         self.screen_output = screen_output
-        Process.__init__(self)
+        self.exit = False
+        super(AsyncTask, self).__init__()
 
     def set_command(self, command_string):
         self.cmd = command_string
@@ -32,13 +33,18 @@ class AsyncTask(Process):
         output_lines = iter(process.stdout.readline, "")
         for line in output_lines:
             yield line
+            if self.exit: break
 
         process.stdout.close()
+
+    def stop(self):
+        self.exit = True
 
     def run(self):
         if self.screen_output:
             for output_line in self.async_exec():
                 print output_line.strip()
+                if self.exit: break
         else:
             self.async_exec()
 
