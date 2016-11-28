@@ -1,6 +1,7 @@
 
 from netaddr import EUI, OUI
-from scapy.all import Dot11, Dot11Beacon, Dot11Elt, Dot11ProbeReq, Dot11ProbeResp, EAP
+from scapy.layers.dot11 import EAPOL
+from scapy.all import Dot11, Dot11Beacon, Dot11Elt, Dot11ProbeReq, Dot11ProbeResp
 
 cipher_suites = { 'GROUP'   : '\x00\x0f\xac\x00',
 				  'WEP'     : '\x00\x0f\xac\x01',
@@ -144,8 +145,6 @@ class Beacon(AccessPointPacket):
 				auth_suite = 'PSK'
 			elif auth_suites['MGT'] in info:
 				auth_suite = 'MGT'
-		elif self.packet.haslayer(EAP):
-			auth_suite = 'EAP'
 		else:
 			auth_suite = 'OPN'
 

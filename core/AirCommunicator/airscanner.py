@@ -13,7 +13,7 @@ from AuxiliaryModules.packet import Beacon, ProbeResponse, ProbeRequest
 from time import sleep
 from threading import Thread, Lock
 from netaddr import EUI, OUI
-from scapy.all import sniff, Dot11, Dot11Beacon, Dot11Elt, Dot11ProbeReq, Dot11ProbeResp
+from scapy.all import sniff, Dot11, Dot11Beacon, Dot11Elt, Dot11ProbeReq, Dot11ProbeResp, EAPOL, EAP
 from socket import error as socket_error
 from utils.networkmanager import NetworkCard
 from utils.utils import DEVNULL
@@ -165,8 +165,9 @@ class AirScanner(object):
         for plugin in self.plugins:
             plugin.handle_packet(packet)
 
-        if self.sniff_beacons and Dot11Beacon in packet:
-            self.handle_beacon_packets(packet)
+        if self.sniff_beacons:
+            if Dot11Beacon in packet:
+                self.handle_beacon_packets(packet)
 
         if self.sniff_probes:
             if Dot11ProbeReq in packet:
@@ -183,10 +184,11 @@ class AirScanner(object):
             return
 
         id = len(self.access_points.keys())
-        new_ap = AccessPoint(id, beacon.ssid, beacon.bssid, beacon.channel, beacon.rssi, \
-                            beacon.encryption, beacon.cipher, beacon.auth)
-        with self.ap_lock:
-            self.access_points[beacon.bssid] = new_ap
+        if beacon.ssid != None: #Not adding malformed packets
+            new_ap = AccessPoint(id, beacon.ssid, beacon.bssid, beacon.channel, beacon.rssi, \
+                                beacon.encryption, beacon.cipher, beacon.auth)
+            with self.ap_lock:
+                self.access_points[beacon.bssid] = new_ap
 
     def handle_probe_req_packets(self, packet):
         probe_req = ProbeRequest(packet)
