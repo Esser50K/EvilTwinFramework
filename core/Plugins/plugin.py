@@ -29,3 +29,15 @@ class AirHostPlugin(Plugin):
 
 	def start(self):
 		pass
+
+class AirDeauthorPlugin(Plugin):
+
+	def __init__(self):
+		super(AirDeauthorPlugin, self).__init__()
+
+	def pre_deauth(self):
+		pass
+
+	def post_deauth(self):
+		pass
+

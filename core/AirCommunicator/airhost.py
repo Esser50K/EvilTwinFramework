@@ -28,17 +28,18 @@ class AirHost(object):
     def add_plugin(self, airhost_plugin):
         self.plugins.append(airhost_plugin)
 
-    def start_access_point(self, interface):
+    def start_access_point(self, interface, print_credentials):
         print "[+] Killing already started processes and restarting network services"
         self.stop_access_point(False) # Restarting services helps avoiding some conflicts with dnsmasq
 
-        for plugin in self.plugins:
-            plugin.start()
-
+        self.aplauncher.print_creds = print_credentials
         self.aplauncher.start_access_point(interface)
         if not self.dnsmasqhandler.start_dnsmasq():
             print "[-] Error starting dnsmasq, aborting AP launch"
             return False
+
+        for plugin in self.plugins:
+            plugin.start()
 
         self.running_interface = interface
         print "[+] Access Point launched successfully"

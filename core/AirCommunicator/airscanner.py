@@ -7,17 +7,17 @@ for 802.11x packets mostly using the Scapy module
 
 import os
 import pyric.pyw as pyw
-import signal
 import traceback
 from AuxiliaryModules.packet import Beacon, ProbeResponse, ProbeRequest
 from time import sleep
 from threading import Thread, Lock
 from netaddr import EUI, OUI
-from scapy.all import sniff, Dot11, Dot11Beacon, Dot11Elt, Dot11ProbeReq, Dot11ProbeResp, EAPOL, EAP
+#from scapy.all import sniff, Dot11, Dot11Beacon, Dot11Elt, Dot11ProbeReq, Dot11ProbeResp, EAPOL, EAP
+from scapy.all import *
+load_contrib('wpa_eapol')
 from socket import error as socket_error
 from utils.networkmanager import NetworkCard
 from utils.utils import DEVNULL
-
 
 cipher_suites = { 'GROUP'   : '\x00\x0f\xac\x00',
                   'WEP'     : '\x00\x0f\xac\x01',
@@ -96,7 +96,7 @@ class AirScanner(object):
     def set_beacon_sniffing(self, option):
         self.sniff_beacons = option
 
-    def start_sniffer(self, interface):
+    def start_sniffer(self, interface, hop_channels=True, fixed_channel=7):
         self.running_interface = interface
         card = NetworkCard(interface)
         if card.get_mode() != 'monitor':
@@ -105,8 +105,12 @@ class AirScanner(object):
         self.sniffer_running = True
         self.sniffing_thread.start()
 
-        hopper_thread = Thread( target=self.hop_channels)
-        hopper_thread.start()
+        if hop_channels:
+            hopper_thread = Thread( target=self.hop_channels)
+            hopper_thread.start()
+        else:
+            card = NetworkCard(interface)
+            card.set_channel(fixed_channel)
 
     def stop_sniffer(self):
         Thread(target=self._clean_quit).start() # Avoids blocking when executed via the console
@@ -174,6 +178,7 @@ class AirScanner(object):
                 self.handle_probe_req_packets(packet)
             if Dot11ProbeResp in packet:
                 self.handle_probe_resp_packets(packet)
+
 
     def handle_beacon_packets(self, packet):
         # Based on an answer from stack-overflow: 

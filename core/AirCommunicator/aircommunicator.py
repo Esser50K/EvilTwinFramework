@@ -16,6 +16,7 @@ from Plugins.dnsspoofer import DNSSpoofer
 from Plugins.selfishwifi import SelfishWiFi
 from Plugins.packetlogger import PacketLogger
 from Plugins.credentialprinter import CredentialPrinter
+from Plugins.credentialsniffer import CredentialSniffer
 from ConfigurationManager.configmanager import ConfigurationManager
 from utils.networkmanager import NetworkManager, NetworkCard
 from prettytable import PrettyTable
@@ -126,7 +127,8 @@ class AirCommunicator(object):
             self.add_airhost_plugins(plugins)
 
             # Start services
-            self.air_host.start_access_point(ap_interface)
+            self.air_host.start_access_point(   ap_interface, 
+                                                self.configs["airhost"]["aplauncher"]["print_creds"].lower() == "true")
             return True
 
         print dedent("""
@@ -138,11 +140,13 @@ class AirCommunicator(object):
         airhost_plugins = self.configs["airhost"]["plugins"]
         for plugin in plugins:
             if plugin == "dnsspoofer":
-                self._add_dnsspoofer_plugin(airhost_plugins)
+                self._add_airhost_dnsspoofer_plugin(airhost_plugins)
             elif plugin == "credentialprinter":
-                self._add_credentialprinter_plugin(airhost_plugins)
+                self._add_airhost_credentialprinter_plugin(airhost_plugins)
+            elif plugin == "credentialsniffer":
+                self._add_airhost_credentialsniffer_plugin(airhost_plugins)
 
-    def _add_dnsspoofer_plugin(self, airhost_plugins):
+    def _add_airhost_dnsspoofer_plugin(self, airhost_plugins):
         dnsspoofer_plugin = airhost_plugins["dnsspoofer"]
         hosts_path = self.config_files["hosts_conf"]
         spoof_ip = self.configs["airhost"]["plugins"]["dnsspoofer"]["spoof_ip"]
@@ -161,13 +165,19 @@ class AirCommunicator(object):
         self.plugins["dnsspoofer"] = dnsspoofer
         self.air_host.add_plugin(dnsspoofer)
 
-    def _add_credentialprinter_plugin(self, airhost_plugins):
+    def _add_airhost_credentialprinter_plugin(self, airhost_plugins):
         credentialprinter_plugin = airhost_plugins["credentialprinter"]
         log_folder = credentialprinter_plugin["log_folder"]
         log_file_name = credentialprinter_plugin["log_file_name"]
         credentialprinter = CredentialPrinter(log_folder, log_file_name)
         self.plugins["credentialprinter"] = credentialprinter
         self.air_host.add_plugin(credentialprinter)
+
+    def _add_airhost_credentialsniffer_plugin(self, airhost_plugins):
+        interface = self.configs["airhost"]["ap_interface"]
+        credentialsniffer = CredentialSniffer(interface)
+        self.plugins["credentialsniffer"] = credentialsniffer
+        self.air_host.add_plugin(credentialsniffer)
         
     def start_sniffer(self, plugins = []):
         # Sniffing options
@@ -176,6 +186,14 @@ class AirCommunicator(object):
 
             sniff_probes = self.configs["airscanner"]["probes"].lower() == "true"
             sniff_beacons = self.configs["airscanner"]["beacons"].lower() == "true"
+            hop_channels = self.configs["airscanner"]["hop_channels"].lower() == "true"
+            try:
+                fixed_sniffing_channel = int(self.configs["airscanner"]["fixed_sniffing_channel"])
+                if fixed_sniffing_channel > 13:
+                    raise
+            except:
+                print "Channel must be an integer and below 14\n"
+                return
 
             sniffing_interface = self.configs["airscanner"]["sniffing_interface"]
             if  sniffing_interface not in winterfaces():
@@ -190,7 +208,7 @@ class AirCommunicator(object):
 
             self.air_scanner.set_probe_sniffing(sniff_probes)
             self.air_scanner.set_beacon_sniffing(sniff_beacons)
-            self.air_scanner.start_sniffer(sniffing_interface)
+            self.air_scanner.start_sniffer(sniffing_interface, hop_channels, fixed_sniffing_channel)
                 
         else:
             print "[-] Sniffer already running"
@@ -199,26 +217,41 @@ class AirCommunicator(object):
         plugin_configs = self.configs["airscanner"]["plugins"]
         for plugin in plugins:
             if plugin == "packetlogger":
-                packetlogger_configs = plugin_configs["packetlogger"]
-                destination_folder = packetlogger_configs["destination_folder"]
-                filter_list = packetlogger_configs["filters"]
-                or_filter = packetlogger_configs["filter_mode"].lower() == "or"
-
-                packetlogger = PacketLogger(destination_folder, filter_list, or_filter)
-
-                self.plugins["packetlogger"] = packetlogger
-                self.air_scanner.add_plugin(packetlogger)
+                self._add_airscanner_packetlogger_plugin(plugin_configs)
             elif plugin == "selfishwifi":
-                selfishwifi_configs = plugin_configs["selfishwifi"]
-                running_interface = self.configs["airscanner"]["sniffing_interface"]
-                ignore_interface = selfishwifi_configs["ignore_interface"]
-                ignore_clients = selfishwifi_configs["ignore_clients"]
-                ssid = selfishwifi_configs["ssid"]
+                self._add_airscanner_selfishwifi_plugin(plugin_configs)
+            elif plugin == "credentialsniffer":
+                self._add_airscanner_credentialsniffer_plugin()
 
-                selfishwifi = SelfishWiFi(ssid, running_interface, ignore_interface, ignore_clients)
+    def _add_airscanner_packetlogger_plugin(self, plugin_configs):
+        packetlogger_configs = plugin_configs["packetlogger"]
+        destination_folder = packetlogger_configs["destination_folder"]
+        filter_list = packetlogger_configs["filters"]
+        or_filter = packetlogger_configs["filter_mode"].lower() == "or"
 
-                self.plugins["selfishwifi"] = selfishwifi
-                self.air_scanner.add_plugin(selfishwifi)
+        packetlogger = PacketLogger(destination_folder, filter_list, or_filter)
+
+        self.plugins["packetlogger"] = packetlogger
+        self.air_scanner.add_plugin(packetlogger)
+
+    def _add_airscanner_selfishwifi_plugin(self, plugin_configs):
+        selfishwifi_configs = plugin_configs["selfishwifi"]
+        running_interface = self.configs["airscanner"]["sniffing_interface"]
+        ignore_interface = selfishwifi_configs["ignore_interface"]
+        ignore_clients = selfishwifi_configs["ignore_clients"]
+        ssid = selfishwifi_configs["ssid"]
+
+        selfishwifi = SelfishWiFi(ssid, running_interface, ignore_interface, ignore_clients)
+
+        self.plugins["selfishwifi"] = selfishwifi
+        self.air_scanner.add_plugin(selfishwifi)
+
+    def _add_airscanner_credentialsniffer_plugin(self):
+        sniffing_interface = self.configs["airscanner"]["sniffing_interface"]
+        credentialsniffer = CredentialSniffer(sniffing_interface)
+        self.plugins["credentialsniffer"] = credentialsniffer
+        self.air_scanner.add_plugin(credentialsniffer)
+
 
 
 
@@ -305,7 +338,7 @@ class AirCommunicator(object):
         if add_type == "aps":
             add_list = ObjectFilter().filter(self.air_scanner.get_access_points(), filter_string)
             for ap in add_list:
-                self.air_deauthenticator.add_ap(ap.bssid, ap.ssid)
+                self.air_deauthenticator.add_ap(ap.bssid, ap.ssid, ap.channel)
         elif add_type == "clients":
             self.air_scanner.update_bssids_in_probes()
             add_list = ObjectFilter().filter(self.air_scanner.get_probe_requests(), filter_string)
@@ -347,8 +380,8 @@ class AirCommunicator(object):
 
     def print_aps_to_deauth(self, filter_string = None):
         bssid_list = list(self.air_deauthenticator.aps_to_deauth)
-        bssid_arg_list = ["id","bssid","ssid"]
-        headers = ["ID:", "AP BSSID:", "AP SSID"]
+        bssid_arg_list = ["id","bssid","ssid", "channel"]
+        headers = ["ID:", "AP BSSID:", "AP SSID", "AP CHANNEL"]
         self.info_printer.add_info("deauth_bssid", bssid_list, bssid_arg_list, headers)
         self.info_printer.print_info("deauth_bssid", filter_string)
 

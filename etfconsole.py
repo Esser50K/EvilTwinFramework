@@ -37,9 +37,9 @@ class ETFConsole(Cmd):
 	filter_keywords = ["where", "only"]
 	plugin_keyword = ["with"]
 
-	airhost_plugins = ["dnsspoofer", "credentialprinter"]
-	airscanner_plugins = ["packetlogger", "selfishwifi"]
-	airdeauthor_plugins = []
+	airhost_plugins = ["dnsspoofer", "credentialprinter", "credentialsniffer"]
+	airscanner_plugins = ["packetlogger", "selfishwifi", "credentialsniffer"]
+	airdeauthor_plugins = ["credentialsniffer"]
 
 	copy_options = ["ap", "probe"]
 	add_del_options = ["aps", "clients"] 								 # Meant to be followed by filter or integer

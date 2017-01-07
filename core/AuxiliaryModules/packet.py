@@ -24,10 +24,11 @@ class Packet(object):
 		pass
 
 	def _get_rssi_from_packet(self, packet):
-		# Found at http://comments.gmane.org/gmane.comp.security.scapy.general/4673
 		try:
-			return str(-(256-ord(packet.notdecoded[-4:-3]))) + " dbm"
-		except Exception:
+			# Found at http://comments.gmane.org/gmane.comp.security.scapy.general/4673
+			# return str(-(256-ord(packet.notdecoded[-4:-3]))) + " dbm"
+			return str(packet.dBm_AntSignal) + " dbm"
+		except Exception as e:
 			return None
 
 	def _get_ssid_from_packet(self, packet):

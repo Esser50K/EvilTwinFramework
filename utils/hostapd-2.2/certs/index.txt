@@ -1,2 +1,0 @@
-V	171114133753Z		01	unknown	/C=FR/ST=Radius/O=Example Inc./CN=Example Server Certificate/emailAddress=admin@example.com
-V	171114174846Z		02	unknown	/C=PT/ST=Lisbon/O=ISCTE-IUL/CN=ISCTE-IUL Server Certificate/emailAddress=admin@iscte-iul.pt

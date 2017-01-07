@@ -2,6 +2,12 @@ import os
 from plugin import AirHostPlugin
 from subprocess import Popen
 
+
+"""
+Needs a lot of TODO
+was first meant for EAP hashes
+now realize it is better for captive portal prints
+"""
 class CredentialPrinter(AirHostPlugin):
 
 	def __init__(self, log_folder, log_file_name):
@@ -13,8 +19,8 @@ class CredentialPrinter(AirHostPlugin):
 	def start(self):
 		hash_log_file = "{folder}{name}{id}.log".format(folder = self.log_folder,
 														name = self.log_file_name,
-														id = len(os.listdir("data/hashes/")))
-		open(hash_log_file, "w").close()
+														id = len(os.listdir(self.log_folder)))
+		open(hash_log_file, "a").close()
 		self.credential_printer_process = Popen(("tail -F " + hash_log_file).split())
 
 	def restore(self):
