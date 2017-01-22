@@ -26,12 +26,15 @@ class ETFConsole(Cmd):
 	aircommunicator = AirCommunicator()
 	spawnmanager = SpawnManager()
 
+	# Static strings to help with autocompletion
+
 	basic_commands = [  "start", "stop", "status", 
 						"spawn", "restore",
 						"get", "set", "config", "back", "listargs",
 						"copy", "add", "del", "show"  ]
 
 	services = ["airhost", "airscanner", "airdeauthor"]
+	aux_services = ["aplauncher", "dnsmasqhandler"]
 	spawners = ["mitmf", "beef", "ettercap", "sslstrip"]
 
 	filter_keywords = ["where", "only"]
@@ -147,11 +150,13 @@ class ETFConsole(Cmd):
 
 	def complete_config(self, text, line, begidx, endidx):
 		args = line.split()
-		all_configs = self.services + \
-					self.spawners + \
-					self.airscanner_plugins + \
-					self.airhost_plugins + \
-					self.airdeauthor_plugins
+		all_configs = 	self.services + \
+						self.aux_services + \
+						self.spawners + \
+						self.airscanner_plugins + \
+						self.airhost_plugins + \
+						self.airdeauthor_plugins
+
 
 		if len(args) == 1:
 			return all_configs

@@ -86,6 +86,9 @@ class AirDeauthenticator(object):
     def set_targeted(self, option):
         self._targeted_only = option
 
+    def add_plugin(self, plugin):
+        self.plugins.append(plugin)
+
     def deauthentication_attack(self):
         # Based on:
         # https://raidersec.blogspot.pt/2013/01/wireless-deauth-attack-using-aireplay.html
@@ -136,13 +139,17 @@ class AirDeauthenticator(object):
             print "Exception: {}".format(e)
             print "[-] Stopping deauthentication attack."
 
+        #Only restore state if no plugins 
+        #were added or else conflicts may arise
         self.deauth_running = False
-        self._restore_deauthor_state()
+        if len(self.plugins) == 0:
+            self._restore_deauthor_state()
         print "[+] Deauthentication attack finished executing."
 
         for plugin in self.plugins:
             plugin.post_deauth()
         del self.plugins[:]
+
 
     def _restore_deauthor_state(self):
         card = NetworkCard(self.running_interface)

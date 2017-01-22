@@ -96,7 +96,7 @@ class Beacon(AccessPointPacket):
 		while isinstance(elt_layer, Dot11Elt):
 			if elt_layer.ID == 3:
 				try:
-					self.channel = ord(elt_layer.info)
+					self.channel = str(ord(elt_layer.info))
 				except Exception:
 					self.channel = str(elt_layer.info)
 			elif elt_layer.ID == 48:

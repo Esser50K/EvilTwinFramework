@@ -11,7 +11,6 @@ from textwrap import dedent
 
 class NetworkCard(object):
 
-
     def __init__(self, interface):
 
         self.interface = interface
@@ -101,8 +100,12 @@ class NetworkManager(object):
     def __init__(self, networkmanager_config_path='/etc/NetworkManager/NetworkManager.conf'):
         self.interfaces = pyw.interfaces()
         self.netcards = { interface: NetworkCard(interface) for interface in pyw.winterfaces() }
+        self.interfaces_to_ignore = []
         self.nm_config_file = networkmanager_config_path
         self.file_handler = None
+
+    def add_interface_to_ignore(self, interface):
+        self.interfaces_to_ignore.append(interface)
 
     def iptables_redirect(self, from_if, to_if):
         card = self.get_netcard(from_if) # Get NetCard object
@@ -152,6 +155,10 @@ class NetworkManager(object):
     # but we can configure it to ignore the interface 
     # we use as access point or to sniff packets
     def network_manager_ignore(self, interface, mac_address): 
+        interface_ignore_string = ""
+        for iface in self.interfaces_to_ignore:
+            interface_ignore_string += ",interface-name:{}".format(iface)
+
         try:
             ignore_config = dedent( """
                                     [main]
@@ -161,9 +168,10 @@ class NetworkManager(object):
                                     managed=false
 
                                     [keyfile]
-                                    unmanaged-devices=mac:{mac_address},interface-name:{interface}
+                                    unmanaged-devices=mac:{mac_address},interface-name:{interface}{ignore_interfaces}
                                     """.format( mac_address=mac_address,
-                                                interface=interface))
+                                                interface=interface,
+                                                ignore_interfaces=interface_ignore_string))
 
             self.cleanup_filehandler()
             self.file_handler = FileHandler(self.nm_config_file)
