@@ -48,8 +48,8 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirDeauthorPlugin):
 	# This will be called when starting the access point
 	def start(self):
 		card = NetworkCard(self.running_interface)
-		if card.get_mode() != 'monitor':
-			card.set_mode('monitor')
+		#if card.get_mode() != 'monitor':
+		#	card.set_mode('monitor')
 		self.sniffer_thread = Thread(target=self.start_credential_sniffing)
 		self.sniffer_thread.start()
 
