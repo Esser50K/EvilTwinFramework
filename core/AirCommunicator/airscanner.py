@@ -153,14 +153,23 @@ class AirScanner(object):
 		# Hop through channels to get find more beacons
 		try:
 			card = NetworkCard(self.running_interface)
+			available_channels = card.get_available_channels()
+			n_available_channels = len(available_channels)
+			current_channel_index = 0
 			while self.sniffer_running:
-				current_channel = card.get_channel()
-				if current_channel <= 12:
-					card.set_channel(current_channel + 1)
-				else:
-					card.set_channel(1)
+				try:
 
-				sleep(.5)
+					if current_channel_index < n_available_channels:
+						card.set_channel(available_channels[current_channel_index])
+					else:
+						card.set_channel(1)
+						current_channel_index = 0
+
+					sleep(.25)
+				except Exception as e:
+					pass
+
+				current_channel_index += 1
 		except Exception as e:
 			pass # The sniffer has already been aborted
 

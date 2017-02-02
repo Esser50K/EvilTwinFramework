@@ -84,6 +84,9 @@ class NetworkCard(object):
     def set_channel(self, channel):
         pyw.chset(self.card, channel)
 
+    def get_available_channels(self):
+        return pyw.devchs(self.card)
+
     def set_mtu_size(self, nbytes):
         os.system('ifconfig {interface} mtu {size}'.format( interface=self.interface,
                                                             size=nbytes))
