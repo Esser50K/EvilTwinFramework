@@ -10,7 +10,7 @@ sys.path.append('./utils')
 from cmd import Cmd
 from utils import etfbanners
 from AirCommunicator.aircommunicator import AirCommunicator
-from AirCommunicator.airscanner import AccessPoint, ProbeInfo
+from AirCommunicator.airscanner import AccessPoint, WiFiClient, ProbeInfo
 from AirCommunicator.airdeauthor import DeauthAP, DeauthClient
 from AuxiliaryModules.aplauncher import Client
 from ConfigurationManager.configmanager import ConfigurationManager
@@ -46,7 +46,7 @@ class ETFConsole(Cmd):
 
 	copy_options = ["ap", "probe"]
 	add_del_options = ["aps", "clients"] 								 # Meant to be followed by filter or integer
-	show_options = ["sniffed_aps", "sniffed_probes", 
+	show_options = ["sniffed_aps", "sniffed_probes", "sniffed_clients",
 					"deauth_aps", "deauth_clients", "connected_clients"] # Meant to be followed by filter or integer
 
 
@@ -359,6 +359,8 @@ class ETFConsole(Cmd):
 
 			if option == "sniffed_aps":
 				self.aircommunicator.print_sniffed_aps(filter_string)
+			elif option == "sniffed_clients":
+				self.aircommunicator.print_sniffed_clients(filter_string)
 			elif option == "sniffed_probes":
 				self.aircommunicator.print_sniffed_probes(filter_string)
 			elif option == "deauth_aps":
@@ -384,6 +386,8 @@ class ETFConsole(Cmd):
 			# list filter args (id, ssid, bssid, channel, etc...)
 			if entered[1] == "sniffed_aps":
 				out = vars(AccessPoint()).keys()
+			elif entered[1] == "sniffed_clients":
+				out = vars(WiFiClient()).keys()
 			elif entered[1] == "sniffed_probes":
 				out = vars(ProbeInfo()).keys()
 			elif entered[1] == "deauth_aps":
@@ -405,6 +409,8 @@ class ETFConsole(Cmd):
 			if entered[1] in self.show_options:
 				if entered[1] == "sniffed_aps":
 					out = [keyword for keyword in vars(AccessPoint()).keys() if keyword.startswith(start)]
+				elif entered[1] == "sniffed_clients":
+					out = [keyword for keyword in vars(WiFiClient()).keys() if keyword.startswith(start)]
 				elif entered[1] == "sniffed_probes":
 					out = [keyword for keyword in vars(ProbeInfo()).keys() if keyword.startswith(start)]
 				elif entered[1] == "deauth_aps":

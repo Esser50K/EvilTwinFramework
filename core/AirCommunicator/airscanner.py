@@ -52,6 +52,37 @@ class AccessPoint(object):
 								"/".join(self.encryption), \
 								str(self.cipher), str(self.auth)    ]   )
 
+class WiFiClient(object):
+	"""
+	This class represents a WiFi Client
+	These are detected whenever they send probe send probe requests
+	One can check if they are associated if the Access Point has responded
+	"""
+
+	def __init__(self, id = 0, probeInfo = None):
+		self.id = id
+		self.client_mac = None
+		self.client_org = None
+		self.probed_ssids = None
+		self.rssi = None
+		self.associated_ssid = None
+		self._parse_probe(probeInfo)
+
+	def is_associated(self):
+		return self.associated_ssid != None
+
+	def _parse_probe(self, probeInfo):
+		if probeInfo != None:
+			self.client_mac = probeInfo.client_mac
+			self.client_org = probeInfo.client_org
+			self.probed_ssids = set([probeInfo.ap_ssid])
+			if probeInfo.type == "REQ":
+				self.rssi = probeInfo.rssi
+
+	def __eq__(self, other):
+		return self.client_mac == other.client_mac
+
+
 class ProbeInfo(object):
 
 	def __init__(self,  id = 0,
@@ -66,8 +97,15 @@ class ProbeInfo(object):
 		self.rssi = rssi
 		self.type = ptype
 
+	def isPair(self, otherProbe):
+		return 	(self.client_mac == other.client_mac) and \
+				(self.ap_ssid == other.ap_ssid) and \
+				(self.type != other.type)
+
 	def __eq__(self, other):
-		return (self.client_mac == other.client_mac) and (self.ap_ssid == other.ap_ssid) and (self.type == other.type)
+		return 	(self.client_mac == other.client_mac) and \
+				(self.ap_ssid == other.ap_ssid) and \
+				(self.type == other.type)
 
 	def __str__(self):
 		return "{}-{}-{}".format(self.client_mac, self.ap_ssid, self.type)
@@ -81,8 +119,9 @@ class AirScanner(object):
 		self.sniff_probes = True
 		self.sniff_beacons = True
 
-		self.ap_lock, self.probe_lock = Lock(), Lock()
+		self.ap_lock, self.client_lock, self.probe_lock = Lock(), Lock(), Lock()
 		self.access_points = {}
+		self.clients = {}
 		self.probes = []
 
 		self.plugins = []
@@ -209,34 +248,61 @@ class AirScanner(object):
 		probe_req = ProbeRequest(packet)
 		
 		if probe_req.client_mac.lower() != "ff:ff:ff:ff:ff:ff":
-			probe_req.ap_bssid = self.get_bssids_from_ssid(probe_req.ssid)   # Returns a list with all the bssids
-			id = len(self.get_probe_requests())
-			probe = ProbeInfo(  id, probe_req.client_mac, probe_req.client_vendor, 
-								probe_req.ssid, probe_req.ap_bssid, probe_req.rssi, "REQ")
-			with self.probe_lock:
-				try:
-					if probe not in self.probes:
-						self.probes.append(probe)
-					else:
-						self.probes[self.probes.index(probe)].rssi = probe.rssi
-				except Exception:
-					pass
+			probe = self._get_probe_info_from_probe(probe_req, "REQ")
+			self._add_probe(probe)
+			self._add_client(probe)
+			
 
 	def handle_probe_resp_packets(self, packet):
 		probe_resp = ProbeResponse(packet)
 
 		if probe_resp.client_mac.lower() != "ff:ff:ff:ff:ff:ff":
-			id = len(self.get_probe_requests())
-			probe = ProbeInfo(  id, probe_resp.client_mac, probe_resp.client_vendor, 
-								probe_resp.ssid, [probe_resp.bssid], probe_resp.rssi, "RESP")
-			with self.probe_lock:
-				try:
-					if probe not in self.probes:
-						self.probes.append(probe)
+			probe = self._get_probe_info_from_probe(probe_resp, "RESP")
+			self._add_probe(probe)
+			self._add_client(probe)
+
+	def _get_probe_info_from_probe(self, probe, probe_type):
+		probe.ap_bssids = self.get_bssids_from_ssid(probe.ssid)   # Returns a list with all the bssids
+		probe_id = len(self.get_probe_requests())
+		probe = ProbeInfo(  probe_id, probe.client_mac, probe.client_vendor, 
+							probe.ssid, probe.ap_bssids, probe.rssi, probe_type)
+		return probe
+
+	def _add_probe(self, probeInfo):
+		with self.probe_lock:
+			try:
+				if probeInfo not in self.probes:
+					self.probes.append(probeInfo)
+				else:
+					self.probes[self.probes.index(probeInfo)].rssi = probeInfo.rssi 			#Just update the rssi
+					self.probes[self.probes.index(probeInfo)].ap_bssids = probeInfo.ap_bssids 	#Just update the bssids
+			except Exception as e:
+				print "Error in airscanner._add_probe"
+				print e
+				pass
+
+	def _add_client(self, probe):
+		if probe.ap_ssid == "":
+			return
+			
+		with self.client_lock:
+			client_id = len(self.get_wifi_clients())
+			wifiClient = WiFiClient(client_id, probe)
+			try:
+				if wifiClient not in self.get_wifi_clients():
+					self.clients[probe.client_mac] = wifiClient
+				else:
+					wifiClient = self.clients[probe.client_mac]
+					wifiClient.probed_ssids.add(probe.ap_ssid)
+
+					if probe.type == "RESP":
+						wifiClient.associated_ssid = probe.ap_ssid
 					else:
-						self.probes[self.probes.index(probe)].rssi = probe.rssi #Just update the rssi
-				except Exception:
-					pass
+						wifiClient.rssi = probe.rssi
+			except Exception as e:
+				print "Error in airscanner._add_client"
+				print e
+				pass
 
 
 	def get_access_points(self):
@@ -250,8 +316,12 @@ class AirScanner(object):
 
 		return None
 
+	def get_wifi_clients(self):
+		return [self.clients[mac] 
+				for mac in self.clients.keys()]
+
 	def get_probe_requests(self):
-		return [probe for probe in self.probes]
+		return self.probes
 
 	def get_probe_request(self, id):
 		for probe in self.get_probe_requests():

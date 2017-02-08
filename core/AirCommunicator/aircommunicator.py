@@ -400,6 +400,13 @@ class AirCommunicator(object):
 		self.info_printer.add_info("sniffed_ap", ap_list, ap_arg_list, headers)
 		self.info_printer.print_info("sniffed_ap", filter_string)
 
+	def print_sniffed_clients(self, filter_string = None):
+		client_list = self.air_scanner.get_wifi_clients()
+		client_arg_list = [ "id","client_mac","client_org","probed_ssids","associated_ssid","rssi"]
+		headers = ["ID:", "MAC:", "CLIENT ORG:", "PROBED SSIDS:", "ASSOCIATED SSID:", "SIGNAL:"]
+		self.info_printer.add_info("sniffed_wifi_clients", client_list, client_arg_list, headers)
+		self.info_printer.print_info("sniffed_wifi_clients", filter_string)
+
 	def print_sniffed_probes(self, filter_string = None):
 		self.air_scanner.update_bssids_in_probes()
 		probe_list = self.air_scanner.get_probe_requests()

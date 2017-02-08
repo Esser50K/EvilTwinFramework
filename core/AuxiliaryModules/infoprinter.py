@@ -27,7 +27,7 @@ class InfoPrinter(object):
 			obj_arg_list = []
 			for arg in args:
 				val = obj.__dict__[arg]
-				if type(val) is list:
+				if type(val) is list or type(val) is set:
 					val = "\n".join(val)
 
 				obj_arg_list.append(str(val))
@@ -92,9 +92,14 @@ class ObjectFilter(object):
 			for filter_arg in filter_map:
 				try:
 					for filter_value in filter_map[filter_arg]:
-						if str(filter_value).lower() not in str(obj.__dict__[filter_arg]).lower():
-							add = False
-							break
+						if type(obj.__dict__[filter_arg]) is str:
+							if str(filter_value).lower() not in str(obj.__dict__[filter_arg]).lower():
+								add = False
+								break
+							elif type(obj.__dict__[filter_arg]) is list or type(obj.__dict__[filter_arg]) is set:
+								for element in obj.__dict__[filter_arg]:
+									add = False
+									break
 				except KeyError: # Don't judge if obj does not have a certain attribute
 					pass
 
@@ -109,9 +114,15 @@ class ObjectFilter(object):
 			for filter_arg in filter_map:
 				try:
 					for filter_value in filter_map[filter_arg]:
-						if str(filter_value).lower() in str(obj.__dict__[filter_arg]).lower():
-							filtered_objlist.append(obj)
-							break
+						if type(obj.__dict__[filter_arg]) is str:
+							if str(filter_value).lower() in str(obj.__dict__[filter_arg]).lower():
+								filtered_objlist.append(obj)
+								break
+						elif type(obj.__dict__[filter_arg]) is list or type(obj.__dict__[filter_arg]) is set:
+							for element in obj.__dict__[filter_arg]:
+								if str(filter_value).lower() in str(obj.__dict__[filter_arg]).lower():
+									filtered_objlist.append(obj)
+									break
 				except KeyError: # Don't judge if obj does not have a certain attribute
 					pass
 
