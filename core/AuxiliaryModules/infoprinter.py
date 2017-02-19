@@ -30,7 +30,11 @@ class InfoPrinter(object):
 				if type(val) is list or type(val) is set:
 					val = "\n".join(val)
 
-				obj_arg_list.append(str(val))
+				# Try parse it as int so the output is sorted correctly
+				try:
+					obj_arg_list.append(int(val))
+				except:
+					obj_arg_list.append(str(val))
 			table.add_row(obj_arg_list)
 
 		sorted_prettytable = table.get_string(sortby=headers[0])
@@ -93,10 +97,10 @@ class ObjectFilter(object):
 				try:
 					for filter_value in filter_map[filter_arg]:
 						if type(obj.__dict__[filter_arg]) is str:
-							if str(filter_value).lower() not in str(obj.__dict__[filter_arg]).lower():
+							if not (type(obj.__dict__[filter_arg]) is list or type(obj.__dict__[filter_arg]) is set):
 								add = False
 								break
-							elif type(obj.__dict__[filter_arg]) is list or type(obj.__dict__[filter_arg]) is set:
+							else:
 								for element in obj.__dict__[filter_arg]:
 									add = False
 									break
@@ -114,11 +118,11 @@ class ObjectFilter(object):
 			for filter_arg in filter_map:
 				try:
 					for filter_value in filter_map[filter_arg]:
-						if type(obj.__dict__[filter_arg]) is str:
+						if not (type(obj.__dict__[filter_arg]) is list or type(obj.__dict__[filter_arg]) is set):
 							if str(filter_value).lower() in str(obj.__dict__[filter_arg]).lower():
 								filtered_objlist.append(obj)
 								break
-						elif type(obj.__dict__[filter_arg]) is list or type(obj.__dict__[filter_arg]) is set:
+						else:
 							for element in obj.__dict__[filter_arg]:
 								if str(filter_value).lower() in str(obj.__dict__[filter_arg]).lower():
 									filtered_objlist.append(obj)

@@ -34,11 +34,17 @@ If a parameter is (dict) it means it is another configurable module within.
 To start an access point make sure you have it configured correctly, type:
 
 > config airhost
+
 check if everything is ok
+
 > config aplauncher
+
 check if everything is ok
+
 > config dnsmasqhandler
+
 check if everything is ok adn start the access point
+
 > start airhost
 
 You can also configure an access point by copying one that is nearby.

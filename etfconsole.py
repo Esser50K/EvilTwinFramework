@@ -4,6 +4,7 @@ from termcolor import colored
 import logging, traceback
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 
+os.chdir(os.path.dirname(sys.argv[0])) # Change working directory
 sys.path.append('./core')
 sys.path.append('./utils')
 
@@ -12,6 +13,7 @@ from utils import etfbanners
 from AirCommunicator.aircommunicator import AirCommunicator
 from AirCommunicator.airscanner import AccessPoint, WiFiClient, ProbeInfo
 from AirCommunicator.airdeauthor import DeauthAP, DeauthClient
+from AirCommunicator.aircracker import WPAHandshake
 from AuxiliaryModules.aplauncher import Client
 from ConfigurationManager.configmanager import ConfigurationManager
 from Spawners.spawnmanager import SpawnManager
@@ -33,7 +35,7 @@ class ETFConsole(Cmd):
 						"get", "set", "config", "back", "listargs",
 						"copy", "add", "del", "show"  ]
 
-	services = ["airhost", "airscanner", "airdeauthor"]
+	services = ["airhost", "airscanner", "airdeauthor", "aircracker"]
 	aux_services = ["aplauncher", "dnsmasqhandler"]
 	spawners = ["mitmf", "beef", "ettercap", "sslstrip"]
 
@@ -43,11 +45,15 @@ class ETFConsole(Cmd):
 	airhost_plugins = ["dnsspoofer", "credentialprinter", "credentialsniffer"]
 	airscanner_plugins = ["packetlogger", "selfishwifi", "credentialsniffer"]
 	airdeauthor_plugins = ["credentialsniffer"]
+	aircracker_types = ["wpa_crackers", "half_wpa_crackers"]
+	aircrackers = ["cowpatty", "aircrack-ng", "halwpaid"]
 
 	copy_options = ["ap", "probe"]
-	add_del_options = ["aps", "clients"] 								 # Meant to be followed by filter or integer
+	add_del_options = ["aps", "clients"] 								 	# Meant to be followed by ID
 	show_options = ["sniffed_aps", "sniffed_probes", "sniffed_clients",
-					"deauth_aps", "deauth_clients", "connected_clients"] # Meant to be followed by filter or integer
+					"deauth_aps", "deauth_clients", "connected_clients",
+					"wpa_handshakes", "half_wpa_handshakes"] 				# Meant to be followed by filter
+	crack_options = ["wpa_handshakes", "half_wpa_handshakes"]				# Meant to be followed by ID
 
 
 	# Configuration Handling
@@ -115,7 +121,6 @@ class ETFConsole(Cmd):
 				self.config_mode_string += layer + "/"
 
 		self.update_prompt()
-		
 
 	def do_config(self, args):
 		arg = args.split()
@@ -155,7 +160,9 @@ class ETFConsole(Cmd):
 						self.spawners + \
 						self.airscanner_plugins + \
 						self.airhost_plugins + \
-						self.airdeauthor_plugins
+						self.airdeauthor_plugins + \
+						self.aircracker_types + \
+						self.aircrackers
 
 
 		if len(args) == 1:
@@ -369,6 +376,11 @@ class ETFConsole(Cmd):
 				self.aircommunicator.print_clients_to_deauth(filter_string)
 			elif option == "connected_clients":
 				self.aircommunicator.print_connected_clients(filter_string)
+			elif option == "wpa_handshakes":
+				self.aircommunicator.print_captured_handshakes(filter_string, False)
+			elif option == "half_wpa_handshakes":
+				self.aircommunicator.print_captured_handshakes(filter_string, True)
+
 
 
 	def complete_show(self, text, line, begidx, endidx):
@@ -396,6 +408,8 @@ class ETFConsole(Cmd):
 				out = vars(DeauthClient()).keys()
 			elif entered[1] == "connected_clients":
 				out = vars(Client()).keys()
+			elif entered[1] == "wpa_handshakes" or entered[1] == "half_wpa_handshakes":
+				out = vars(WPAHandshake()).keys()
 
 		return out
 
@@ -419,7 +433,8 @@ class ETFConsole(Cmd):
 					out = [keyword for keyword in vars(DeauthClient()).keys() if keyword.startswith(start)]
 				elif entered[1] == "connected_clients":
 					out = [keyword for keyword in vars(Client()).keys() if keyword.startswith(start)]
-
+				elif entered[1] == "wpa_handshakes" or entered[1] == "half_wpa_handshakes":
+					out = [keyword for keyword in vars(WPAHandshake()).keys() if keyword.startswith(start)]
 		return out
 
 
@@ -502,6 +517,30 @@ class ETFConsole(Cmd):
 				elif entered[1] == "airdeauthor":
 					out = [keyword for keyword in self.airdeauthor_plugins if keyword.startswith(start)]
 
+		return out
+
+	def do_crack(self, args):
+		args = args.split()
+		try:
+			id, is_half = int(args[1]), "half" in args[0]
+		except:
+			print "[-] ID must be int"
+			return
+		self.aircommunicator.crack_handshake(id, is_half)		
+
+	def complete_crack(self, text, line, begidx, endidx):
+		out = None
+		entered = line.split()
+
+		if not text or text == "":
+			if len(entered) == 1:
+				out = self.crack_options
+		else:
+			if len(entered) == 2:
+				if entered[1] in self.crack_options:
+					out = [text + " "]
+				else:
+					out = [keyword for keyword in self.crack_options if keyword.startswith(entered[1])]
 		return out
 
 	def update_prompt(self):

@@ -10,8 +10,10 @@ from pyric.pyw import interfaces, winterfaces
 from airhost import AirHost
 from airscanner import AirScanner
 from airdeauthor import AirDeauthenticator
+from aircracker import AirCracker
 from AuxiliaryModules.infoprinter import InfoPrinter, ObjectFilter
 from AuxiliaryModules.httpserver import HTTPServer
+from AuxiliaryModules.wpacracker import WPACracker
 from Plugins.dnsspoofer import DNSSpoofer
 from Plugins.selfishwifi import SelfishWiFi
 from Plugins.packetlogger import PacketLogger
@@ -19,7 +21,6 @@ from Plugins.credentialprinter import CredentialPrinter
 from Plugins.credentialsniffer import CredentialSniffer
 from ConfigurationManager.configmanager import ConfigurationManager
 from utils.networkmanager import NetworkManager, NetworkCard
-from prettytable import PrettyTable
 from textwrap import dedent
 
 class AirCommunicator(object):
@@ -31,6 +32,7 @@ class AirCommunicator(object):
 		self.air_host = AirHost(self.config_files["hostapd_conf"], self.config_files["dnsmasq_conf"])
 		self.air_scanner = AirScanner()
 		self.air_deauthenticator = AirDeauthenticator()
+		self.air_cracker = AirCracker()
 		self.network_manager = NetworkManager(self.config_files["networkmanager_conf"])
 
 		self.plugins = {"dnsspoofer"        : None,
@@ -374,11 +376,12 @@ class AirCommunicator(object):
 			add_list = ObjectFilter().filter(self.air_scanner.get_probe_requests(), filter_string)
 			for client in add_list:
 				client_mac = client.client_mac
-				if len(client.ap_bssids) > 0:
-					for bssid in client.ap_bssids:
-						if bssid and bssid != "":
-							self.air_deauthenticator.add_client(client_mac, bssid, client.ap_ssid)
-				else:
+				try:
+					if len(client.ap_bssids) > 0:
+						for bssid in client.ap_bssids:
+							if bssid and bssid != "":
+								self.air_deauthenticator.add_client(client_mac, bssid, client.ap_ssid)
+				except:
 					print "[-] Cannot add client '{}' because no AP bssid is associated".format(client_mac)
 	
 
@@ -390,6 +393,18 @@ class AirCommunicator(object):
 			del_list = ObjectFilter().filter(self.air_deauthenticator.clients_to_deauth, filter_string)
 			self.air_deauthenticator.del_clients(del_list)
 
+	def crack_handshake(self, id, is_half):
+		wpa_cracker = self.wpa_cracker_from_conf(is_half)
+		self.air_cracker.launch_handshake_cracker(id, is_half, wpa_cracker)
+
+	def wpa_cracker_from_conf(self, is_half):
+		aircracker_conf = self.configs["aircracker"]
+		wpa_cracker = aircracker_conf["half_wpa_cracker"] if is_half else aircracker_conf["wpa_cracker"]
+		wpa_cracker_conf = aircracker_conf["half_wpa_crackers" if is_half else "wpa_crackers"][wpa_cracker]
+		return WPACracker(	wpa_cracker_conf["name"], wpa_cracker_conf["location"], 
+							wpa_cracker_conf["ssid_flag"], wpa_cracker_conf["pcap_flag"], wpa_cracker_conf["wordlist_flag"],
+							aircracker_conf["ssid"], aircracker_conf["pcap_file"], aircracker_conf["wordlist_file"],
+							aircracker_conf["wordlist_generator_string"])
 
 	# Informational print methods
 	def print_sniffed_aps(self, filter_string = None):
@@ -429,10 +444,18 @@ class AirCommunicator(object):
 		self.info_printer.add_info("deauth_client", client_list, client_arg_list, headers)
 		self.info_printer.print_info("deauth_client", filter_string)
 
-
 	def print_connected_clients(self, filter_string = None):
 		client_list = self.air_host.aplauncher.connected_clients
 		client_arg_list = ["id","name","mac_address","ip_address","vendor","rx_packets","tx_packets","signal"]
 		headers = ["ID:", "CLIENT NAME:", "CLIENT MAC:", "CLIENT IP:", "VENDOR:", "RX PACKETS:", "TX PACKETS:", "SIGNAL:"]
 		self.info_printer.add_info("connected_client", client_list, client_arg_list, headers)
 		self.info_printer.print_info("connected_client", filter_string)
+
+	def print_captured_handshakes(self, filter_string = None, is_half = False):
+		self.air_cracker.load_half_wpa_handshakes() if is_half else self.air_cracker.load_wpa_handshakes()
+		info_key = "half_wpa_handshakes" if is_half else "wpa_handshakes"
+		handshake_list = self.air_cracker.half_wpa_handshakes if is_half else self.air_cracker.wpa_handshakes
+		handshake_args = ["id", "ssid", "client_mac", "client_org"]
+		handshake_headers = ["ID:", "SSID:", "CLIENT MAC:", "CLIENT ORG:"]
+		self.info_printer.add_info(info_key, handshake_list, handshake_args, handshake_headers)
+		self.info_printer.print_info(info_key, filter_string)
