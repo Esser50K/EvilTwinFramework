@@ -204,7 +204,7 @@ class ETFConsole(Cmd):
 			print "{config} = {value}".format(  config = var, 
 												value = self.current_config_mode[var])
 		except KeyError:
-			print "'{key}' does not exist in the configuration file".format(key = mode)
+			print "'{key}' does not exist in the configuration file".format(key = var)
 
 	def complete_set(self, text, line, begidx, endidx):
 		return self.complete_vars(text)
