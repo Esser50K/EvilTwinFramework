@@ -33,7 +33,8 @@ class APLauncher(object):
 											encryption=None, 
 											auth="PSK", 
 											cipher="CCMP", 
-											password=None):
+											password=None,
+											catch_all_honeypot=False):
 		self.cleanup()
 
 		try:
@@ -54,6 +55,47 @@ class APLauncher(object):
 											channel=channel,
 											hw_mode=hw_mode))
 
+		if catch_all_honeypot:
+			configurations = self.get_catch_all_honeypot_configurations(configurations, interface, ssid, bssid)
+		else:
+			configurations = self.get_specific_configurations(configurations, bssid, encryption, auth, cipher, password)
+		
+
+		self.file_handler.write(configurations)
+		return True
+
+	def get_catch_all_honeypot_configurations(self, configurations, interface, ssid, bssid):
+		# hostapd can automatically create sub bssids if last bytes are set to 0
+		if bssid:
+			bssid = bssid[:-1] + "0"
+			configurations += "bssid={bssid}\n".format(bssid=bssid) + "\n"
+
+		# Adding WEP configurations
+		configurations += "bss={}_0\n".format(interface)
+		configurations += "ssid={}\n".format(ssid)
+		configurations += self._get_wep_configurations("12345") + "\n\n"
+
+		# Adding WPA-PSK configurations
+		configurations += "bss={}_1\n".format(interface)
+		configurations += "ssid={}\n".format(ssid)
+		configurations += self._get_wpa_configurations("wpa/wpa2", "PSK", "CCMP", "12345678") + "\n"
+
+		# Adding WPA-EAP configurations
+		configurations += "bss={}_2\n".format(interface)
+		configurations += "ssid={}\n".format(ssid)
+		configurations += self._get_wpa_configurations("wpa/wpa2", "EAP", "CCMP", None) + "\n"
+
+		return configurations
+
+
+
+	def get_specific_configurations(self, 	configurations, 
+											bssid=None,
+											encryption=None, 
+											auth="PSK", 
+											cipher="CCMP", 
+											password=None):
+
 		# Spoof bssid from other access points
 		if bssid:
 			configurations += "bssid={bssid}\n".format(bssid=bssid)
@@ -65,12 +107,11 @@ class APLauncher(object):
 			if ("wpa" in encryption):
 				configurations += self._get_wpa_configurations(encryption, auth, cipher, password)
 			elif encryption == "wep":
-				configurations += self._get_wpe_configurations(password)
+				configurations += self._get_wep_configurations(password)
 
-		self.file_handler.write(configurations)
-		return True
+		return configurations
 
-	def _get_wpe_configurations(self, password):
+	def _get_wep_configurations(self, password):
 		configurations = ""
 		if (len(password) == 5 or len(password) == 13 or len(password) == 16):
 			configurations += "wep_default_key=0\n"
@@ -79,7 +120,7 @@ class APLauncher(object):
 			configurations += "wep_default_key=0\n"
 			configurations += "wep_key0={key}".format(key=password)
 		else:
-			error_msg = "WEP key must be either 5, 8, 13 ascii charachters or 10 or 23 HEX charachters.\n"
+			error_msg = "WEP key must be either 5, 13, 16 ascii charachters or 10 or 23 HEX charachters.\n"
 			raise InvalidConfigurationException(error_msg)
 
 		return configurations
@@ -103,14 +144,14 @@ class APLauncher(object):
 		configurations += "wpa_pairwise={cipher}\n".format(cipher=cipher.upper())   # cipher: CCMP or TKIP
 		
 		if auth.lower() == "eap":
-			configurations += self._get_wpa_eap_configurations(configurations)
+			configurations += self._get_wpa_eap_configurations()
 		else:
 			configurations += self._get_and_check_wpa_password_configurations(configurations, password)
 
 		return configurations
 			
 
-	def _get_wpa_eap_configurations(self, configurations):
+	def _get_wpa_eap_configurations(self):
 		configurations = "eap_user_file=/etc/hostapd-wpe/hostapd-wpe.eap_user\n"
 		configurations += "ca_cert=/etc/hostapd-wpe//certs/certnew.cer\n"
 		configurations += "server_cert=/etc/hostapd-wpe/certs/server.crt\n"

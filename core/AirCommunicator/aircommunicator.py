@@ -123,7 +123,10 @@ class AirCommunicator(object):
 		self.add_airhost_plugins(plugins)
 
 		# NetworkManager setup
-		if self.network_manager.set_mac_and_unmanage(ap_interface, bssid, retry = True):
+		is_catch_all_honeypot = self.configs["airhost"]["aplauncher"]["catch_all_honeypot"].lower() == "true"
+		if self.network_manager.set_mac_and_unmanage(	ap_interface, bssid, 
+														retry = True, 
+														virtInterfaces = 3 if is_catch_all_honeypot else 0):
 			self.network_manager.configure_interface(ap_interface, gateway)
 			self.network_manager.iptables_redirect(ap_interface, internet_interface)
 			
@@ -141,7 +144,8 @@ class AirCommunicator(object):
 					encryption=self.configs["airhost"]["aplauncher"]["encryption"], 
 					auth=self.configs["airhost"]["aplauncher"]["auth"],
 					cipher=self.configs["airhost"]["aplauncher"]["cipher"],
-					password=self.configs["airhost"]["aplauncher"]["password"])
+					password=self.configs["airhost"]["aplauncher"]["password"],
+					catch_all_honeypot=is_catch_all_honeypot)
 			except KeyError:
 				self.air_host.aplauncher.write_hostapd_configurations(
 					interface=ap_interface, ssid=ssid, bssid=bssid, channel=channel, hw_mode=hw_mode)
@@ -283,9 +287,6 @@ class AirCommunicator(object):
 		credentialsniffer = CredentialSniffer(sniffing_interface)
 		self.plugins["credentialsniffer"] = credentialsniffer
 		self.air_scanner.add_plugin(credentialsniffer)
-
-
-
 
 	def stop_air_communications(self, stop_sniffer, stop_ap, stop_deauth):
 		if stop_sniffer and self.air_scanner.sniffer_running:
