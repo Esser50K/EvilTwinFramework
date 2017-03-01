@@ -33,6 +33,7 @@ except Exception as e:
 def install_scapy_community():
     print "[+] Preparing to install community version of scapy"
     clone_command           = "hg clone https://bitbucket.org/secdev/scapy-com"
+    dpkg_command            = "dpkg --ignore-depends=python-scapy -r python-scapy"
     installation_command    = "python scapy-com/setup.py install"
     cleanup_command         = "rm -rf scapy-com"
 
@@ -45,7 +46,7 @@ def install_scapy_community():
     print "[+] Cleaning up the cloned folder after installation"
     os.system(cleanup_command)
 
-basic_dependencies = ["dnsmasq", "hostapd-wpe", "python-pyric", "python-scapy"]
+basic_dependencies = ["dnsmasq", "hostapd-wpe", "python-pyric", "mitmproxy"]
 complete_install = ["gnome-terminal", "mitmf", "beef-xss", "ettercap-common", "sslstrip"]
 
 print "[+] Adding packages to install to list."
