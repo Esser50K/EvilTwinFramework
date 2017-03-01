@@ -77,9 +77,7 @@ class ETFConsole(Cmd):
 			print "[-] Only 1 argument expected after spawn command"
 
 		try:
-			self.spawnmanager.add_spawner(  args, 
-											self.configs["etf"]["spawner"][args]["system_location"],
-											" ".join(self.configs["etf"]["spawner"][args]["args"]))
+			self.spawnmanager.add_spawner(args)
 		except KeyError:
 			print "[-] Spawner for '{}' does not exist.".format(args)
 

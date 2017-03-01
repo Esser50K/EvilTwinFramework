@@ -10,26 +10,31 @@ from mitmfspawner import MITMFSpawner
 from beefspawner import BeefSpawner
 from sslstripspawner import SSLStripSpawner
 from ettercapspawner import EttercapSpawner
+from ConfigurationManager.configmanager import ConfigurationManager
 
 class SpawnManager(object):
 
 	def __init__(self):
 		self.spawners = []
+		self.configs = ConfigurationManager().config["etf"]["spawner"]
 
-	def add_spawner(self, spawner_name, system_location, arg_string):
+	def add_spawner(self, spawner_name):
 		try:
 			spawner = None
-			if spawner_name == "mitmf":
-				spawner = MITMFSpawner(system_location)
+			if spawner_name in map(lambda x: x.name, self.spawners):
+				for spawned in self.spawners:
+					if spawned.name == spawner_name:
+						spawner = spawned
+			elif spawner_name == "mitmf":
+				spawner = MITMFSpawner(self.configs[spawner_name])
 			elif spawner_name == "beef":
-				spawner = BeefSpawner(system_location)
+				spawner = BeefSpawner(self.configs[spawner_name])
 			elif spawner_name == "sslstrip":
-				spawner = SSLStripSpawner(system_location)
+				spawner = SSLStripSpawner(self.configs[spawner_name])
 			elif spawner_name == "ettercap":
-				spawner = EttercapSpawner(system_location)
+				spawner = EttercapSpawner(self.configs[spawner_name])
 
 			if spawner:
-				spawner.set_arg_string(arg_string)
 				spawner.spawn()
 				self.spawners.append(spawner)
 
