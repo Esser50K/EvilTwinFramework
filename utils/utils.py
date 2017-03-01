@@ -114,14 +114,11 @@ class FileHandler(object):
             copy(file_path, file_path + ".original") # Create a backup file with the '.original' extension
 
         open(self.current_file, 'w').close()
-            
-
 
     def restore_file(self):
         if os.path.exists(self.original_file):
             copy(self.original_file, self.current_file)
             os.remove(self.original_file)
-
 
     def write(self, string, mode='w'):
         if os.path.exists(self.current_file):

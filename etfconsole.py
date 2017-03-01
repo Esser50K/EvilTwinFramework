@@ -16,6 +16,7 @@ from AirCommunicator.airdeauthor import DeauthAP, DeauthClient
 from AirCommunicator.aircracker import WPAHandshake
 from AuxiliaryModules.aplauncher import Client
 from ConfigurationManager.configmanager import ConfigurationManager
+from MITMCore.etfitm import EvilInTheMiddle
 from Spawners.spawnmanager import SpawnManager
 
 
@@ -26,7 +27,8 @@ class ETFConsole(Cmd):
 	# Backend Tools
 	configs = ConfigurationManager("./core/ConfigurationManager/etf.conf").config
 	aircommunicator = AirCommunicator()
-	spawnmanager = SpawnManager()
+	etfitm			= EvilInTheMiddle()
+	spawnmanager 	= SpawnManager()
 
 	# Static strings to help with autocompletion
 
@@ -35,7 +37,7 @@ class ETFConsole(Cmd):
 						"get", "set", "config", "back", "listargs",
 						"copy", "add", "del", "show"  ]
 
-	services = ["airhost", "airscanner", "airdeauthor", "aircracker"]
+	services = ["airhost", "airscanner", "airdeauthor", "aircracker", "mitmproxy"]
 	aux_services = ["aplauncher", "dnsmasqhandler"]
 	spawners = ["mitmf", "beef", "ettercap", "sslstrip"]
 
@@ -47,6 +49,7 @@ class ETFConsole(Cmd):
 	airdeauthor_plugins = ["credentialsniffer"]
 	aircracker_types = ["wpa_crackers", "half_wpa_crackers"]
 	aircrackers = ["cowpatty", "aircrack-ng", "halwpaid"]
+	mitmproxy_plugins = ["downloadreplacer", "beefinjector"]
 
 	copy_options = ["ap", "probe"]
 	add_del_options = ["aps", "clients"] 								 	# Meant to be followed by ID
@@ -79,8 +82,6 @@ class ETFConsole(Cmd):
 											" ".join(self.configs["etf"]["spawner"][args]["args"]))
 		except KeyError:
 			print "[-] Spawner for '{}' does not exist.".format(args)
-
-
 
 	def spawner_completion(self, text, line):
 		entered = line.split()
@@ -162,8 +163,8 @@ class ETFConsole(Cmd):
 						self.airhost_plugins + \
 						self.airdeauthor_plugins + \
 						self.aircracker_types + \
-						self.aircrackers
-
+						self.aircrackers + \
+						self.mitmproxy_plugins
 
 		if len(args) == 1:
 			return all_configs
@@ -448,13 +449,42 @@ class ETFConsole(Cmd):
 			if "with" in args:
 				plugins = args[args.index("with")+1:]
 
-			self.aircommunicator.service(service, "start", plugins)
+			if "air" in service:
+				self.aircommunicator.service(service, "start", plugins)
+			elif service == "mitmproxy":
+				self.start_mitmproxy(plugins)
+
+	def start_mitmproxy(self, plugins):
+		mitm_configs = self.configs["etf"]["mitmproxy"]
+		try:
+			listen_port = str(int(mitm_configs["lport"])) # Verify if it is integer
+			bind_address = mitm_configs["bind_address"] if len(mitm_configs["bind_address"].split(".")) == 4 else None
+			ssl = mitm_configs["ssl"].lower() == "true"
+			certs = mitm_configs["certs"]
+			if type(certs) is not list and certs != "":
+				certs = [certs]
+			background = mitm_configs["background"].lower() == "true"
+
+			mitm_plugins = []
+			for plugin in plugins:
+				if plugin in self.mitmproxy_plugins:
+					mitm_plugins.append(plugin)
+
+		except Exception as e:
+			print "[-] Something is wrong with the configuration of mitmproxy:\n", e
+			return
+
+		self.etfitm.pass_config(listen_port, bind_address, ssl, certs, mitm_plugins)
+		self.etfitm.start(background)
 
 	def do_stop(self, args):
 		args = args.split()
 		if len(args) >= 1:
 			service = args[0]
-			self.aircommunicator.service(service, "stop")
+			if "air" in service:
+				self.aircommunicator.service(service, "stop")
+			elif service == "mitmproxy":
+				self.etfitm.stop()
 
 
 	def complete_start(self, text, line, begidx, endidx):
@@ -487,6 +517,8 @@ class ETFConsole(Cmd):
 				out = self.airscanner_plugins
 			elif entered[1] == "airdeauthor":
 				out = self.airdeauthor_plugins
+			elif entered[1] == "mitmproxy":
+				out = self.mitmproxy_plugins
 
 		return out
 
@@ -516,6 +548,8 @@ class ETFConsole(Cmd):
 					out = [keyword for keyword in self.airscanner_plugins if keyword.startswith(start)]
 				elif entered[1] == "airdeauthor":
 					out = [keyword for keyword in self.airdeauthor_plugins if keyword.startswith(start)]
+				elif entered[1] == "mitmproxy":
+					out = [keyword for keyword in self.mitmproxy_plugins if keyword.startswith(start)]
 
 		return out
 

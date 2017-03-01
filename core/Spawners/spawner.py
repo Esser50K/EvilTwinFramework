@@ -33,7 +33,7 @@ class Spawner(object):
 
 	# This method is supposed to be overriden by subclass
 	def restore_process(self):
-		pass
+		os.system("pkill {}".format(self.name))
 
 	def spawn(self):
 		self.setup_process()
