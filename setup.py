@@ -47,7 +47,7 @@ def install_scapy_community():
     os.system(cleanup_command)
 
 basic_dependencies = ["dnsmasq", "hostapd-wpe", "python-pyric", "mitmproxy"]
-complete_install = ["gnome-terminal", "mitmf", "beef-xss", "ettercap-common", "sslstrip"]
+complete_install = ["gnome-terminal", "mitmf", "beef-xss", "ettercap-common", "sslstrip", "netlib"]
 
 print "[+] Adding packages to install to list."
 package_list = basic_dependencies
