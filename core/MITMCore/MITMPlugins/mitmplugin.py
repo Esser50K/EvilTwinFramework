@@ -3,14 +3,19 @@ This module has the base class for MITM custom plugins
 Every MITM Plugin must be a subclass of MITMPlugin
 """
 import sys
-sys.path.append('./core')
 from ConfigurationManager.configmanager import ConfigurationManager
 
 class MITMPlugin(object):
 
 	def __init__(self, name):
 		self.name = name
-		self.config = ConfigurationManager("./core/ConfigurationManager/etf.conf").config["etf"]["mitmproxy"]["mitmplugins"][name]
+		self.config = ConfigurationManager().config["etf"]["mitmproxy"]["mitmplugins"][name]
+
+	def setup(self):
+		pass
+
+	def cleanup(self):
+		pass
 
 	def get_config(self, key):
 		try:

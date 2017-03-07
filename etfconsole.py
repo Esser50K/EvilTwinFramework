@@ -49,7 +49,7 @@ class ETFConsole(Cmd):
 	airdeauthor_plugins = ["credentialsniffer"]
 	aircracker_types = ["wpa_crackers", "half_wpa_crackers"]
 	aircrackers = ["cowpatty", "aircrack-ng", "halwpaid"]
-	mitmproxy_plugins = ["downloadreplacer", "beefinjector", "peinjector"]
+	mitmproxy_plugins = ["downloadreplacer", "beefinjector", "peinjector", "bdfpatcher"]
 
 	copy_options = ["ap", "probe"]
 	add_del_options = ["aps", "clients"] 								 	# Meant to be followed by ID
@@ -455,12 +455,17 @@ class ETFConsole(Cmd):
 	def start_mitmproxy(self, plugins):
 		mitm_configs = self.configs["etf"]["mitmproxy"]
 		try:
-			listen_port = str(int(mitm_configs["lport"])) # Verify if it is integer
-			bind_address = mitm_configs["bind_address"] if len(mitm_configs["bind_address"].split(".")) == 4 else None
+			listen_port = int(mitm_configs["lport"]) # Verify if it is integer
+			listen_host = mitm_configs["lhost"] if len(mitm_configs["lhost"].split(".")) == 4 else "127.0.0.1"
 			ssl = mitm_configs["ssl"].lower() == "true"
-			certs = mitm_configs["certs"]
+			client_cert = mitm_configs["client_cert"]
+			certs 		= mitm_configs["certs"]
 			if type(certs) is not list and certs != "":
 				certs = [certs]
+			elif certs == "":
+				certs = []
+
+			certs = map(lambda x: x.split("=") if "=" in x else ["*", x], certs)
 			background = mitm_configs["background"].lower() == "true"
 
 			mitm_plugins = []
@@ -472,7 +477,7 @@ class ETFConsole(Cmd):
 			print "[-] Something is wrong with the configuration of mitmproxy:\n", e
 			return
 
-		self.etfitm.pass_config(listen_port, bind_address, ssl, certs, mitm_plugins)
+		self.etfitm.pass_config(listen_host, listen_port, ssl, client_cert, certs, mitm_plugins)
 		self.etfitm.start(background)
 
 	def do_stop(self, args):
@@ -583,6 +588,7 @@ class ETFConsole(Cmd):
 	def do_EOF(self, line): # control-D
 		print "Exiting..."
 		self.aircommunicator.stop_air_communications(True, True, True)
+		self.etfitm.stop()
 		self.spawnmanager.restore_all()
 		os.system('service networking restart')
 		os.system('service network-manager restart')
