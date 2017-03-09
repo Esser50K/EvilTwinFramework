@@ -6,6 +6,7 @@ and setting up and restoring them
 
 import os
 from etfexceptions import InvalidFilePathException
+from spawner import Spawner
 from mitmfspawner import MITMFSpawner
 from beefspawner import BeefSpawner
 from sslstripspawner import SSLStripSpawner
@@ -21,22 +22,11 @@ class SpawnManager(object):
 	def add_spawner(self, spawner_name):
 		try:
 			spawner = None
-			if spawner_name in map(lambda x: x.name, self.spawners):
-				for spawned in self.spawners:
-					if spawned.name == spawner_name:
-						spawner = spawned
-			elif spawner_name == "mitmf":
-				spawner = MITMFSpawner(self.configs[spawner_name])
-			elif spawner_name == "beef":
-				spawner = BeefSpawner(self.configs[spawner_name])
-			elif spawner_name == "sslstrip":
-				spawner = SSLStripSpawner(self.configs[spawner_name])
-			elif spawner_name == "ettercap":
-				spawner = EttercapSpawner(self.configs[spawner_name])
-
-			if spawner:
-				spawner.spawn()
-				self.spawners.append(spawner)
+			for spawner in Spawner.__subclasses__():
+				spawner_instance = spawner()
+				if spawner_instance.name == spawner_name:
+					spawner_instance.spawn()
+					self.spawners.append(spawner_instance)
 
 		except InvalidFilePathException as e:
 			print e

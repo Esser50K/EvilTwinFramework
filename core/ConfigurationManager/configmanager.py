@@ -7,6 +7,7 @@ It uses the singleton design pattern
 
 from configobj import ConfigObj
 
+#TODO make set_config method that treats the variable to config as global and looks where it repeats itself
 class ConfigurationManager(object):
 
     class __ConfigurationManager(object):

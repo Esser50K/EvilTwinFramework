@@ -10,10 +10,10 @@ now realize it is better for captive portal prints
 """
 class CredentialPrinter(AirHostPlugin):
 
-	def __init__(self, log_folder, log_file_name):
-		super(CredentialPrinter, self).__init__()
-		self.log_folder = log_folder
-		self.log_file_name = log_file_name
+	def __init__(self):
+		super(CredentialPrinter, self).__init__("credentialprinter")
+		self.log_folder = self.config["log_folder"]
+		self.log_file_name = self.config["log_file_name"]
 		self.credential_printer_process = None
 
 	def start(self):

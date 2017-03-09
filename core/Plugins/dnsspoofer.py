@@ -5,18 +5,30 @@ from utils.utils import FileHandler
 
 class DNSSpoofer(AirHostPlugin):
 
-	def __init__(self, spoof_ip, hosts_config_path, httpserver = None, spoofpages = []):
-		super(DNSSpoofer, self).__init__()
-		self.spoof_ip = spoof_ip
-		self.hosts_config_path = hosts_config_path
+	def __init__(self):
+		super(DNSSpoofer, self).__init__("dnsspoofer")
+		self.spoof_ip = self.config["spoof_ip"]
+		self.hosts_config_path = self.config["hosts_conf"]
 
+		spoofpages = self.config["spoof_pages"]
 		self.spoofpages = spoofpages if type(spoofpages) is list else [spoofpages]
 
 		self.captive_portal_mode = False
 		self.httpserver_running = False
 
-		self.httpserver = httpserver
+		self.httpserver = self._configure_http_server()
 		self.file_handler = None
+
+	def _configure_http_server(self):
+		httpserver = None
+		if self.config["httpserver"].lower() == "true":
+			apache_config_path = self.config["apache_conf"]
+			apache_root_path = self.config["apache_root"]
+			ssl = self.config["ssl_on"].lower() == "true"
+			overwrite = self.config["overwrite_pages"].lower() == "true"
+			httpserver = HTTPServer(apache_config_path, apache_root_path, ssl, overwrite)
+
+		return httpserver
 
 	def set_captive_portal_mode(self, captive_portal_mode):
 		self.captive_portal_mode = captive_portal_mode

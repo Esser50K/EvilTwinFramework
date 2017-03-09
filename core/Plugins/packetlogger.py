@@ -5,10 +5,12 @@ from scapy.utils import PcapWriter
 
 class PacketLogger(AirScannerPlugin):
 
-	def __init__(self, destination_folder, filter_list = [], or_filter = False):
-		self.destination_folder = destination_folder
+	def __init__(self):
+		super(PacketLogger, self).__init__("packetlogger")
+		self.destination_folder = self.config["destination_folder"]
 		self._nlogs = self._get_log_count()
 		self.packet_filters = []
+		filter_list = self.config["filters"]
 		for filter in filter_list:
 			try:
 				type, value = map(str.strip, filter.split("="))
@@ -17,7 +19,7 @@ class PacketLogger(AirScannerPlugin):
 				print e
 				pass
 
-		self.or_filter = or_filter
+		self.or_filter = self.config["filter_mode"].lower() == "or"
 		self.current_log_file = "packet_log{n}.cap".format(n = self._nlogs)
 		self.packet_logger = PcapWriter(self.destination_folder + "packet_log{n}.cap".format(n = self._nlogs), 
 										append=True, sync=True)

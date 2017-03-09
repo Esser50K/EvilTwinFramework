@@ -9,18 +9,18 @@ own class which must be a subclass of Spawner.
 import os
 from subprocess import Popen
 from etfexceptions import InvalidFilePathException
+from ConfigurationManager.configmanager import ConfigurationManager
+
 
 class Spawner(object):
-
-	def __init__(self, config):
+	def __init__(self, name):
+		self.name = name
+		self.config = ConfigurationManager().config["etf"]["spawner"][name]
+		self.arg_string = " ".join(self.config["args"])
+		self.system_location = self.config["system_location"]
 		self.calling = None
-		self.name = None
 		self.process = None
 		self.is_set_up = False
-		self.config = config
-		self.arg_string = " ".join(config["args"])
-		self.system_location = config["system_location"]
-
 		if not os.path.exists(self.system_location):
 			raise InvalidFilePathException("The path '{location}' does not exist, \
 											'{name}' could not be loaded.".format(	location=system_location,
@@ -43,4 +43,5 @@ class Spawner(object):
 														args=self.arg_string)])
 
 		print "[+] Spawned '{}' with args:\n{}".format(self.calling, self.arg_string)
-		print "[/] NOTE: Remember to restore '{}' after closing window.".format(self.name)
+		print "[/] NOTE: \nType 'restore {}' to close and restore the spawner.".format(self.name)
+		print "Should type it even if already closed manually."

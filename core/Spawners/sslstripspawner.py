@@ -4,9 +4,8 @@ from utils.utils import NetUtils
 
 class SSLStripSpawner(Spawner):
 
-	def __init__(self, config):
-		super(SSLStripSpawner, self).__init__(config)
-		self.name = "sslstrip"
+	def __init__(self):
+		super(SSLStripSpawner, self).__init__("sslstrip")
 		self.calling = self.system_location + "/sslstrip.py"
 
 	def setup_process(self):

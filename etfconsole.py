@@ -39,7 +39,7 @@ class ETFConsole(Cmd):
 
 	services = ["airhost", "airscanner", "airdeauthor", "aircracker", "mitmproxy"]
 	aux_services = ["aplauncher", "dnsmasqhandler"]
-	spawners = ["mitmf", "beef", "ettercap", "sslstrip"]
+	spawners = ["mitmf", "beef-xss", "ettercap", "sslstrip"]
 
 	filter_keywords = ["where", "only"]
 	plugin_keyword = ["with"]
@@ -75,10 +75,10 @@ class ETFConsole(Cmd):
 		entered = args.split()
 		if len(entered) != 1:
 			print "[-] Only 1 argument expected after spawn command"
-
 		try:
 			self.spawnmanager.add_spawner(args)
-		except KeyError:
+		except KeyError as e:
+			print e
 			print "[-] Spawner for '{}' does not exist.".format(args)
 
 	def spawner_completion(self, text, line):
@@ -542,7 +542,7 @@ class ETFConsole(Cmd):
 				out = [text + " "]
 			else:
 				out = self.plugin_keyword
-		elif len(entered) == 4:
+		elif len(entered) >= 4:
 			start = entered[-1]
 			if entered[1] in self.services:
 				if entered[1] == "airhost":

@@ -2,6 +2,8 @@
 # -*- encoding: utf-8 -*-
 
 """
+	This module is the Python connector for the peinjector patching service, it is part of the peinjector project.
+	https://github.com/JonDoNym/peinjector
 	Provides de-serialization and in-stream patch applying capabilities for PE Files
 """
 

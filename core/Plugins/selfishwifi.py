@@ -10,17 +10,17 @@ from threading import Thread
 
 class SelfishWiFi(AirScannerPlugin):
 
-	def __init__(self, ssid, running_interface, internet_interface, ignore_clients = []):
-		super(SelfishWiFi, self).__init__()
-		self.running_interface = running_interface
-		self.ignore_clients = ignore_clients + ["ff:ff:ff:ff:ff:ff"]
-		internet_interface_mac = NetworkCard(internet_interface).get_mac()
+	def __init__(self):
+		super(SelfishWiFi, self).__init__("selfishwifi")
+		self.running_interface = self.config["running_interface"]
+		self.ignore_clients = self.config["ignore_clients"] + ["ff:ff:ff:ff:ff:ff"]
+		internet_interface_mac = NetworkCard(self.config["internet_interface"]).get_mac()
 		if internet_interface_mac is not None:
 			self.ignore_clients.append(internet_interface_mac)
 
 		self.is_running = True
 		self.general_deauth_attack_completed = False
-		self.deauth_ssid = ssid
+		self.deauth_ssid = self.config["ssid"]
 		self.deauth_bssids = set()
 		self.clients_to_deauth = set()
 

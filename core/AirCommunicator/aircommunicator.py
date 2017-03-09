@@ -11,8 +11,8 @@ from airhost import AirHost
 from airscanner import AirScanner
 from airdeauthor import AirDeauthenticator
 from aircracker import AirCracker
+from Plugins.plugin import Plugin, AirHostPlugin, AirScannerPlugin, AirDeauthorPlugin
 from AuxiliaryModules.infoprinter import InfoPrinter, ObjectFilter
-from AuxiliaryModules.httpserver import HTTPServer
 from AuxiliaryModules.wpacracker import WPACracker
 from Plugins.dnsspoofer import DNSSpoofer
 from Plugins.selfishwifi import SelfishWiFi
@@ -35,12 +35,6 @@ class AirCommunicator(object):
 		self.air_cracker = AirCracker()
 		self.network_manager = NetworkManager(self.config_files["networkmanager_conf"])
 
-		self.plugins = {"dnsspoofer"        : None,
-						"packetlogger"      : None,
-						"selfishwifi"       : None,
-						"credentialsniffer" : None,
-						"credentialprinter" : None} # name: plugin
-
 		self.info_printer = InfoPrinter()
 
 	def start_deauthentication_attack(self, plugins = []):
@@ -62,30 +56,12 @@ class AirCommunicator(object):
 				except KeyError:
 					pass
 		
-			self.add_airdeauthor_plugins(plugins)
+			self.add_plugins(plugins, self.air_deauthenticator, AirDeauthorPlugin)
 			self.air_deauthenticator.set_burst_count(int(burst_count))
 			self.air_deauthenticator.set_targeted(targeted_only)
 			self.air_deauthenticator.start_deauthentication_attack(jamming_interface)
 		else:
 			print "[-] Deauthentication attack still running"
-
-	def add_airdeauthor_plugins(self, plugins):
-		airhost_plugins = self.configs["airdeauthor"]["plugins"]
-		for plugin in plugins:
-			if plugin == "credentialsniffer":
-				self._add_airdeauthor_credentialsniffer_plugin(airhost_plugins)
-
-	def _add_airdeauthor_credentialsniffer_plugin(self, plugins):
-		interface = self.configs["airdeauthor"]["jamming_interface"]
-		channel = self.configs["airscanner"]["fixed_sniffing_channel"]
-		try:
-			credentialsniffer = CredentialSniffer(interface, channel = int(channel))
-		except:
-			print "Fixed channel is not an integer, default channel 7 chosen."
-			credentialsniffer = CredentialSniffer(interface)
-			
-		self.plugins["credentialsniffer"] = credentialsniffer
-		self.air_deauthenticator.add_plugin(credentialsniffer)
 
 	def start_access_point(self, plugins = []):
 		'''
@@ -120,7 +96,7 @@ class AirCommunicator(object):
 			return False
 
 		# Add plugins
-		self.add_airhost_plugins(plugins)
+		self.add_plugins(plugins, self.air_host, AirHostPlugin)
 
 		# NetworkManager setup
 		is_catch_all_honeypot = self.configs["airhost"]["aplauncher"]["catch_all_honeypot"].lower() == "true"
@@ -163,62 +139,11 @@ class AirCommunicator(object):
 					[-] Errors occurred while trying to start access point, 
 					try restarting network services and unplug your network adapter""")
 		return False
-
-	def add_airhost_plugins(self, plugins):
-		airhost_plugins = self.configs["airhost"]["plugins"]
-		for plugin in plugins:
-			if plugin == "dnsspoofer":
-				self._add_airhost_dnsspoofer_plugin(airhost_plugins)
-			elif plugin == "credentialprinter":
-				self._add_airhost_credentialprinter_plugin(airhost_plugins)
-			elif plugin == "credentialsniffer":
-				self._add_airhost_credentialsniffer_plugin(airhost_plugins)
-
-	def _add_airhost_dnsspoofer_plugin(self, airhost_plugins):
-		dnsspoofer_plugin = airhost_plugins["dnsspoofer"]
-		hosts_path = self.config_files["hosts_conf"]
-		spoof_ip = self.configs["airhost"]["plugins"]["dnsspoofer"]["spoof_ip"]
-		spoof_pages = self.configs["airhost"]["plugins"]["dnsspoofer"]["spoof_pages"]
-
-		httpserver = None
-		if dnsspoofer_plugin["httpserver"].lower() == "true":
-			apache_config_path = self.config_files["apache_conf"]
-			apache_root_path = self.config_files["apache_root"]
-			ssl = dnsspoofer_plugin["ssl_on"].lower() == "true"
-			overwrite = dnsspoofer_plugin["overwrite_pages"].lower() == "true"
-			httpserver = HTTPServer(apache_config_path, apache_root_path, ssl, overwrite)
-
-		dnsspoofer = DNSSpoofer(spoof_ip, hosts_path, httpserver, spoof_pages)
-
-		self.plugins["dnsspoofer"] = dnsspoofer
-		self.air_host.add_plugin(dnsspoofer)
-
-	def _add_airhost_credentialprinter_plugin(self, airhost_plugins):
-		credentialprinter_plugin = airhost_plugins["credentialprinter"]
-		log_folder = credentialprinter_plugin["log_folder"]
-		log_file_name = credentialprinter_plugin["log_file_name"]
-		credentialprinter = CredentialPrinter(log_folder, log_file_name)
-		self.plugins["credentialprinter"] = credentialprinter
-		self.air_host.add_plugin(credentialprinter)
-
-	def _add_airhost_credentialsniffer_plugin(self, airhost_plugins):
-		sniffing_interface = self.configs["airscanner"]["sniffing_interface"]
-		ap_interface = self.configs["airhost"]["ap_interface"]
-		ssid = self.configs["airhost"]["aplauncher"]["ssid"]
-		channel = self.configs["airhost"]["aplauncher"]["channel"]
-		self.network_manager.add_interface_to_ignore(sniffing_interface) # Needed so the sniffer doesnt crash
-		credentialsniffer = CredentialSniffer(  sniffing_interface, 
-												ap_interface = ap_interface, 
-												channel = channel, 
-												is_ap = True, 
-												ssid = ssid)
-		self.plugins["credentialsniffer"] = credentialsniffer
-		self.air_host.add_plugin(credentialsniffer)
 		
 	def start_sniffer(self, plugins = []):
 		# Sniffing options
 		if not self.air_scanner.sniffer_running:
-			self.add_airscanner_plugins(plugins)
+			self.add_plugins(plugins, self.air_scanner, AirScannerPlugin)
 
 			sniff_probes = self.configs["airscanner"]["probes"].lower() == "true"
 			sniff_beacons = self.configs["airscanner"]["beacons"].lower() == "true"
@@ -249,44 +174,11 @@ class AirCommunicator(object):
 		else:
 			print "[-] Sniffer already running"
 
-	def add_airscanner_plugins(self, plugins):
-		plugin_configs = self.configs["airscanner"]["plugins"]
-		for plugin in plugins:
-			if plugin == "packetlogger":
-				self._add_airscanner_packetlogger_plugin(plugin_configs)
-			elif plugin == "selfishwifi":
-				self._add_airscanner_selfishwifi_plugin(plugin_configs)
-			elif plugin == "credentialsniffer":
-				self._add_airscanner_credentialsniffer_plugin()
-
-	def _add_airscanner_packetlogger_plugin(self, plugin_configs):
-		packetlogger_configs = plugin_configs["packetlogger"]
-		destination_folder = packetlogger_configs["destination_folder"]
-		filter_list = packetlogger_configs["filters"]
-		or_filter = packetlogger_configs["filter_mode"].lower() == "or"
-
-		packetlogger = PacketLogger(destination_folder, filter_list, or_filter)
-
-		self.plugins["packetlogger"] = packetlogger
-		self.air_scanner.add_plugin(packetlogger)
-
-	def _add_airscanner_selfishwifi_plugin(self, plugin_configs):
-		selfishwifi_configs = plugin_configs["selfishwifi"]
-		running_interface = self.configs["airscanner"]["sniffing_interface"]
-		ignore_interface = selfishwifi_configs["ignore_interface"]
-		ignore_clients = selfishwifi_configs["ignore_clients"]
-		ssid = selfishwifi_configs["ssid"]
-
-		selfishwifi = SelfishWiFi(ssid, running_interface, ignore_interface, ignore_clients)
-
-		self.plugins["selfishwifi"] = selfishwifi
-		self.air_scanner.add_plugin(selfishwifi)
-
-	def _add_airscanner_credentialsniffer_plugin(self):
-		sniffing_interface = self.configs["airscanner"]["sniffing_interface"]
-		credentialsniffer = CredentialSniffer(sniffing_interface)
-		self.plugins["credentialsniffer"] = credentialsniffer
-		self.air_scanner.add_plugin(credentialsniffer)
+	def add_plugins(self, plugins, airmodule, baseclass):
+		for airhost_plugin in baseclass.__subclasses__():
+			airhost_plugin_instance = airhost_plugin()
+			if airhost_plugin_instance.name in plugins:
+				airmodule.add_plugin(airhost_plugin_instance)
 
 	def stop_air_communications(self, stop_sniffer, stop_ap, stop_deauth):
 		if stop_sniffer and self.air_scanner.sniffer_running:

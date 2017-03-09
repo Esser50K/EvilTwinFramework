@@ -20,25 +20,31 @@ except ImportError:
 
 class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirDeauthorPlugin):
 
-	def __init__(self, 	sniffing_interface, channel=7, timeout=30, 
-						is_ap=False, ssid=None, ap_interface = None):
-		super(CredentialSniffer, self).__init__()
-		self.running_interface = sniffing_interface
+	def __init__(self):
+		#super(CredentialSniffer, self).__init__("credentialsniffer")
+		AirScannerPlugin.__init__(self, "credentialsniffer")
+		AirHostPlugin.__init__(self, "credentialsniffer")
+		AirDeauthorPlugin.__init__(self, "credentialsniffer")
+		self.running_interface = self.config["sniffing_interface"]
 		self.wifi_clients = {}
 		self.wpa_handshakes = {}
 		self.broadcasted_bssids = {} #bssid: beacon_packet
 
 		self.sniffer_thread = None
 		self.stop = False
-		self.fixed_channel = channel
-		self.timeout = timeout
+		try:
+			self.fixed_channel = int(self.config["channel"])
+		except:
+			self.fixed_channel = 7
+
+		self.timeout = self.config["timeout"]
 
 		# When sniffing for credentials on interface running in master mode
 		# scapy will only be able to sniff for layer 3 packets (Networking)
 		# so it never receives a Beacon packet (layer2) to verify the access point ssid
 		# best to pass it as parameter since we are running the access point we know the ssid
-		self.is_ap = is_ap
-		self.ssid = ssid
+		self.is_ap = False
+		self.ssid = self.config["ssid"]
 		
 
 	# This will be called by the AirSniffer
@@ -47,6 +53,7 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirDeauthorPlugin):
 
 	# This will be called when starting the access point
 	def start(self):
+		self.is_ap = True
 		self.sniffer_thread = Thread(target=self.start_credential_sniffing)
 		self.sniffer_thread.start()
 
