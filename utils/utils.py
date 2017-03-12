@@ -8,6 +8,7 @@ import os
 import signal
 import subprocess
 from shutil import copy
+from subprocess import check_output
 from etfexceptions import InvalidFilePathException, InvalidConfigurationException
 from threading import Thread
 
@@ -94,6 +95,28 @@ class NetUtils:
                                                                                 subnet=subnet,
                                                                                 netmask=netmask,
                                                                                 gateway=gateway))
+
+    def get_ip_from_mac(self, interface, mac):
+        arp_output = check_output("arp -a -i {}".format(interface).split()).split("\n")
+        for line in arp_output:
+            if mac.lower() in line.lower():
+                try:
+                    device_name, device_ip = map(str.strip, (line.split()[0:2]))
+                    device_ip = device_ip[1:-1] # Cut the enclosing parenthesis off: (0.0.0.0) -> 0.0.0.0
+                    return (device_name, device_ip)
+                except Exception as e:
+                    print e
+                    print "[-] Problem occurred while parsing arp output."
+
+        return (None, None)
+
+    def get_ssid_from_interface(self, interface):
+        iw_output = check_output("iw {} info".format(interface).split()).split("\n")
+        for line in iw_output:
+            if "ssid" in line:
+                ssid = line.split("ssid")[1].strip()
+                return ssid
+        return None
 
     
 class FileHandler(object):

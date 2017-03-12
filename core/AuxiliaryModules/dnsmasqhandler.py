@@ -21,20 +21,29 @@ class DNSMasqHandler(object):
 	def set_captive_portal_mode(self, captive_portal_mode):
 		self.captive_portal_mode = captive_portal_mode
 
-	def write_dnsmasq_configurations(self, interface, ip_gw, dhcp_range=[], nameservers=[]):
+	def write_dnsmasq_configurations(self, interface, ip_gw, dhcp_range=[], nameservers=[], virtInterfaces = 0):
 		# Argument cleanup
 		if type(nameservers) is not list:
 			nameservers = [nameservers]
 
+		dhcp_range_string = "\ndhcp-range={interface}, {dhcp_start}, {dhcp_end}, 12h".format(interface 	= interface,
+																							 dhcp_start = dhcp_range[0],
+																							 dhcp_end	= dhcp_range[1])
+		for i in range(virtInterfaces-1):
+			dhcp_start = ".".join(dhcp_range[0].split(".")[0:2] + [str(int(dhcp_range[0].split(".")[2]) + i + 1)] + [dhcp_range[0].split(".")[3]])
+			dhcp_end = ".".join(dhcp_range[1].split(".")[0:2] + [str(int(dhcp_range[1].split(".")[2]) + i + 1)] + [dhcp_range[1].split(".")[3]])
+			dhcp_range_string += "\ndhcp-range={interface}_{index}, {dhcp_start}, {dhcp_end}, 12h".format(	
+																									interface = interface,
+																									index = i,
+																									dhcp_start 	= dhcp_start,
+																									dhcp_end	= dhcp_end)
 		configurations = dedent("""
-								interface={interface}
-								dhcp-range={dhcp_start}, {dhcp_end}, 12h
+								{dhcp_range}
 								dhcp-option=3,{ip_gw}
 								dhcp-option=6,{ip_gw}
-								""".format( interface = interface,
-											ip_gw = ip_gw,
-											dhcp_start = dhcp_range[0],
-											dhcp_end = dhcp_range[1]))
+								""".format( dhcp_range = dhcp_range_string,
+											interface = interface,
+											ip_gw = ip_gw))
 
 		if self.captive_portal_mode:
 			configurations += "no-resolv\n"

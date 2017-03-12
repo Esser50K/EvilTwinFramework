@@ -22,6 +22,7 @@ from Plugins.credentialsniffer import CredentialSniffer
 from ConfigurationManager.configmanager import ConfigurationManager
 from utils.networkmanager import NetworkManager, NetworkCard
 from textwrap import dedent
+from time import sleep
 
 class AirCommunicator(object):
 
@@ -99,10 +100,16 @@ class AirCommunicator(object):
 		self.add_plugins(plugins, self.air_host, AirHostPlugin)
 
 		# NetworkManager setup
-		is_catch_all_honeypot = self.configs["airhost"]["aplauncher"]["catch_all_honeypot"].lower() == "true"
+		is_catch_all_honeypot 	= self.configs["airhost"]["aplauncher"]["catch_all_honeypot"].lower() == "true"
+		is_multiple_ssid		= type(ssid) is list
+		nVirtInterfaces 		= 	3 			if is_catch_all_honeypot else \
+									len(ssid) 	if is_multiple_ssid else \
+									0
 		if self.network_manager.set_mac_and_unmanage(	ap_interface, bssid, 
 														retry = True, 
-														virtInterfaces = 3 if is_catch_all_honeypot else 0):
+														virtInterfaces = nVirtInterfaces):
+
+			# Initial configuration
 			self.network_manager.configure_interface(ap_interface, gateway)
 			self.network_manager.iptables_redirect(ap_interface, internet_interface)
 			
@@ -113,7 +120,8 @@ class AirCommunicator(object):
 				captive_portal_mode = False
 
 			self.air_host.dnsmasqhandler.set_captive_portal_mode(captive_portal_mode)
-			self.air_host.dnsmasqhandler.write_dnsmasq_configurations(ap_interface, gateway, dhcp_range, dns_servers)
+			self.air_host.dnsmasqhandler.write_dnsmasq_configurations(	ap_interface, gateway, dhcp_range, dns_servers, \
+																		nVirtInterfaces)
 			try:
 				self.air_host.aplauncher.write_hostapd_configurations(
 					interface=ap_interface, ssid=ssid, bssid=bssid, channel=channel, hw_mode=hw_mode,
@@ -133,6 +141,13 @@ class AirCommunicator(object):
 			print_creds = self.configs["airhost"]["aplauncher"]["print_creds"].lower() == "true"
 			self.air_host.start_access_point(   ap_interface, 
 												print_creds)
+
+			# Configure Virtual Interfaces once hostapd has set them up
+			sleep(.5) # Wait for for hostapd to setup interfaces
+			for i in range(nVirtInterfaces-1):
+				gateway = ".".join(gateway.split(".")[0:2] + [str(int(gateway.split(".")[2]) + 1)] + [gateway.split(".")[3]])
+				self.network_manager.configure_interface("{}_{}".format(ap_interface, i), gateway)
+				self.network_manager.iptables_redirect("{}_{}".format(ap_interface, i), internet_interface, True)
 			return True
 
 		print dedent("""

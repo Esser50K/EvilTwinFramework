@@ -97,34 +97,33 @@ class NetworkCard(object):
 		else:
 			print "[-] '{}' is not on AP mode".format(self.interface)
 
+	def is_virtual(self):
+		return "_" in self.interface
+
 
 class NetworkManager(object):
 
 	def __init__(self, networkmanager_config_path='/etc/NetworkManager/NetworkManager.conf'):
 		self.interfaces = pyw.interfaces()
 		self.netcards = { interface: NetworkCard(interface) for interface in pyw.winterfaces() }
-		self.interfaces_to_ignore = []
 		self.nm_config_file = networkmanager_config_path
 		self.file_handler = None
 
-	def add_interface_to_ignore(self, interface):
-		self.interfaces_to_ignore.append(interface)
-
-	def iptables_redirect(self, from_if, to_if):
+	def iptables_redirect(self, from_if, to_if, isVirtual = False):
 		card = self.get_netcard(from_if) # Get NetCard object
-
 		if card != None:
-			NetUtils().flush_iptables()
 			NetUtils().accept_forwarding(from_if)
-			NetUtils().set_postrouting_interface(to_if)
-			NetUtils().add_routing_rule(card.get_subnet(), card.get_mask(), card.get_ip())
+			if not isVirtual:
+				NetUtils().set_postrouting_interface(to_if)
+				NetUtils().add_routing_rule(card.get_subnet(), card.get_mask(), card.get_ip())
 
 	def configure_interface(self, interface, ip, netmask=None, broadcast=None, mtu=1800):
-		card = self.get_netcard(interface) # Get NetCard object
-
-		if card != None:
-			card.ifconfig(ip, netmask, broadcast)
-			card.set_mtu_size(mtu)
+		os.system("ifconfig {iface} {ip} {netmask} {broadcast}".format(	iface	= interface,
+																		ip		= ip,
+																		netmask = "netmask {}".format(netmask) if netmask else "",
+																		broadcast = "broadcast {}".format(broadcast) if broadcast else ""))
+		os.system("ifconfig {iface} mtu {mtu}".format(	iface	= interface,
+														mtu		= mtu))
 
 	def set_mac_and_unmanage(self, interface, mac, retry = False, virtInterfaces = 0):
 		card = self.get_netcard(interface)
@@ -157,14 +156,14 @@ class NetworkManager(object):
 	# NetworkManager is usually a conflicting process, 
 	# but we can configure it to ignore the interface 
 	# we use as access point or to sniff packets
-	def network_manager_ignore(self, interface, mac_address, virtInterfaces): 
-		mac_address = mac_address[:-1] + "0"
+	def network_manager_ignore(self, interface, mac_address, virtInterfaces):
+		if virtInterfaces > 0:
+			mac_address = mac_address[:-1] + "0"
 		interface_ignore_string = interface
 
-		for i in range(virtInterfaces):
+		for i in range(virtInterfaces-1):
 			interface_ignore_string += ",mac:{}".format(mac_address[:-1] + str(i+1))
-		for iface in self.interfaces_to_ignore:
-			interface_ignore_string += ",interface-name:{}".format(iface)
+			interface_ignore_string += ",interface-name:{}_{}".format(interface, i)
 
 		try:
 			ignore_config = dedent( """
@@ -212,7 +211,7 @@ class NetworkManager(object):
 			self.file_handler = None
 
 	def reset_interfaces(self):
-		for card in self.netcards:
+		for card in [card for card in self.netcards if not self.netcards[card].is_virtual]:
 			self.netcards[card].set_mac(self.netcards[card].original_mac)
 			self.netcards[card].set_mode('managed')
 

