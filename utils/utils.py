@@ -96,6 +96,15 @@ class NetUtils:
                                                                                 netmask=netmask,
                                                                                 gateway=gateway))
 
+    def interface_config(self, interface, ip, netmask=None, broadcast=None):
+        os.system("ifconfig {iface} {ip} {netmask} {broadcast}".format( iface   = interface,
+                                                                        ip      = ip,
+                                                                        netmask = "netmask {}".format(netmask) if netmask else "",
+                                                                        broadcast = "broadcast {}".format(broadcast) if broadcast else ""))
+    def set_interface_mtu(self, interface, mtu):
+        os.system("ifconfig {iface} mtu {mtu}".format(  iface   = interface,
+                                                        mtu     = mtu))
+
     def get_ip_from_mac(self, interface, mac):
         arp_output = check_output("arp -a -i {}".format(interface).split()).split("\n")
         for line in arp_output:
@@ -111,12 +120,14 @@ class NetUtils:
         return (None, None)
 
     def get_ssid_from_interface(self, interface):
-        iw_output = check_output("iw {} info".format(interface).split()).split("\n")
-        for line in iw_output:
-            if "ssid" in line:
-                ssid = line.split("ssid")[1].strip()
-                return ssid
-        return None
+        try:
+            iw_output = check_output("iw {} info".format(interface).split()).split("\n")
+            for line in iw_output:
+                if "ssid" in line:
+                    ssid = line.split("ssid")[1].strip()
+                    return ssid
+        except:
+            return None
 
     
 class FileHandler(object):

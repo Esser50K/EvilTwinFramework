@@ -23,13 +23,12 @@ class APLauncher(object):
 		self.file_handler = None
 		self.print_creds = False
 
-	# TODO: Add support for multiple SSIDs! 
 	def write_hostapd_configurations(self,  interface="wlan0", 
 											ssid=None, 
 											bssid=None, 
 											channel="1", 
 											hw_mode="g", 
-											encryption=None, 
+											encryption="OPN", 
 											auth="PSK", 
 											cipher="CCMP", 
 											password=None,
@@ -216,21 +215,6 @@ class APLauncher(object):
 		configurations = "wpa_passphrase={password}\n".format(password=password)   # password minimum is 8 digits
 		return configurations
 
-	def start_access_point(self, interface):
-		print "[+] Starting hostapd background process"
-		self.ap_process = Popen("hostapd-wpe -s {config_path}".format(config_path=self.hostapd_config_path).split(), 
-								stdout=PIPE,
-								stderr=PIPE,
-								universal_newlines=True)
-		Thread(	target=self._async_cred_logging, 
-				args=(	"./data/hashes/eap_hashes{}.log".format(self._count_hash_captures()), 
-						self.print_creds)).start()
-
-		self.ap_running = True
-		sleep(.5)
-		self.connected_clients_updator = Thread(target=self._update_connected_clients, args=(interface, ))
-		self.connected_clients_updator.start()
-
 	def _parse_configs(self, ssid, encryption, auth, password):
 		ssids, encryptions, auths, passwords = None, None, None, None
 		if type(ssid) is list:
@@ -306,9 +290,24 @@ class APLauncher(object):
 				log_file.close()
 
 		try:
-			log_file.close()
 			self.ap_process.stdout.close()
+			log_file.close()
 		except: pass
+
+	def start_access_point(self, interface):
+		print "[+] Starting hostapd background process"
+		self.ap_process = Popen("hostapd-wpe -s {config_path}".format(config_path=self.hostapd_config_path).split(), 
+								stdout=PIPE,
+								stderr=PIPE,
+								universal_newlines=True)
+		Thread(	target=self._async_cred_logging, 
+				args=(	"./data/hashes/eap_hashes{}.log".format(self._count_hash_captures()), 
+						self.print_creds)).start()
+
+		self.ap_running = True
+		sleep(.5)
+		self.connected_clients_updator = Thread(target=self._update_connected_clients, args=(interface, ))
+		self.connected_clients_updator.start()
 
 	def stop_access_point(self, wait = True):
 		if self.ap_process != None:

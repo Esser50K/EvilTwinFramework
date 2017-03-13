@@ -117,7 +117,7 @@ class DNSSpoofer(AirHostPlugin):
 			self.httpserver.reset_conf()
 			self.httpserver.start_server(False)
 
-	def start(self):
+	def post_start(self):
 		self.start_spoofing(self.spoof_ip)
 
 	def restore(self):

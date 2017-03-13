@@ -130,14 +130,15 @@ class EvilInTheMiddleHandler(controller.Master):
 class EvilInTheMiddle(object):
 
 	def __init__(self):
-		self.listen_host	= None
-		self.listen_port	= 8080
-		self.ssl			= False				# If True port 443 will be redirected to listen_port
-		self.certs			= []
-		self.certs_base_path	=	ConfigurationManager().config["etf"]["mitmproxy"]["mitm_certs_base_path"]
-		self.plugins_base_path	=	ConfigurationManager().config["etf"]["mitmproxy"]["mitmplugins"]["mitm_plugins_base_path"]
-		self.master_handler = None
-		self.set_rules		= False
+		self.listen_host		= None
+		self.listen_port		= 8080
+		self.ssl				= False			# If True port 443 will be redirected to listen_port
+		self.certs				= []
+		self.certs_base_path	= ConfigurationManager().config["etf"]["mitmproxy"]["mitm_certs_base_path"]
+		self.plugins_base_path	= ConfigurationManager().config["etf"]["mitmproxy"]["mitmplugins"]["mitm_plugins_base_path"]
+		self.master_handler 	= None
+		self.set_rules			= False
+		self.running 			= False
 
 	def pass_config(self, 	listen_host = None, listen_port = 8080,
 							ssl = False, client_cert = None, certs = [], 
@@ -150,29 +151,27 @@ class EvilInTheMiddle(object):
 		self.plugins 		= plugins
 		self.set_rules		= False
 
-	def start(self, background = False):
-		print "[+] Configuring iptable rules"
-		self._prepare_iptable_rules()
-		print "[+] Preparing master handler"
-		self._prepare_handler()
-		print "[+] Starting master handler"
-		self.master_handler.run()
-
-
-		if background:
-			pass
-		else:
-			pass
+	def start(self):
+		if not self.running:
+			print "[+] Configuring iptable rules"
+			self._prepare_iptable_rules()
+			print "[+] Preparing master handler"
+			self._prepare_handler()
+			print "[+] Starting master handler"
+			self.master_handler.run()
+			self.running = True
 
 	def stop(self):
-		print "[+] Clearing iptable rules"
-		self._clear_iptable_rules()
-		if self.master_handler != None:
-			print "[+] Shutting down the master handler"
-			for plugin in self.master_handler.plugins:
-				plugin.cleanup()
+		if self.running:
+			print "[+] Clearing iptable rules"
+			self._clear_iptable_rules()
+			if self.master_handler != None:
+				print "[+] Shutting down the master handler"
+				for plugin in self.master_handler.plugins:
+					plugin.cleanup()
 
-			self.master_handler.shutdown()
+				self.master_handler.shutdown()
+			self.running = False
 
 	def _prepare_handler(self):
 		proxy_opts 		= options.Options(

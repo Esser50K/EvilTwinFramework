@@ -54,12 +54,10 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirDeauthorPlugin):
 		self.extract_credential_info(packet)
 
 	# This will be called when starting the access point
-	def start(self):
+	def post_start(self):
 		self.is_ap = True
-		ap_interfaces = [ iface for iface in pyw.winterfaces() if self.running_interface.strip() in iface]
-		for iface in ap_interfaces:
-			self.sniffer_thread = Thread(target=self.start_credential_sniffing, args=(iface,))
-			self.sniffer_thread.start()
+		self.sniffer_thread = Thread(target=self.start_credential_sniffing)
+		self.sniffer_thread.start()
 
 	# This will be called before a deauthentication attack
 	# The channel needs to be fixed so it does not miss any packets
@@ -73,16 +71,15 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirDeauthorPlugin):
 																				self.running_interface, 
 																				self.fixed_channel,
 																				self.timeout)
-		self.sniffer_thread = Thread(target=self.start_credential_sniffing, args=(self.running_interface,))
+		self.sniffer_thread = Thread(target=self.start_credential_sniffing)
 		stop_timer_thread = Thread(target= self.timed_stop, args=(self.timeout,))
 		self.sniffer_thread.start()
 		stop_timer_thread.start()
 
-	def start_credential_sniffing(self, interface):
+	def start_credential_sniffing(self):
 		# TODO map packets to interface with threads
 		try:
-			sniff(	iface		=	interface,
-					store		=	0,
+			sniff(	store		=	0,
 					prn			=	self.extract_credential_info,
 					stop_filter	=	self._stop)
 		except Exception as e: 

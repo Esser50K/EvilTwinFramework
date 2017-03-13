@@ -7,6 +7,7 @@ and their information
 import os
 import pyric.pyw as pyw
 from utils import NetUtils, FileHandler
+from subprocess import check_output
 from textwrap import dedent
 
 class NetworkCard(object):
@@ -21,6 +22,7 @@ class NetworkCard(object):
 		# Important capabilities
 		self._ap_mode_support = "AP" in self.modes
 		self._monitor_mode_support = "monitor" in self.modes
+		self._number_of_supported_aps = None
 
 	def set_txpower(self, dbm):
 		pyw.txset(self.card, 'fixed', dbm)
@@ -87,6 +89,9 @@ class NetworkCard(object):
 	def get_available_channels(self):
 		return pyw.devchs(self.card)
 
+	def get_phy_index(self):
+		return self.card.phy
+
 	def set_mtu_size(self, nbytes):
 		os.system('ifconfig {interface} mtu {size}'.format( interface=self.interface,
 															size=nbytes))
@@ -96,6 +101,37 @@ class NetworkCard(object):
 			os.system("iw dev {} station dump".format(self.interface))
 		else:
 			print "[-] '{}' is not on AP mode".format(self.interface)
+
+	def get_number_of_supported_aps(self):
+		if self._ap_mode_support and not self._number_of_supported_aps:
+			iw_out = check_output("iw list".split()).split("\n")
+			found_phy, found_combinations = False, False
+			for line in iw_out:
+				if not found_phy:
+					if "phy{}".format(self.card.phy) in line:
+						found_phy = True
+				elif not found_combinations:
+					if "valid interface combinations:" in line:
+						found_combinations = True
+				else:
+					if "{ AP, mesh point }" in line:
+						try:
+							number_string = line.split("=")[-1].strip()
+							real_num = ""
+							for  char in number_string:
+								if not char.isdigit():
+									break
+								real_num += char
+
+							self._number_of_supported_aps = int(real_num)
+							break
+						except: 
+							print "Error converting '{}' to int".format(line.split("=")[-1].strip())
+							return None
+
+		return self._number_of_supported_aps
+
+
 
 	def is_virtual(self):
 		return "_" in self.interface
@@ -118,12 +154,8 @@ class NetworkManager(object):
 				NetUtils().add_routing_rule(card.get_subnet(), card.get_mask(), card.get_ip())
 
 	def configure_interface(self, interface, ip, netmask=None, broadcast=None, mtu=1800):
-		os.system("ifconfig {iface} {ip} {netmask} {broadcast}".format(	iface	= interface,
-																		ip		= ip,
-																		netmask = "netmask {}".format(netmask) if netmask else "",
-																		broadcast = "broadcast {}".format(broadcast) if broadcast else ""))
-		os.system("ifconfig {iface} mtu {mtu}".format(	iface	= interface,
-														mtu		= mtu))
+		NetUtils().interface_config(interface, ip, netmask, broadcast)
+		NetUtils().set_interface_mtu(interface, mtu)
 
 	def set_mac_and_unmanage(self, interface, mac, retry = False, virtInterfaces = 0):
 		card = self.get_netcard(interface)

@@ -44,12 +44,12 @@ class ETFConsole(Cmd):
 	filter_keywords = ["where", "only"]
 	plugin_keyword = ["with"]
 
-	airhost_plugins = ["dnsspoofer", "credentialprinter", "credentialsniffer"]
+	airhost_plugins = ["dnsspoofer", "credentialprinter", "credentialsniffer", "karma"]
 	airscanner_plugins = ["packetlogger", "selfishwifi", "credentialsniffer"]
 	airdeauthor_plugins = ["credentialsniffer"]
 	aircracker_types = ["wpa_crackers", "half_wpa_crackers"]
 	aircrackers = ["cowpatty", "aircrack-ng", "halwpaid"]
-	mitmproxy_plugins = ["downloadreplacer", "beefinjector", "peinjector", "bdfpatcher"]
+	mitmproxy_plugins = ["downloadreplacer", "beefinjector", "peinjector"]
 
 	copy_options = ["ap", "probe"]
 	add_del_options = ["aps", "clients"] 								 	# Meant to be followed by ID
@@ -615,6 +615,7 @@ if __name__ == '__main__':
 		print "[-] Exception in command line loop:\n", e
 		traceback.print_exc()
 		console.aircommunicator.stop_air_communications(True, True, True)
+		console.etfitm.stop()
 		console.spawnmanager.restore_all()
 		os.system('service networking restart')
 		os.system('service network-manager restart')

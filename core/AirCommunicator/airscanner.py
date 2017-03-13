@@ -14,8 +14,6 @@ from threading import Thread, Lock
 from netaddr import EUI, OUI
 #from scapy.all import sniff, Dot11, Dot11Beacon, Dot11Elt, Dot11ProbeReq, Dot11ProbeResp, EAPOL, EAP
 from scapy.all import *
-load_contrib('wpa_eapol')
-from socket import error as socket_error
 from utils.networkmanager import NetworkCard
 from utils.utils import DEVNULL
 
@@ -140,6 +138,10 @@ class AirScanner(object):
 		card = NetworkCard(interface)
 		if card.get_mode() != 'monitor':
 			card.set_mode('monitor')
+
+		for plugin in self.plugins:
+			plugin.pre_scanning()
+
 		self.sniffing_thread = Thread( target=self.sniff_packets)
 		self.sniffer_running = True
 		self.sniffing_thread.start()
@@ -157,6 +159,7 @@ class AirScanner(object):
 	def _clean_quit(self, wait = True):
 		self.sniffer_running = False
 		for plugin in self.plugins:
+			plugin.post_scanning()
 			plugin.restore()
 		del self.plugins[:]
 		
@@ -176,13 +179,8 @@ class AirScanner(object):
 
 		try:
 			sniff(iface=self.running_interface, store=0, prn=self.handle_packets, stop_filter= (lambda pkt: not self.sniffer_running))
-		except socket_error as e:
-			if not e.errno == 100:
-				print e
-				traceback.print_exc()
 		except Exception as e:
 			print e
-			traceback.print_exc()
 			print "[-] Exception occurred while sniffing on interface '{}'".format(self.running_interface)
 
 		print "[+] Packet sniffer on interface '{}' has finished".format(self.running_interface)

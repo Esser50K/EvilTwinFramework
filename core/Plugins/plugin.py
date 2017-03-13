@@ -12,6 +12,7 @@ class Plugin(object):
 			self.config.keys()
 		except:
 			self.config = {}
+
 		for key in configs.keys():
 			self.config[key] = configs[key]
 
@@ -26,7 +27,13 @@ class AirScannerPlugin(Plugin):
 	def __init__(self, name, type = "airscanner"):
 		super(AirScannerPlugin, self).__init__(name, type)
 
+	def pre_scanning(self):
+		pass
+
 	def handle_packet(self, packet):
+		pass
+
+	def post_scanning(self):
 		pass
 
 
@@ -35,7 +42,13 @@ class AirHostPlugin(Plugin):
 	def __init__(self, name, type = "airhost"):
 		super(AirHostPlugin, self).__init__(name, type)
 
-	def start(self):
+	def pre_start(self):
+		pass
+
+	def post_start(self):
+		pass
+
+	def stop(self):
 		pass
 
 class AirDeauthorPlugin(Plugin):

@@ -16,7 +16,7 @@ class CredentialPrinter(AirHostPlugin):
 		self.log_file_name = self.config["log_file_name"]
 		self.credential_printer_process = None
 
-	def start(self):
+	def post_start(self):
 		hash_log_file = "{folder}{name}{id}.log".format(folder = self.log_folder,
 														name = self.log_file_name,
 														id = len(os.listdir(self.log_folder)))

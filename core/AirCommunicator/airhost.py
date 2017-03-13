@@ -32,14 +32,19 @@ class AirHost(object):
 		print "[+] Killing already started processes and restarting network services"
 		self.stop_access_point(False) # Restarting services helps avoiding some conflicts with dnsmasq
 		
+		print "[+] Running plugins pre_start"
+		for plugin in self.plugins:
+			plugin.pre_start()
+
 		self.aplauncher.print_creds = print_credentials
 		self.aplauncher.start_access_point(interface)
 		if not self.dnsmasqhandler.start_dnsmasq():
 			print "[-] Error starting dnsmasq, aborting AP launch"
 			return False
 
+		print "[+] Running plugins post_start"
 		for plugin in self.plugins:
-			plugin.start()
+			plugin.post_start()
 
 		self.running_interface = interface
 		print "[+] Access Point launched successfully"
@@ -53,6 +58,9 @@ class AirHost(object):
 		print "[+] Access Point stopped, restarting network services..."
 		os.system('service networking restart')
 		os.system('service NetworkManager restart')
+
+		for plugin in self.plugins:
+			plugin.stop()
 
 		if free_plugins:
 			for plugin in self.plugins:
