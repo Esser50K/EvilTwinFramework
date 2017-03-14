@@ -124,7 +124,8 @@ class NetUtils:
             iw_output = check_output("iw {} info".format(interface).split()).split("\n")
             for line in iw_output:
                 if "ssid" in line:
-                    ssid = line.split("ssid")[1].strip()
+                    ssid_index = line.index("ssid") + len("ssid")
+                    ssid = line[ssid_index:].strip()
                     return ssid
         except:
             return None

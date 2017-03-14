@@ -339,14 +339,14 @@ class APLauncher(object):
 				if not self._parse_connected_clients(interface):
 					fail_count += 1
 
-				"""
+				
 				if fail_count > 5:
 					print "[-] hostapd was unable to start the access point,"
 					print "check configuration file or try restarting. Stopping now."
 					self.stop_access_point(wait = False)
 					print "stop airhost manually to stop other services"
 					break
-				"""
+				
 			sleep(3)
 
 	def _parse_connected_clients(self, interface):
