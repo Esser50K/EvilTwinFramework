@@ -198,12 +198,24 @@ class ETFConsole(Cmd):
 				var, value = splitted_args[0], splitted_args[1:]
 
 			self.current_config_mode[var] # raise KeyError before assignment if option does not exist
-			self.current_config_mode[var] = value
+			#self.current_config_mode[var] = value
+			self._set_global_config(self.configs, var, value)
 			self.configs.write()
-			print "{config} = {value}".format(  config = var, 
+			print "{config} = {value}".format(  config = var,
 												value = self.current_config_mode[var])
 		except KeyError:
 			print "'{key}' does not exist in the configuration file".format(key = var)
+
+	def _set_global_config(self, dict_root, var, val):
+		if var in dict_root.keys():
+			dict_root[var] = val
+			
+		for key, value in dict_root.items():
+			if isinstance(value, dict):
+				try:
+					self._set_global_config(value, var, val)
+				except: pass
+
 
 	def complete_set(self, text, line, begidx, endidx):
 		return self.complete_vars(text)

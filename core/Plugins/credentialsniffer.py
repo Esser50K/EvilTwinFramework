@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 This class will be a plugin for all Air modules
-It will sniff the network for WPA 4-way handshakes and EAPoL MD5 and MsCHAPv2 credentials
+It will sniff the network for WPA 4-way handshakes and EAPoL MD5 and LEAP credentials
 It can be used after a deauthentication attack
-While sniffing or even while running a fake access point
+While sniffing or even while running a fake access point to capture hal wpa handshakes
 """
 import os
 from pyric import pyw as pyw
