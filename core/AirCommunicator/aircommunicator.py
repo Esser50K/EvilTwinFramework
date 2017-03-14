@@ -356,9 +356,9 @@ class AirCommunicator(object):
 		self.info_printer.print_info("deauth_client", filter_string)
 
 	def print_connected_clients(self, filter_string = None):
-		client_list = self.air_host.aplauncher.connected_clients
-		client_arg_list = ["id","name","mac_address","ip_address","vendor","rx_packets","tx_packets","signal"]
-		headers = ["ID:", "CLIENT NAME:", "CLIENT MAC:", "CLIENT IP:", "VENDOR:", "RX PACKETS:", "TX PACKETS:", "SIGNAL:"]
+		client_list = self.air_host.aplauncher.get_connected_clients()
+		client_arg_list = ["id","name","mac_address","ip_address","vendor","connected_ssids","rx_packets","tx_packets","signal"]
+		headers = ["ID:", "CLIENT NAME:", "CLIENT MAC:", "CLIENT IP:", "VENDOR:", "CONNECTED NET:", "RX PACKETS:", "TX PACKETS:", "SIGNAL:"]
 		self.info_printer.add_info("connected_client", client_list, client_arg_list, headers)
 		self.info_printer.print_info("connected_client", filter_string)
 

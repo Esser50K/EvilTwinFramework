@@ -132,7 +132,7 @@ class Beacon(AccessPointPacket):
 		# Figure out cipher suite
 		if info:
 			crypto_methods = map(str.lower, crypto_methods)
-			if "wpa2" in crypto_methods and cipher_suites['CCMP'] in info:
+			if ("wpa2" in crypto_methods or "wpa" in crypto_methods) and cipher_suites['CCMP'] in info:
 				cipher_suite = 'CCMP'
 			elif "wep" in crypto_methods:
 				cipher_suite = 'WEP'
@@ -144,6 +144,8 @@ class Beacon(AccessPointPacket):
 		if info:
 			if auth_suites['PSK'] in info:
 				auth_suite = 'PSK'
+			elif ("wpa2" in crypto_methods or "wpa" in crypto_methods):
+				auth_suite = 'EAP'
 			elif auth_suites['MGT'] in info:
 				auth_suite = 'MGT'
 		else:

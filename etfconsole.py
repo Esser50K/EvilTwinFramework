@@ -466,7 +466,6 @@ class ETFConsole(Cmd):
 				certs = []
 
 			certs = map(lambda x: x.split("=") if "=" in x else ["*", x], certs)
-			background = mitm_configs["background"].lower() == "true"
 
 			mitm_plugins = []
 			for plugin in plugins:
@@ -478,7 +477,7 @@ class ETFConsole(Cmd):
 			return
 
 		self.etfitm.pass_config(listen_host, listen_port, ssl, client_cert, certs, mitm_plugins)
-		self.etfitm.start(background)
+		self.etfitm.start()
 
 	def do_stop(self, args):
 		args = args.split()

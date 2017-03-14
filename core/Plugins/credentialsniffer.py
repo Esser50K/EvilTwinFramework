@@ -33,7 +33,7 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirDeauthorPlugin):
 		self.broadcasted_bssids = {} #bssid: beacon_packet
 
 		self.sniffer_thread = None
-		self.stop = False
+		self.should_stop = False
 		try:
 			self.fixed_channel = int(self.config["channel"])
 		except:
@@ -88,15 +88,15 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirDeauthorPlugin):
 			pass
 
 	def restore(self):
-		self.stop = True
+		self.should_stop = True
 
 	def timed_stop(self, time_seconds):
 		sleep(time_seconds)
 		print "[+] Stopping credential sniffing"
-		self.stop = True
+		self.should_stop = True
 
 	def _stop(self, packet):
-		return self.stop
+		return self.should_stop
 
 	def extract_credential_info(self, packet):
 		if packet.haslayer(Dot11Beacon):

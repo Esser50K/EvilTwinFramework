@@ -327,6 +327,10 @@ class APLauncher(object):
 			self.file_handler.restore_file()
 			self.file_handler = None
 
+	def get_connected_clients(self):
+		return [client for ssid in self.connected_clients.keys() for client in self.connected_clients[ssid]]
+
+
 	def _update_connected_clients(self, interface):
 		fail_count = 0
 		ap_interfaces = [iface for iface in pyw.winterfaces() if interface.strip() in iface.strip()]
@@ -335,12 +339,14 @@ class APLauncher(object):
 				if not self._parse_connected_clients(interface):
 					fail_count += 1
 
-				if fail_count > 3:
+				"""
+				if fail_count > 5:
 					print "[-] hostapd was unable to start the access point,"
 					print "check configuration file or try restarting. Stopping now."
 					self.stop_access_point(wait = False)
 					print "stop airhost manually to stop other services"
 					break
+				"""
 			sleep(3)
 
 	def _parse_connected_clients(self, interface):
