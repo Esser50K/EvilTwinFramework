@@ -5,16 +5,9 @@ from ConfigurationManager.configmanager import ConfigurationManager
 
 class Plugin(object):
 
-	def __init__(self, name, type):
+	def __init__(self, name):
 		self.name = name
-		configs = ConfigurationManager().config["etf"]["aircommunicator"][type]["plugins"][name]
-		try:
-			self.config.keys()
-		except:
-			self.config = {}
-
-		for key in configs.keys():
-			self.config[key] = configs[key]
+		self.config = ConfigurationManager().config["etf"]["aircommunicator"]["plugins"][name]
 
 	def restore(self):
 		"""
@@ -24,8 +17,8 @@ class Plugin(object):
 
 class AirScannerPlugin(Plugin):
 
-	def __init__(self, name, type = "airscanner"):
-		super(AirScannerPlugin, self).__init__(name, type)
+	def __init__(self, name):
+		super(AirScannerPlugin, self).__init__(name)
 
 	def pre_scanning(self):
 		pass
@@ -39,8 +32,8 @@ class AirScannerPlugin(Plugin):
 
 class AirHostPlugin(Plugin):
 
-	def __init__(self, name, type = "airhost"):
-		super(AirHostPlugin, self).__init__(name, type)
+	def __init__(self, name):
+		super(AirHostPlugin, self).__init__(name)
 
 	def pre_start(self):
 		pass
@@ -53,8 +46,8 @@ class AirHostPlugin(Plugin):
 
 class AirDeauthorPlugin(Plugin):
 
-	def __init__(self, name, type = "airdeauthor"):
-		super(AirDeauthorPlugin, self).__init__(name, type)
+	def __init__(self, name):
+		super(AirDeauthorPlugin, self).__init__(name)
 
 	def pre_deauth(self):
 		pass

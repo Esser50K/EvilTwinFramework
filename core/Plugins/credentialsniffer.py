@@ -23,10 +23,7 @@ except ImportError:
 class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirDeauthorPlugin):
 
 	def __init__(self):
-		#super(CredentialSniffer, self).__init__("credentialsniffer")
-		AirScannerPlugin.__init__(self, "credentialsniffer")
-		AirHostPlugin.__init__(self, "credentialsniffer")
-		AirDeauthorPlugin.__init__(self, "credentialsniffer")
+		super(CredentialSniffer, self).__init__("credentialsniffer")
 		self.running_interface = self.config["sniffing_interface"]
 		self.wifi_clients = {}
 		self.wpa_handshakes = {}
