@@ -305,7 +305,7 @@ class APLauncher(object):
 						self.print_creds)).start()
 
 		self.ap_running = True
-		sleep(.5)
+		sleep(1)
 		self.connected_clients_updator = Thread(target=self._update_connected_clients, args=(interface, ))
 		self.connected_clients_updator.start()
 
@@ -333,8 +333,8 @@ class APLauncher(object):
 
 	def _update_connected_clients(self, interface):
 		fail_count = 0
-		ap_interfaces = [iface for iface in pyw.winterfaces() if interface.strip() in iface.strip()]
 		while self.ap_running:
+			ap_interfaces = [iface for iface in pyw.winterfaces() if interface.strip() in iface.strip()]
 			for interface in ap_interfaces:
 				if not self._parse_connected_clients(interface):
 					fail_count += 1

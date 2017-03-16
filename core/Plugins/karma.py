@@ -25,6 +25,8 @@ class Karma(AirHostPlugin):
 		self.max_access_points = self.config["max_access_points"]
 		self.dnsmasq_conf = self.config["dnsmasq_conf"]
 		self.hostapd_conf = self.config["hostapd_conf"]
+		self.aplauncher 	= None
+		self.dnsmasqhandler = None
 		self.ghost_ap = self.config["ghost_ap"].lower() == "true"
 		self.captive_portal = self.config["captive_portal_mode"].lower() == "true"
 
@@ -64,6 +66,7 @@ class Karma(AirHostPlugin):
 					NetUtils().interface_config(interface_name, card.get_ip())
 					NetUtils().set_interface_mtu(interface_name, 1800)
 					NetUtils().accept_forwarding(interface_name)
+		self.dnsmasqhandler.start_dnsmasq()
 
 	def print_status(self):
 		print "[+] Starting Karma Sniffer thread and timer for {} seconds".format(self.scan_time)
@@ -132,8 +135,8 @@ class Karma(AirHostPlugin):
 			print "[-] max_access_points is higher than what card supports. Setting to {}".format(max_supported_access_points)
 			self.max_access_points = max_supported_access_points
 
-		aplauncher 		= APLauncher(self.hostapd_conf)
-		dnsmasqhandler 	= DNSMasqHandler(self.dnsmasq_conf)
+		self.aplauncher 		= APLauncher(self.hostapd_conf)
+		self.dnsmasqhandler 	= DNSMasqHandler(self.dnsmasq_conf)
 		rand_mac = "52:54:00:%02x:%02x:%02x" % (randint(0, 255), 
 												randint(0, 255),
 												randint(0, 255))
@@ -156,15 +159,15 @@ class Karma(AirHostPlugin):
 					break
 
 		self.number_of_configured_nets = len(final_list)
-		dnsmasqhandler.set_captive_portal_mode(self.captive_portal)
-		dnsmasqhandler.write_dnsmasq_configurations(self.ap_interface, 
+		self.dnsmasqhandler.set_captive_portal_mode(self.captive_portal)
+		self.dnsmasqhandler.write_dnsmasq_configurations(self.ap_interface, 
 													card.get_ip(), 
 													[	".".join(card.get_ip().split(".")[:3] + ["2"]), 
 														".".join(card.get_ip().split(".")[:3] + ["254"])	], 
 													["8.8.8.8", "8.8.4.4"],
 													len(final_list))
 
-		aplauncher.write_hostapd_configurations(self.ap_interface, 
+		self.aplauncher.write_hostapd_configurations(self.ap_interface, 
 												final_list,
 												rand_mac)
 

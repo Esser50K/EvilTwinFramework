@@ -7,6 +7,7 @@ with help of the httpserver class as well as configuring dnsmasq
 import os
 from utils.utils import FileHandler
 from textwrap import dedent
+from time import sleep
 
 class DNSMasqHandler(object):
 
@@ -44,6 +45,7 @@ class DNSMasqHandler(object):
 								""".format( dhcp_range = dhcp_range_string,
 											interface = interface,
 											ip_gw = ip_gw))
+		configurations += "bind-interfaces\n"
 
 		if self.captive_portal_mode:
 			configurations += "no-resolv\n"
@@ -65,7 +67,7 @@ class DNSMasqHandler(object):
 
 	def start_dnsmasq(self):
 		print "[+] Starting dnsmasq service"
-		if not os.system('service dnsmasq start') == 0:
+		if not os.system('service dnsmasq restart') == 0:
 			return False
 
 		self.dnsmasq_running = True

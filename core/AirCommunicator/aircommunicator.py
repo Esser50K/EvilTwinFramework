@@ -17,7 +17,6 @@ from AuxiliaryModules.wpacracker import WPACracker
 from Plugins.dnsspoofer import DNSSpoofer
 from Plugins.selfishwifi import SelfishWiFi
 from Plugins.packetlogger import PacketLogger
-from Plugins.credentialprinter import CredentialPrinter
 from Plugins.credentialsniffer import CredentialSniffer
 from Plugins.karma import Karma
 from ConfigurationManager.configmanager import ConfigurationManager
@@ -145,12 +144,19 @@ class AirCommunicator(object):
 
 			# Configure Virtual Interfaces once hostapd has set them up
 			sleep(.5) # Wait for for hostapd to setup interfaces
+			extra_interfaces = False
 			for i in range(nVirtInterfaces-1):
 				interface_name = "{}_{}".format(ap_interface, i)
 				if interface_name in winterfaces():
 					gateway = ".".join(gateway.split(".")[0:2] + [str(int(gateway.split(".")[2]) + 1)] + [gateway.split(".")[3]])
 					self.network_manager.configure_interface(interface_name, gateway)
-					self.network_manager.iptables_redirect(interface_name, internet_interface, True)
+					self.network_manager.iptables_redirect(interface_name, internet_interface)
+					extra_interfaces = True
+
+			# Needed for dnsmasq to work correctly with virtual interfaces once they are configured
+			if extra_interfaces:
+				self.air_host.dnsmasqhandler.start_dnsmasq() 
+
 			return True
 
 		print dedent("""

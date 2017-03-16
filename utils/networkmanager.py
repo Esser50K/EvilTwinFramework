@@ -145,11 +145,11 @@ class NetworkManager(object):
 		self.nm_config_file = networkmanager_config_path
 		self.file_handler = None
 
-	def iptables_redirect(self, from_if, to_if, isVirtual = False):
+	def iptables_redirect(self, from_if, to_if):
 		card = self.get_netcard(from_if) # Get NetCard object
 		if card != None:
 			NetUtils().accept_forwarding(from_if)
-			if not isVirtual:
+			if not card.is_virtual():
 				NetUtils().set_postrouting_interface(to_if)
 				NetUtils().add_routing_rule(card.get_subnet(), card.get_mask(), card.get_ip())
 
