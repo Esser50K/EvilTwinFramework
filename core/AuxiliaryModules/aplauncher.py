@@ -334,9 +334,10 @@ class APLauncher(object):
 	def _update_connected_clients(self, interface):
 		fail_count = 0
 		while self.ap_running:
-			ap_interfaces = [iface for iface in pyw.winterfaces() if interface.strip() in iface.strip()]
-			for interface in ap_interfaces:
-				if not self._parse_connected_clients(interface):
+			# Gets virtual interfaces too because their name is same as ap_interface with _<index> appended
+			ap_interfaces = [iface for iface in pyw.winterfaces() if interface in iface]
+			for ap_interface in ap_interfaces:
+				if not self._parse_connected_clients(ap_interface):
 					fail_count += 1
 
 				
