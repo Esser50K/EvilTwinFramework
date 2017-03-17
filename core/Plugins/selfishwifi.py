@@ -20,7 +20,7 @@ class SelfishWiFi(AirScannerPlugin):
 
 		self.is_running = True
 		self.general_deauth_attack_completed = False
-		self.deauth_ssid = self.config["ssid"]
+		self.deauth_ssid = self.config["connected_network"]
 		self.deauth_bssids = set()
 		self.clients_to_deauth = set()
 

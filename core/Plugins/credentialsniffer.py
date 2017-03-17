@@ -43,7 +43,6 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirDeauthorPlugin):
 		# so it never receives a Beacon packet (layer2) to verify the access point ssid
 		# best to pass it as parameter since we are running the access point we know the ssid
 		self.is_ap = False
-		self.ssid = self.config["ssid"]
 		
 
 	# This will be called by the AirSniffer
