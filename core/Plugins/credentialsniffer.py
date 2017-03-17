@@ -116,57 +116,61 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirDeauthorPlugin):
 		"""
 		eapol_packet = packet["EAPOL"]
 
-		# Frame 1
-		# Flags: KeyType + ACK
-		if eapol_packet.flags == 17:
-			client_mac = self._get_destination_from_packet(packet)
-			bssid = self._get_source_from_packet(packet)
-			try:
-				self.wpa_handshakes[client_mac]['frame1'] = True
-				self.wpa_handshakes[client_mac]['bssid'] = bssid
-				self.wpa_handshakes[client_mac]['packets'].append(packet)
-			except Exception as e:
-				self._prepare_wpa_handshake_log(client_mac)
-				self.wpa_handshakes[client_mac]['frame1'] = True
-				self.wpa_handshakes[client_mac]['bssid'] = bssid
-				self.wpa_handshakes[client_mac]['packets'].append(packet)
 
-		# Frame 2
-		# Flags: KeyType + MIC	
-		elif eapol_packet.flags == 33:
-			client_mac = self._get_source_from_packet(packet)
-			bssid = self._get_destination_from_packet(packet)
-			try:
-				self.wpa_handshakes[client_mac]['frame2'] = True
-				self.wpa_handshakes[client_mac]['bssid'] = bssid
-				self.wpa_handshakes[client_mac]['packets'].append(packet)
-			except Exception as e:
-				self._prepare_wpa_handshake_log(client_mac)
-				self.wpa_handshakes[client_mac]['frame2'] = True
-				self.wpa_handshakes[client_mac]['bssid'] = bssid
-				self.wpa_handshakes[client_mac]['packets'].append(packet)
-
-		# Frame 3
-		# Flags: KeyType + Install + ACK + MIC + Secure + Encrypted
-		elif eapol_packet.flags == 633:
-			client_mac = self._get_destination_from_packet(packet)
-			try:
-				self.wpa_handshakes[client_mac]['frame3'] = True
-				self.wpa_handshakes[client_mac]['replay_counter'] = packet.replay
-				self.wpa_handshakes[client_mac]['packets'].append(packet)
-			except Exception as e: pass # Caught some response packets before capturing the requests
-
-		# Frame 4
-		# Flags: KeyType + MIC + Secure
-		elif eapol_packet.flags == 97:
-			client_mac = self._get_source_from_packet(packet)
-			try:
-				if packet.replay == self.wpa_handshakes[client_mac]['replay_counter']:
-					self.wpa_handshakes[client_mac]['frame4'] = True
+		try:
+			# Frame 1
+			# Flags: KeyType + ACK
+			if eapol_packet.flags == 17:
+				client_mac = self._get_destination_from_packet(packet)
+				bssid = self._get_source_from_packet(packet)
+				try:
+					self.wpa_handshakes[client_mac]['frame1'] = True
+					self.wpa_handshakes[client_mac]['bssid'] = bssid
 					self.wpa_handshakes[client_mac]['packets'].append(packet)
-			except Exception as e: pass # Caught some response packets before capturing the requests
+				except Exception as e:
+					self._prepare_wpa_handshake_log(client_mac)
+					self.wpa_handshakes[client_mac]['frame1'] = True
+					self.wpa_handshakes[client_mac]['bssid'] = bssid
+					self.wpa_handshakes[client_mac]['packets'].append(packet)
 
-		self._log_wpa_handshake(client_mac)
+			# Frame 2
+			# Flags: KeyType + MIC	
+			elif eapol_packet.flags == 33:
+				client_mac = self._get_source_from_packet(packet)
+				bssid = self._get_destination_from_packet(packet)
+				try:
+					self.wpa_handshakes[client_mac]['frame2'] = True
+					self.wpa_handshakes[client_mac]['bssid'] = bssid
+					self.wpa_handshakes[client_mac]['packets'].append(packet)
+				except Exception as e:
+					self._prepare_wpa_handshake_log(client_mac)
+					self.wpa_handshakes[client_mac]['frame2'] = True
+					self.wpa_handshakes[client_mac]['bssid'] = bssid
+					self.wpa_handshakes[client_mac]['packets'].append(packet)
+
+			# Frame 3
+			# Flags: KeyType + Install + ACK + MIC + Secure + Encrypted
+			elif eapol_packet.flags == 633:
+				client_mac = self._get_destination_from_packet(packet)
+				try:
+					self.wpa_handshakes[client_mac]['frame3'] = True
+					self.wpa_handshakes[client_mac]['replay_counter'] = packet.replay
+					self.wpa_handshakes[client_mac]['packets'].append(packet)
+				except Exception as e: pass # Caught some response packets before capturing the requests
+
+			# Frame 4
+			# Flags: KeyType + MIC + Secure
+			elif eapol_packet.flags == 97:
+				client_mac = self._get_source_from_packet(packet)
+				try:
+					if packet.replay == self.wpa_handshakes[client_mac]['replay_counter']:
+						self.wpa_handshakes[client_mac]['frame4'] = True
+						self.wpa_handshakes[client_mac]['packets'].append(packet)
+				except Exception as e: pass # Caught some response packets before capturing the requests
+
+			self._log_wpa_handshake(client_mac)
+		except AttributeError as e:
+			print "[-] AttributeError while parsing wpa_eapol packets:", e
 
 
 	def _get_source_from_packet(self, packet):
