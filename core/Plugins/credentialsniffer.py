@@ -168,8 +168,8 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirDeauthorPlugin):
 				except Exception as e: pass # Caught some response packets before capturing the requests
 
 			self._log_wpa_handshake(client_mac)
-		except AttributeError as e:
-			print "[-] AttributeError while parsing wpa_eapol packets:", e
+		except Exception as e:
+			pass
 
 
 	def _get_source_from_packet(self, packet):

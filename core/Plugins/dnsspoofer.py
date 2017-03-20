@@ -28,6 +28,11 @@ class DNSSpoofer(AirHostPlugin):
 			overwrite = self.config["overwrite_pages"].lower() == "true"
 			httpserver = HTTPServer(apache_config_path, apache_root_path, ssl, overwrite)
 
+			try:
+				if self.config["print_phishing_creds"].lower() == "true":
+					httpserver.set_cred_file_keyword(self.config["creds_file_keyword"])
+			except: pass
+
 		return httpserver
 
 	def set_captive_portal_mode(self, captive_portal_mode):
@@ -91,7 +96,6 @@ class DNSSpoofer(AirHostPlugin):
 			self.httpserver.configure_page_in_apache(	domain_name = page, 
 														domain_alias = self._create_alias_list(page),
 														captive_portal_mode = self.captive_portal_mode)
-		return self.httpserver.start_server(True)
 
 	def _create_alias_list(self, domain):
 		aliases = []
