@@ -31,12 +31,16 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirDeauthorPlugin):
 
 		self.sniffer_thread = None
 		self.should_stop = False
+		
 		try:
-			self.fixed_channel = int(self.config["channel"])
+			self.fixed_channel = int(self.config["fixed_sniffing_channel"])
 		except:
 			self.fixed_channel = 7
 
-		self.timeout = self.config["timeout"]
+		try:
+			self.timeout = int(self.config["timeout"])
+		except:
+			self.timeout = 30
 
 		# When sniffing for credentials on interface running in master mode
 		# scapy will only be able to sniff for layer 3 packets (Networking)
