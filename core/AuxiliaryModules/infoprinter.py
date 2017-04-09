@@ -28,17 +28,17 @@ class InfoPrinter(object):
 			for arg in args:
 				val = obj.__dict__[arg]
 				if type(val) is list or type(val) is set:
-					val = "\n".join(val)
+					val = "\n".join(val).encode("utf-8").strip()
 
 				# Try parse it as int so the output is sorted correctly
 				try:
 					obj_arg_list.append(int(val))
 				except:
-					obj_arg_list.append(str(val))
+					obj_arg_list.append(str(val).encode("utf-8"))
 			table.add_row(obj_arg_list)
 
 		sorted_prettytable = table.get_string(sortby=headers[0])
-		print sorted_prettytable.encode("utf-8")
+		print sorted_prettytable
 		return filtered_objs
 
 
@@ -119,9 +119,14 @@ class ObjectFilter(object):
 				try:
 					for filter_value in filter_map[filter_arg]:
 						if not (type(obj.__dict__[filter_arg]) is list or type(obj.__dict__[filter_arg]) is set):
-							if str(filter_value).lower() in str(obj.__dict__[filter_arg]).lower():
-								filtered_objlist.append(obj)
-								break
+							try:
+								if int(filter_value) == int(obj.__dict__[filter_arg]):
+									filtered_objlist.append(obj)
+									break
+							except:
+								if str(filter_value).lower() in str(obj.__dict__[filter_arg]).lower():
+									filtered_objlist.append(obj)
+									break
 						else:
 							for element in obj.__dict__[filter_arg]:
 								if str(filter_value).lower() in str(obj.__dict__[filter_arg]).lower():

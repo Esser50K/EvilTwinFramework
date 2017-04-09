@@ -170,7 +170,7 @@ class NetworkManager(object):
 				if not self.network_manager_ignore(interface, mac, virtInterfaces):
 					return False
 
-				os.system("service NetworkManager restart") # Restarting NetworkManager service
+				os.system("service network-manager restart") # Restarting NetworkManager service
 				if pyw.macget(card.card) == mac:
 					return True
 

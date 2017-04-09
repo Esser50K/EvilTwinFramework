@@ -17,15 +17,6 @@ from scapy.all import *
 from utils.networkmanager import NetworkCard
 from utils.utils import DEVNULL
 
-cipher_suites = { 'GROUP'   : '\x00\x0f\xac\x00',
-				  'WEP'     : '\x00\x0f\xac\x01',
-				  'TKIP'    : '\x00\x0f\xac\x02',
-				  'CCMP'    : '\x00\x0f\xac\x04',
-				  'WEP'     : '\x00\x0f\xac\x05' }
-
-auth_suites = { 'MGT' : '\x00\x0f\xac\x01',
-				'PSK' : '\x00\x0f\xac\x02' }
-
 class AccessPoint(object):
 	"""
 	This class represents an Access Point Object
@@ -142,8 +133,8 @@ class AirScanner(object):
 		for plugin in self.plugins:
 			plugin.pre_scanning()
 
-		self.sniffing_thread = Thread( target=self.sniff_packets)
 		self.sniffer_running = True
+		self.sniffing_thread = Thread( target=self.sniff_packets)
 		self.sniffing_thread.start()
 
 		if hop_channels:
@@ -227,9 +218,6 @@ class AirScanner(object):
 
 
 	def handle_beacon_packets(self, packet):
-		# Based on an answer from stack-overflow: 
-		# https://stackoverflow.com/questions/21613091/how-to-use-scapy-to-determine-wireless-encryption-type
-		#packet.show()
 		beacon = Beacon(packet)
 		if beacon.bssid in self.access_points:
 			self.access_points[beacon.bssid].rssi = beacon.rssi

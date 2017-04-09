@@ -20,6 +20,8 @@ class APLauncher(object):
 		self.connected_clients_updator = None
 		self.connected_clients = {}	# interface: client_list
 
+		self.hostapd_output_parser = None
+
 		self.file_handler = None
 		self.print_creds = False
 
@@ -300,9 +302,10 @@ class APLauncher(object):
 								stdout=PIPE,
 								stderr=PIPE,
 								universal_newlines=True)
-		Thread(	target=self._async_cred_logging, 
-				args=(	"./data/hashes/eap_hashes{}.log".format(self._count_hash_captures()), 
-						self.print_creds)).start()
+		self.hostapd_output_parser =  Thread(	target=self._async_cred_logging, 
+												args=(	"./data/hashes/eap_hashes{}.log".format(self._count_hash_captures()), 
+														self.print_creds))
+		self.hostapd_output_parser.start()
 
 		self.ap_running = True
 		sleep(1)

@@ -19,14 +19,11 @@ class Packet(object):
 		self.rssi = self._get_rssi_from_packet(packet)
 		self.parse_packet()
 
-
 	def parse_packet(self):
 		pass
 
 	def _get_rssi_from_packet(self, packet):
 		try:
-			# Found at http://comments.gmane.org/gmane.comp.security.scapy.general/4673
-			# return str(-(256-ord(packet.notdecoded[-4:-3]))) + " dbm"
 			return str(packet.dBm_AntSignal) + " dbm"
 		except Exception as e:
 			return None
@@ -87,6 +84,8 @@ class Beacon(AccessPointPacket):
 		super(Beacon, self).__init__(packet)
 
 	def parse_packet(self):
+		# Based on an answer from stack-overflow: 
+		# https://stackoverflow.com/questions/21613091/how-to-use-scapy-to-determine-wireless-encryption-type
 		elt_layer = self.packet[Dot11Elt]
 
 		cap = self.packet.sprintf(  "{Dot11Beacon:%Dot11Beacon.cap%}"
@@ -142,12 +141,10 @@ class Beacon(AccessPointPacket):
 
 		# Figure out authentication method
 		if info:
-			if auth_suites['PSK'] in info:
-				auth_suite = 'PSK'
-			elif ("wpa2" in crypto_methods or "wpa" in crypto_methods):
+			if auth_suites['MGT'] in info:
 				auth_suite = 'EAP'
-			elif auth_suites['MGT'] in info:
-				auth_suite = 'MGT'
+			elif auth_suites['PSK'] in info:
+				auth_suite = 'PSK'
 		else:
 			auth_suite = 'OPN'
 
@@ -156,24 +153,17 @@ class Beacon(AccessPointPacket):
 
 
 class ProbeResponse(AccessPointPacket):
-
 	def __init__(self, packet):
 		super(ProbeResponse, self).__init__(packet)
 
-
 class ProbeRequest(ClientPacket):
-
 	def __init__(self, packet):
 		super(ProbeRequest, self).__init__(packet)
 
-
 class AuthenticationResponse(AccessPointPacket):
-
 	def __init__(self, packet):
 		super(AuthenticationResponse, self).__init__(packet)
 
-
 class AssociationResponse(AccessPointPacket):
-
 	def __init__(self, packet):
 		super(AssociationResponse, self).__init__(packet)

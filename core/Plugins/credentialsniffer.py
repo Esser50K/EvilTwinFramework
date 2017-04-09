@@ -18,7 +18,6 @@ try:  # Python Scapy-Com check (inspiration from EAPEAK/McIntyre)
 	from scapy.layers.l2 import eap_types as EAP_TYPES
 except ImportError:
 	print "[-] Community version of Scapy (Scapy-Com) is missing, please run setup.py for full instalation"
-	sys.exit(0)
 
 class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirDeauthorPlugin):
 
@@ -31,7 +30,7 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirDeauthorPlugin):
 
 		self.sniffer_thread = None
 		self.should_stop = False
-		
+
 		try:
 			self.fixed_channel = int(self.config["fixed_sniffing_channel"])
 		except:

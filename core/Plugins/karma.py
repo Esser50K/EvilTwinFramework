@@ -5,7 +5,7 @@ import pyric.pyw as pyw
 from AuxiliaryModules.aplauncher import APLauncher
 from AuxiliaryModules.dnsmasqhandler import DNSMasqHandler
 from AuxiliaryModules.packet import Beacon, ProbeRequest, ProbeResponse
-from utils.networkmanager import NetworkCard
+from utils.networkmanager import NetworkCard, NetworkManager
 from utils.utils import NetUtils
 from plugin import AirScannerPlugin, AirHostPlugin
 from random import randint
@@ -22,7 +22,8 @@ class Karma(AirHostPlugin):
 		self.scan_time = self.config["scan_time"]
 		# It will configure the hostapd file according
 		self.ap_interface = self.config["ap_interface"]
-		self.max_access_points = self.config["max_access_points"]
+		try: 	self.max_access_points = int(self.config["max_access_points"])
+		except: self.max_access_points = 1
 		self.dnsmasq_conf = self.config["dnsmasq_conf"]
 		self.hostapd_conf = self.config["hostapd_conf"]
 		self.aplauncher 	= None
@@ -131,6 +132,7 @@ class Karma(AirHostPlugin):
 		# Escrever num ficheiro depois ler se for chamado no airhost
 		card = NetworkCard(self.ap_interface)
 		max_supported_access_points = card.get_number_of_supported_aps()
+		print "Max aps: ", max_supported_access_points
 		if self.max_access_points > max_supported_access_points:
 			print "[-] max_access_points is higher than what card supports. Setting to {}".format(max_supported_access_points)
 			self.max_access_points = max_supported_access_points
@@ -159,6 +161,12 @@ class Karma(AirHostPlugin):
 					break
 
 		self.number_of_configured_nets = len(final_list)
+		NetworkManager().set_mac_and_unmanage(	self.ap_interface, 
+												rand_mac, 
+												True, 
+												self.number_of_configured_nets)
+
+
 		self.dnsmasqhandler.set_captive_portal_mode(self.captive_portal)
 		self.dnsmasqhandler.write_dnsmasq_configurations(self.ap_interface, 
 													card.get_ip(), 
@@ -167,8 +175,8 @@ class Karma(AirHostPlugin):
 													["8.8.8.8", "8.8.4.4"],
 													len(final_list))
 
-		self.aplauncher.write_hostapd_configurations(self.ap_interface, 
-												final_list,
-												rand_mac)
+		self.aplauncher.write_hostapd_configurations(	self.ap_interface, 
+														final_list,
+														rand_mac)
 
 
