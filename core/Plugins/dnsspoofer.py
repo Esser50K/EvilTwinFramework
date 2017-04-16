@@ -1,3 +1,10 @@
+"""
+This class is responsible for DNSSpoofing
+It is also capable of launching an http/https server with apache2
+Can bew configured as captive portals but can also spoof multiple pages.
+"""
+
+
 import os
 from plugin import AirHostPlugin
 from AuxiliaryModules.httpserver import HTTPServer

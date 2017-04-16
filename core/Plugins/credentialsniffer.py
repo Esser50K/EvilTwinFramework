@@ -5,7 +5,7 @@ It will sniff the network for WPA 4-way handshakes and EAPoL MD5 and LEAP creden
 It can be used after a deauthentication attack
 While sniffing or even while running a fake access point to capture hal wpa handshakes
 """
-import os
+import os, traceback
 from pyric import pyw as pyw
 from plugin import AirScannerPlugin, AirHostPlugin, AirDeauthorPlugin
 from AuxiliaryModules.packet import Beacon
@@ -66,7 +66,7 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirDeauthorPlugin):
 
 	# This will be called after a deauthentication attack
 	def post_deauth(self):
-		print "[+] Starting Handshake or Credential sniffing on {} and channel {} for {} seconds".format(
+		print "[+] Starting Handshake and Credential sniffing on {} and channel {} for {} seconds".format(
 																				self.running_interface, 
 																				self.fixed_channel,
 																				self.timeout)
@@ -244,7 +244,7 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirDeauthorPlugin):
 				self.wpa_handshakes[client_mac]['ssid'] = self.broadcasted_bssids[bssid][0]
 				self.wpa_handshakes[client_mac]['packets'].append(beacon)
 		except Exception as e:
-			print "Exception: ", e
+			print "Exception Logging WPA Handshake: ", traceback.print_exc()
 			return
 			
 		# Only the last 3 frames are needed

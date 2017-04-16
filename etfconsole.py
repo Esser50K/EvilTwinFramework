@@ -603,7 +603,6 @@ class ETFConsole(Cmd):
 		os.system('service networking restart')
 		os.system('service network-manager restart')
 		os._exit(0)
-		return True
 
 	# Just overwriting this method so it doesn't execute the last non-empty line
 	def emptyline(self):
@@ -630,4 +629,4 @@ if __name__ == '__main__':
 		console.spawnmanager.restore_all()
 		os.system('service networking restart')
 		os.system('service network-manager restart')
-		os._exit(-1)
+		os._exit(1)
