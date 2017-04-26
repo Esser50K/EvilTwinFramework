@@ -46,7 +46,7 @@ def install_scapy_community():
     print "[+] Cleaning up the cloned folder after installation"
     os.system(cleanup_command)
 
-basic_dependencies = ["scapy", "dnsmasq", "hostapd-wpe", "python-pyric", "mitmproxy"]
+basic_dependencies = ["python-scapy", "dnsmasq", "hostapd-wpe", "python-pyric", "mitmproxy"]
 complete_install = ["gnome-terminal", "mitmf", "beef-xss", "ettercap-common", "sslstrip", "netlib"]
 
 print "[+] Adding packages to install to list."
