@@ -7,6 +7,12 @@ It uses apache with help of dnsmasq to launch spoofed pages as well as captive p
 
 Packet sending and receiving is all done via Scapy!
 
+# Installation
+
+Clone the project and run the setup file:
+
+> ./setup -c
+
 # Usage
 
 For now there only is a console interface that is very easy to use and has tab completion!
