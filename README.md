@@ -11,7 +11,11 @@ Packet sending and receiving is all done via Scapy!
 
 Clone the project and run the setup file:
 
-> ./setup -c
+> ./setup
+
+One of the MITM Plugins relies on peinjector service, this has to be installed manually following the instructions of the project.
+
+> https://github.com/JonDoNym/peinjector
 
 # Usage
 
