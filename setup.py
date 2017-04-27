@@ -44,7 +44,7 @@ except Exception as e:
 # Dependencies
 package_list = ["python-scapy", "dnsmasq", 
                 "hostapd-wpe", "python-pyric", 
-                "mitmproxy", "gnome-terminal", 
+                "--reinstall mitmproxy", "gnome-terminal", 
                 "mitmf", "beef-xss", 
                 "ettercap-common", "sslstrip"]
 
