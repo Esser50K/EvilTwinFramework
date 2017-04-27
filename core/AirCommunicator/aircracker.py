@@ -32,19 +32,25 @@ class AirCracker(object):
 	def load_wpa_handshakes(self):
 		del self.wpa_handshakes[:]
 		for handshake in os.listdir("data/wpa_handshakes"):
-			self.wpa_handshakes.append(self._parse_filename_to_handshake(handshake, False))
+			handshake = self._parse_filename_to_handshake(handshake, False)
+			if handshake != None:
+				self.wpa_handshakes.append(handshake)
 
 	def load_half_wpa_handshakes(self):
 		del self.half_wpa_handshakes[:]
 		for handshake in os.listdir("data/wpa_half_handshakes"):
-			self.half_wpa_handshakes.append(self._parse_filename_to_handshake(handshake, True))
+			handshake = self._parse_filename_to_handshake(handshake, True)
+			if handshake != None:
+				self.half_wpa_handshakes.append(handshake)
 
 	def _parse_filename_to_handshake(self, handshake, is_half):
-		handshake_name = handshake.split(".")[0]
-		ssid = handshake_name.split("_")[1]
-		client_mac = handshake_name.split("_")[2]
-		return 	WPAHandshake(len(self.half_wpa_handshakes), ssid, client_mac, os.path.abspath("data/wpa_half_handshakes/"+handshake)) if is_half else \
-				WPAHandshake(len(self.wpa_handshakes), ssid, client_mac, os.path.abspath("data/wpa_handshakes/"+handshake))
+		try:
+			handshake_name = handshake.split(".")[0]
+			ssid = handshake_name.split("_")[1]
+			client_mac = handshake_name.split("_")[2]
+			return 	WPAHandshake(len(self.half_wpa_handshakes), ssid, client_mac, os.path.abspath("data/wpa_half_handshakes/"+handshake)) if is_half else \
+					WPAHandshake(len(self.wpa_handshakes), ssid, client_mac, os.path.abspath("data/wpa_handshakes/"+handshake))
+		except: pass
 
 	def set_wpa_cracker(self, wpa_cracker):
 		self.wpa_cracker = wpa_cracker
