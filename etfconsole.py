@@ -190,6 +190,8 @@ class ETFConsole(Cmd):
 		return self.complete_vars(text)
 
 	def do_set(self, args):
+		is_var = lambda key: (  isinstance(self.current_config_mode[key], str) or 
+								isinstance(self.current_config_mode[key], list))
 		try:
 			splitted_args = args.split()
 			if len(splitted_args) == 2:
@@ -197,13 +199,17 @@ class ETFConsole(Cmd):
 			else:
 				var, value = splitted_args[0], splitted_args[1:]
 
-			self.current_config_mode[var] # raise KeyError before assignment if option does not exist
+			# raise KeyError before assignment if option does not exist
+			if not is_var(self.current_config_mode[var]): 
+				return
 			self._set_global_config(self.configs, var, value)
 			self.configs.write()
 			print "{config} = {value}".format(  config = var,
 												value = self.current_config_mode[var])
 		except KeyError:
 			print "'{key}' does not exist in the configuration file".format(key = var)
+		except Exception:
+			pass
 
 	def _set_global_config(self, dict_root, var, val):
 		if var in dict_root.keys():
