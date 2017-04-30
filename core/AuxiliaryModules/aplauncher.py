@@ -380,12 +380,15 @@ class APLauncher(object):
 			client = Client(id, client_name, client_mac, client_ip, ssid, inactivity_time, 
 							rx_packets, tx_packets, rx_bitrate, tx_bitrate, signal)
 
-			if client not in self.connected_clients[interface]:
-				print "[+] New connected client on '{ssid}'-> ip: {ip}, mac: {mac} ({vendor})".format(
-																								ssid=ssid,
-																								ip=client_ip, 
-																								mac=client_mac, 
-																								vendor=client.vendor)
+			try:
+				if client not in self.connected_clients[interface]:
+					print "[+] New connected client on '{ssid}'-> ip: {ip}, mac: {mac} ({vendor})".format(
+																									ssid=ssid,
+																									ip=client_ip, 
+																									mac=client_mac, 
+																									vendor=client.vendor)
+			except: pass
+			
 			temp_clients.append(client)
 
 		self.connected_clients[interface] = temp_clients

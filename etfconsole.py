@@ -200,8 +200,9 @@ class ETFConsole(Cmd):
 				var, value = splitted_args[0], splitted_args[1:]
 
 			# raise KeyError before assignment if option does not exist
-			if not is_var(self.current_config_mode[var]): 
+			if not is_var(var): 
 				return
+
 			self._set_global_config(self.configs, var, value)
 			self.configs.write()
 			print "{config} = {value}".format(  config = var,

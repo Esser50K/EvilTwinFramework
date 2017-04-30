@@ -159,9 +159,11 @@ class AirScanner(object):
 
 		# Reset card operaing state to 'managed'
 		if self.running_interface != None:
-			card = NetworkCard(self.running_interface)
-			if card.get_mode() != 'managed':
-				card.set_mode('managed')
+			try:
+				card = NetworkCard(self.running_interface)
+				if card.get_mode() != 'managed':
+					card.set_mode('managed')
+			except: pass
 
 		self.running_interface = None
 
