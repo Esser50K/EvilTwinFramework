@@ -127,7 +127,7 @@ class AirScanner(object):
 	def start_sniffer(self, interface, hop_channels=True, fixed_channel=7):
 		self.running_interface = interface
 		card = NetworkCard(interface)
-		if card.get_mode() != 'monitor':
+		if card.get_mode().lower() != 'monitor':
 			card.set_mode('monitor')
 
 		for plugin in self.plugins:
@@ -161,7 +161,7 @@ class AirScanner(object):
 		if self.running_interface != None:
 			try:
 				card = NetworkCard(self.running_interface)
-				if card.get_mode() != 'managed':
+				if card.get_mode().lower() != 'managed':
 					card.set_mode('managed')
 			except: pass
 

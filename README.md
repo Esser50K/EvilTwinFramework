@@ -142,6 +142,7 @@ If you have an extra WiFi adapter you can deauthenticate others from their netwo
 To add access points or clients to be deauthenticated type:
 
 > show sniffed_aps
+
 > add aps \<filter_string>
 
 The filter_string follows an easy syntax, it goes:
@@ -171,6 +172,7 @@ Now make sure the interface used for the deuathentication attack
 is not the same as the one used for the fake access point while it is running.
 
 > config airdeauthor
+
 > listargs
 
 After all that run the deauthor:
