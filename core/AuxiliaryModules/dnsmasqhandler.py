@@ -30,7 +30,7 @@ class DNSMasqHandler(object):
 		dhcp_range_string = "\ndhcp-range={interface}, {dhcp_start}, {dhcp_end}, 12h".format(interface 	= interface,
 																							 dhcp_start = dhcp_range[0],
 																							 dhcp_end	= dhcp_range[1])
-		for i in range(virtInterfaces-1):
+		for i in range(virtInterfaces):
 			dhcp_start = ".".join(dhcp_range[0].split(".")[0:2] + [str(int(dhcp_range[0].split(".")[2]) + i + 1)] + [dhcp_range[0].split(".")[3]])
 			dhcp_end = ".".join(dhcp_range[1].split(".")[0:2] + [str(int(dhcp_range[1].split(".")[2]) + i + 1)] + [dhcp_range[1].split(".")[3]])
 			dhcp_range_string += "\ndhcp-range={interface}_{index}, {dhcp_start}, {dhcp_end}, 12h".format(	

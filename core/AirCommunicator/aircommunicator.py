@@ -103,8 +103,9 @@ class AirCommunicator(object):
 		is_catch_all_honeypot 	= self.configs["airhost"]["aplauncher"]["catch_all_honeypot"].lower() == "true"
 		is_multiple_ssid		= type(ssid) is list
 		nVirtInterfaces 		= 3 			if is_catch_all_honeypot else \
-								  len(ssid)		if is_multiple_ssid else \
+								  len(ssid) - 1	if is_multiple_ssid else \
 								  0
+
 		if self.network_manager.set_mac_and_unmanage(	ap_interface, bssid, 
 														retry = True, 
 														virtInterfaces = nVirtInterfaces):
@@ -145,7 +146,7 @@ class AirCommunicator(object):
 			# Configure Virtual Interfaces once hostapd has set them up
 			sleep(.5) # Wait for for hostapd to setup interfaces
 			extra_interfaces = False
-			for i in range(nVirtInterfaces-1):
+			for i in range(nVirtInterfaces):
 				interface_name = "{}_{}".format(ap_interface, i)
 				if interface_name in winterfaces():
 					gateway = ".".join(gateway.split(".")[0:2] + [str(int(gateway.split(".")[2]) + 1)] + [gateway.split(".")[3]])

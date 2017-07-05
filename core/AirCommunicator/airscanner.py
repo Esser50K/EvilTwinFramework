@@ -8,7 +8,7 @@ for 802.11x packets mostly using the Scapy module
 import os
 import pyric.pyw as pyw
 import traceback
-from AuxiliaryModules.packet import Beacon, ProbeResponse, ProbeRequest
+from AuxiliaryModules.packet import Beacon, ProbeResponse, ProbeRequest, AssociationResponse
 from time import sleep
 from threading import Thread, Lock
 from netaddr import EUI, OUI
@@ -38,8 +38,7 @@ class AccessPoint(object):
 
 	def __str__(self):
 		return  " ".join(   [   str(self.bssid), str(self.ssid), \
-								"/".join(self.encryption), \
-								str(self.cipher), str(self.auth)    ]   )
+								str(self.crypto), str(self.cipher), str(self.auth)    ]   )
 
 class WiFiClient(object):
 	"""
@@ -67,6 +66,8 @@ class WiFiClient(object):
 			self.probed_ssids = set([probeInfo.ap_ssid])
 			if probeInfo.type == "REQ":
 				self.rssi = probeInfo.rssi
+			elif probeInfo.type == "ASSO":
+				self.associated_ssid = probeInfo.ap_ssid
 
 	def __eq__(self, other):
 		return self.client_mac == other.client_mac
@@ -217,6 +218,9 @@ class AirScanner(object):
 				self.handle_probe_req_packets(packet)
 			if Dot11ProbeResp in packet:
 				self.handle_probe_resp_packets(packet)
+			if Dot11AssoResp in packet:
+				self.handle_asso_resp_packets(packet)
+
 
 
 	def handle_beacon_packets(self, packet):
@@ -236,7 +240,7 @@ class AirScanner(object):
 		probe_req = ProbeRequest(packet)
 		
 		if probe_req.client_mac.lower() != "ff:ff:ff:ff:ff:ff":
-			probe = self._get_probe_info_from_probe(probe_req, "REQ")
+			probe = self._get_info_from_probe(probe_req, "REQ")
 			self._add_probe(probe)
 			self._add_client(probe)
 			
@@ -245,16 +249,32 @@ class AirScanner(object):
 		probe_resp = ProbeResponse(packet)
 
 		if probe_resp.client_mac.lower() != "ff:ff:ff:ff:ff:ff":
-			probe = self._get_probe_info_from_probe(probe_resp, "RESP")
+			probe = self._get_info_from_probe(probe_resp, "RESP")
 			self._add_probe(probe)
 			self._add_client(probe)
 
-	def _get_probe_info_from_probe(self, probe, probe_type):
-		probe.ap_bssids = self.get_bssids_from_ssid(probe.ssid)   # Returns a list with all the bssids
+	def handle_asso_resp_packets(self, packet):
+		asso_resp = AssociationResponse(packet)
+
+		if asso_resp.client_mac.lower() != "ff:ff:ff:ff:ff:ff":
+			probe = self._get_info_from_asso(asso_resp, "ASSO")
+			self._add_client(probe)
+
+	def _get_info_from_probe(self, probe, probe_type):
+		ap_bssids = self.get_bssids_from_ssid(probe.ssid)   # Returns a list with all the bssids
 		probe_id = len(self.get_probe_requests())
 		probe = ProbeInfo(  probe_id, probe.client_mac, probe.client_vendor, 
-							probe.ssid, probe.ap_bssids, probe.rssi, probe_type)
+							probe.ssid, ap_bssids, probe.rssi, probe_type)
 		return probe
+
+	def _get_info_from_asso(self, probe, probe_type):
+		try:
+			probe.ssid = self.access_points[probe.bssid].ssid
+		except: pass
+		probe = ProbeInfo(  0, probe.client_mac, probe.client_vendor, 
+							probe.ssid, [probe.bssid], probe.rssi, probe_type)
+		return probe
+
 
 	def _add_probe(self, probeInfo):
 		with self.probe_lock:
@@ -267,10 +287,9 @@ class AirScanner(object):
 			except Exception as e:
 				print "Error in airscanner._add_probe"
 				print e
-				pass
 
 	def _add_client(self, probe):
-		if probe.ap_ssid == "":
+		if probe.ap_ssid == "" and probe.type != "ASSO":
 			return
 			
 		with self.client_lock:
@@ -279,18 +298,20 @@ class AirScanner(object):
 			try:
 				if wifiClient not in self.get_wifi_clients():
 					self.clients[probe.client_mac] = wifiClient
+					print "New client:", wifiClient.client_mac
 				else:
 					wifiClient = self.clients[probe.client_mac]
 					wifiClient.probed_ssids.add(probe.ap_ssid)
 
-					if probe.type == "RESP":
-						wifiClient.associated_ssid = probe.ap_ssid
-					else:
+					if probe.type == "ASSO":
+						try:
+							wifiClient.associated_ssid = probe.ap_ssid
+						except: pass
+					elif probe.type == "REQ":
 						wifiClient.rssi = probe.rssi
 			except Exception as e:
 				print "Error in airscanner._add_client"
 				print e
-				pass
 
 
 	def get_access_points(self):

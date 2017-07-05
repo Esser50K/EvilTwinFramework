@@ -152,10 +152,12 @@ class AirDeauthenticator(object):
 
 
     def _restore_deauthor_state(self):
-        card = NetworkCard(self.running_interface)
-        if card.get_mode().lower() != self._previous_mode:
-            card.set_mode(self._previous_mode)
-            self._previous_mode = None
+        try:
+            card = NetworkCard(self.running_interface)
+            if card.get_mode().lower() != self._previous_mode:
+                card.set_mode(self._previous_mode)
+                self._previous_mode = None
+        except: pass
 
         self.running_interface = None
 
@@ -166,9 +168,7 @@ class AirDeauthenticator(object):
         card = NetworkCard(interface)
         current_mode = card.get_mode().lower()
         self._previous_mode = current_mode
-        print current_mode
         if not (current_mode == 'monitor' or current_mode == 'ap'):
-            print "Setting card mode"
             card.set_mode('monitor')
 
         self.deauth_running = True

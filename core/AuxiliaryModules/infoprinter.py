@@ -28,6 +28,7 @@ class InfoPrinter(object):
 			for arg in args:
 				val = obj.__dict__[arg]
 				if type(val) is list or type(val) is set:
+					val = [x for x in val if x is not None] # Remove Nones
 					val = "\n".join(val).encode("utf-8").strip()
 
 				# Try parse it as int so the output is sorted correctly

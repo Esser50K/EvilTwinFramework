@@ -193,7 +193,7 @@ class NetworkManager(object):
 			mac_address = mac_address[:-1] + "0"
 		interface_ignore_string = interface
 
-		for i in range(virtInterfaces-1):
+		for i in range(virtInterfaces):
 			interface_ignore_string += ",mac:{}".format(mac_address[:-1] + str(i+1))
 			interface_ignore_string += ",interface-name:{}_{}".format(interface, i)
 

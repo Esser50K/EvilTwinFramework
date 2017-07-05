@@ -9,7 +9,7 @@ import os, traceback
 from pyric import pyw as pyw
 from plugin import AirScannerPlugin, AirHostPlugin, AirDeauthorPlugin
 from AuxiliaryModules.packet import Beacon
-from scapy.all import Ether, Dot11Beacon, EAPOL, EAP, LEAP, PcapWriter, sniff, load_contrib
+from scapy.all import Ether, Dot11Beacon, EAPOL, EAP, LEAP, PcapWriter, sniff
 from utils.networkmanager import NetworkCard
 from utils.utils import NetUtils
 from threading import Thread
