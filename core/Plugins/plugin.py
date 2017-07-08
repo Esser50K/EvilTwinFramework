@@ -44,14 +44,24 @@ class AirHostPlugin(Plugin):
 	def stop(self):
 		pass
 
-class AirDeauthorPlugin(Plugin):
+class AirInjectorPlugin(Plugin):
 
 	def __init__(self, name):
-		super(AirDeauthorPlugin, self).__init__(name)
+		super(AirInjectorPlugin, self).__init__(name)
 
-	def pre_deauth(self):
+	# this method receives either APs or Clients from the AirScanner
+	# the specific injector will interpret what to do and create the corresponding packets
+	def interpret_targets(self, targets):
 		pass
 
-	def post_deauth(self):
+	# the packet created in interpret_targets are sent in this method as the user specifies
+	def inject_packets(self):
 		pass
+
+	def pre_injection(self):
+		pass
+
+	def post_injection(self):
+		pass
+
 
