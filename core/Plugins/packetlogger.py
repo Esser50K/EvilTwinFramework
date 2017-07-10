@@ -21,7 +21,10 @@ class PacketLogger(AirScannerPlugin):
 
 		self.or_filter = self.config["filter_mode"].lower() == "or"
 		self.current_log_file = "packet_log{n}.cap".format(n = self._nlogs)
-		self.packet_logger = PcapWriter(self.destination_folder + "packet_log{n}.cap".format(n = self._nlogs), 
+		self.packet_logger = None
+
+	def pre_scanning(self):
+		self.packet_logger = PcapWriter(self.destination_folder + self.current_log_file, 
 										append=True, sync=True)
 
 	def _get_log_count(self):

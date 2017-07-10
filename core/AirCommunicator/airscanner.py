@@ -61,6 +61,9 @@ class AirScanner(object):
 		else:
 			card = NetworkCard(interface)
 			card.set_channel(fixed_channel)
+			print "Set channel to {}".format(fixed_channel)
+			print "Channel is on {}".format(card.get_channel())
+
 
 	def stop_sniffer(self):
 		Thread(target=self._clean_quit).start() # Avoids blocking when executed via the console
