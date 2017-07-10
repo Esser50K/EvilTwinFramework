@@ -51,11 +51,11 @@ class ETFConsole(Cmd):
 	mitmproxy_plugins = ["downloadreplacer", "beefinjector", "peinjector"]
 
 	copy_options = ["ap", "probe"]
-	add_del_options = ["aps", "clients", "probes"] 								 	# Meant to be followed by ID
+	add_del_options = ["aps", "clients", "probes"] 								# Meant to be followed by ID
 	show_options = ["sniffed_aps", "sniffed_probes", "sniffed_clients",
 					"ap_targets", "client_targets", "connected_clients",
-					"wpa_handshakes", "half_wpa_handshakes"] 				# Meant to be followed by filter
-	crack_options = ["wpa_handshakes", "half_wpa_handshakes"]				# Meant to be followed by ID
+					"wpa_handshakes", "half_wpa_handshakes", "wep_data_logs"] 	# Meant to be followed by filter
+	crack_options = ["wpa_handshakes", "half_wpa_handshakes", "wep_data"]		# Meant to be followed by ID
 
 
 	# Configuration Handling
@@ -396,6 +396,8 @@ class ETFConsole(Cmd):
 				self.aircommunicator.print_captured_handshakes(filter_string, False)
 			elif option == "half_wpa_handshakes":
 				self.aircommunicator.print_captured_handshakes(filter_string, True)
+			elif option == "wep_data_logs":
+				self.aircommunicator.print_wep_data_logs(filter_string)
 
 
 
@@ -575,11 +577,14 @@ class ETFConsole(Cmd):
 	def do_crack(self, args):
 		args = args.split()
 		try:
-			id, is_half = int(args[1]), "half" in args[0]
+			id, is_handshake, is_half = int(args[1]), "handshake"in args[0], "half" in args[0]
 		except:
 			print "[-] ID must be int"
 			return
-		self.aircommunicator.crack_handshake(id, is_half)		
+		if is_handshake:
+			self.aircommunicator.crack_handshake(id, is_half)
+		else:
+			self.aircommunicator.crack_wep(id)	
 
 	def complete_crack(self, text, line, begidx, endidx):
 		out = None

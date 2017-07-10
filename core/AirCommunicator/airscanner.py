@@ -61,8 +61,11 @@ class AirScanner(object):
 		else:
 			card = NetworkCard(interface)
 			card.set_channel(fixed_channel)
-			print "Set channel to {}".format(fixed_channel)
-			print "Channel is on {}".format(card.get_channel())
+			if card.get_channel() == fixed_channel:
+				print "[+] Set fixed channel to {}".format(fixed_channel)
+			else:
+				print "[-] Could not change channel, try unplugging your interface."
+				print "[/] Channel is on {}".format(card.get_channel())
 
 
 	def stop_sniffer(self):
@@ -92,6 +95,7 @@ class AirScanner(object):
 		print "[+] Starting packet sniffer on interface '{}'".format(self.running_interface)
 
 		try:
+			conf.use_pcap=True # Accelerate sniffing -> Less packet loss
 			sniff(iface=self.running_interface, store=0, prn=self.handle_packets, stop_filter= (lambda pkt: not self.sniffer_running))
 		except Exception as e:
 			print e

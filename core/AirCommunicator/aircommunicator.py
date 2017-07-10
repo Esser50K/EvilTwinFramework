@@ -34,7 +34,7 @@ class AirCommunicator(object):
 		self.air_host = AirHost(self.config_files["hostapd_conf"], self.config_files["dnsmasq_conf"])
 		self.air_scanner = AirScanner()
 		self.air_injector = AirInjector()
-		self.air_cracker = AirCracker()
+		self.air_cracker = AirCracker(self.configs["aircracker"]["log_dir"])
 		self.network_manager = NetworkManager(self.config_files["networkmanager_conf"])
 
 		self.info_printer = InfoPrinter()
@@ -309,6 +309,9 @@ class AirCommunicator(object):
 		wpa_cracker = self.wpa_cracker_from_conf(is_half)
 		self.air_cracker.launch_handshake_cracker(id, is_half, wpa_cracker)
 
+	def crack_wep(self, id):
+		self.air_cracker.launch_wep_cracker(id)
+
 	def wpa_cracker_from_conf(self, is_half):
 		aircracker_conf = self.configs["aircracker"]
 		wpa_cracker = aircracker_conf["half_wpa_cracker"] if is_half else aircracker_conf["wpa_cracker"]
@@ -370,4 +373,13 @@ class AirCommunicator(object):
 		handshake_args = ["id", "ssid", "client_mac", "client_org"]
 		handshake_headers = ["ID:", "SSID:", "CLIENT MAC:", "CLIENT ORG:"]
 		self.info_printer.add_info(info_key, handshake_list, handshake_args, handshake_headers)
+		self.info_printer.print_info(info_key, filter_string)
+
+	def print_wep_data_logs(self, filter_string = None):
+		self.air_cracker.load_wep_data_logs()
+		info_key = "wep_data"
+		wep_logs = self.air_cracker.wep_data_logs
+		wep_log_args = ["id", "bssid", "ap_org", "date"]
+		wep_log_headers = ["ID:", "BSSID:", "AP ORG:", "DATE"]
+		self.info_printer.add_info(info_key, wep_logs, wep_log_args, wep_log_headers)
 		self.info_printer.print_info(info_key, filter_string)

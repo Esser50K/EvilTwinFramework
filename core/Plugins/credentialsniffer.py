@@ -24,6 +24,7 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirInjectorPlugin):
 	def __init__(self):
 		super(CredentialSniffer, self).__init__("credentialsniffer")
 		self.running_interface = self.config["sniffing_interface"]
+		self.log_dir = self.config["log_dir"]
 		self.wifi_clients = {}
 		self.wpa_handshakes = {}
 		self.broadcasted_bssids = {} #bssid: beacon_packet
@@ -228,9 +229,11 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirInjectorPlugin):
 
 			print "[+] Half WPA Handshake found for client '{}' and network '{}'\n".format(	client_mac,
 																							ssid)
+			if "wpa_half_handshakes" not in os.listdir(self.log_dir):
+				os.makedir(self.log_dir + "wpa_half_handshakes")
 
-			log_file_path = "data/wpa_half_handshakes/handshake_{}_{}.cap".format(	ssid,
-																					client_mac)
+			log_file_path = self.log_dir + "wpa_half_handshakes/handshake_{}_{}.cap".format(ssid,
+																							client_mac)
 			self._log_packets(log_file_path, client_mac)
 
 
@@ -260,9 +263,11 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirInjectorPlugin):
 
 			print "[+] WPA Handshake found for client '{}' and network '{}'\n".format(client_mac,
 																					  self.wpa_handshakes[client_mac]['ssid'])
-
-			log_file_path = "data/wpa_handshakes/handshake_{}_{}.cap".format(self.wpa_handshakes[client_mac]['ssid'],
-																			 client_mac)
+			if "wpa_handshakes" not in os.listdir(self.log_dir):
+				os.makedir(self.log_dir + "wpa_handshakes")
+				
+			log_file_path = self.log_dir + "wpa_handshakes/handshake_{}_{}.cap".format( self.wpa_handshakes[client_mac]['ssid'],
+																			 			client_mac)
 			self._log_packets(log_file_path, client_mac)
 
 	def _log_packets(self, file_path, client_mac):
