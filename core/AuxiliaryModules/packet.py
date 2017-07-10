@@ -12,6 +12,15 @@ cipher_suites = { 'GROUP'   : '\x00\x0f\xac\x00',
 auth_suites = { 'MGT' : '\x00\x0f\xac\x01',
 				'PSK' : '\x00\x0f\xac\x02' }
 
+def get_vendor(mac):
+		if mac != "":
+			maco = EUI(mac)                         # EUI - Extended Unique Identifier
+			try:
+				return maco.oui.registration().org  # OUI - Organizational Unique Identifier
+			except Exception as e:                  # OUI not registered exception
+				return None
+		return None
+
 class Packet(object):
 
 	def __init__(self, packet):
@@ -41,15 +50,6 @@ class Packet(object):
 
 		return ssid
 
-	def _get_vendor(self, mac):
-		if mac != "":
-			maco = EUI(mac)                         # EUI - Extended Unique Identifier
-			try:
-				return maco.oui.registration().org  # OUI - Organizational Unique Identifier
-			except Exception as e:                  # OUI not registered exception
-				return None
-		return None
-
 
 class ClientPacket(Packet):
 	def __init__(self, packet):
@@ -58,7 +58,7 @@ class ClientPacket(Packet):
 			self.client_mac = packet[Dot11].addr2
 		self.bssid = packet[Dot11].addr1
 		self.ssid = self._get_ssid_from_packet(packet)
-		self.client_vendor = self._get_vendor(self.client_mac)
+		self.client_vendor = get_vendor(self.client_mac)
 		super(ClientPacket, self).__init__(packet)
 
 
@@ -69,7 +69,7 @@ class AccessPointPacket(Packet):
 		if self.bssid.lower() == "ff:ff:ff:ff:ff:ff":
 			self.bssid = packet[Dot11].addr2
 		self.client_mac = packet[Dot11].addr1
-		self.client_vendor = self._get_vendor(self.client_mac)
+		self.client_vendor = get_vendor(self.client_mac)
 		super(AccessPointPacket, self).__init__(packet)
 
 

@@ -11,13 +11,12 @@ sys.path.append('./utils')
 from cmd import Cmd
 from utils import etfbanners
 from AirCommunicator.aircommunicator import AirCommunicator
-from AirCommunicator.airscanner import AccessPoint, WiFiClient, ProbeInfo
-from AirCommunicator.airdeauthor import DeauthAP, DeauthClient
 from AirCommunicator.aircracker import WPAHandshake
 from AuxiliaryModules.aplauncher import Client
 from ConfigurationManager.configmanager import ConfigurationManager
 from MITMCore.etfitm import EvilInTheMiddle
 from Spawners.spawnmanager import SpawnManager
+from utils.wifiutils import AccessPoint, WiFiClient, ProbeInfo
 
 
 class ETFConsole(Cmd):
@@ -37,7 +36,7 @@ class ETFConsole(Cmd):
 						"get", "set", "config", "back", "listargs",
 						"copy", "add", "del", "show"  ]
 
-	services = ["airhost", "airscanner", "airdeauthor", "aircracker", "mitmproxy"]
+	services = ["airhost", "airscanner", "airinjector", "aircracker", "mitmproxy"]
 	aux_services = ["aplauncher", "dnsmasqhandler"]
 	spawners = ["mitmf", "beef-xss", "ettercap", "sslstrip"]
 
@@ -46,15 +45,15 @@ class ETFConsole(Cmd):
 
 	airhost_plugins = ["dnsspoofer", "credentialprinter", "credentialsniffer", "karma"]
 	airscanner_plugins = ["packetlogger", "selfishwifi", "credentialsniffer"]
-	airdeauthor_plugins = ["credentialsniffer"]
+	airinjector_plugins = ["credentialsniffer"]
 	aircracker_types = ["wpa_crackers", "half_wpa_crackers"]
 	aircrackers = ["cowpatty", "aircrack-ng", "halwpaid"]
 	mitmproxy_plugins = ["downloadreplacer", "beefinjector", "peinjector"]
 
 	copy_options = ["ap", "probe"]
-	add_del_options = ["aps", "clients"] 								 	# Meant to be followed by ID
+	add_del_options = ["aps", "clients", "probes"] 								 	# Meant to be followed by ID
 	show_options = ["sniffed_aps", "sniffed_probes", "sniffed_clients",
-					"deauth_aps", "deauth_clients", "connected_clients",
+					"ap_targets", "client_targets", "connected_clients",
 					"wpa_handshakes", "half_wpa_handshakes"] 				# Meant to be followed by filter
 	crack_options = ["wpa_handshakes", "half_wpa_handshakes"]				# Meant to be followed by ID
 
@@ -159,7 +158,7 @@ class ETFConsole(Cmd):
 						self.spawners + \
 						self.airscanner_plugins + \
 						self.airhost_plugins + \
-						self.airdeauthor_plugins + \
+						self.airinjector_plugins + \
 						self.aircracker_types + \
 						self.aircrackers + \
 						self.mitmproxy_plugins
@@ -271,13 +270,13 @@ class ETFConsole(Cmd):
 		args = args.split()
 		if len(args) >= 1:
 			filter_string = self._parse_filter_string(args)
-			self.aircommunicator.deauthor_add(args[0], filter_string)
+			self.aircommunicator.injector_add(args[0], filter_string)
 
 	def do_del(self, args):
 		args = args.split()
 		if len(args) >= 1:
 			filter_string = self._parse_filter_string(args)
-			self.aircommunicator.deauthor_del(args[0], filter_string)
+			self.aircommunicator.injector_del(args[0], filter_string)
 
 	def complete_add(self, text, line, begidx, endidx):
 		return self.complete_addel(line, text)
@@ -315,13 +314,13 @@ class ETFConsole(Cmd):
 			if addel == "add":
 				if entered[1] == "aps":
 					out = vars(AccessPoint()).keys()
-				elif entered[1] == "clients":
+				elif entered[1] == "probes":
 					out = vars(ProbeInfo()).keys()
 			elif addel == "del":
 				if entered[1] == "aps":
-					out = vars(DeauthAP()).keys()
+					out = vars(AccessPoint()).keys()
 				elif entered[1] == "clients":
-					out = vars(DeauthClient()).keys()
+					out = vars(WiFiClient()).keys()
 
 		return out
 
@@ -336,13 +335,13 @@ class ETFConsole(Cmd):
 			if addel == "add":
 				if entered[1] == "aps":
 					out = [keyword for keyword in vars(AccessPoint()).keys() if keyword.startswith(start)]
-				elif entered[1] == "clients":
+				elif entered[1] == "probes":
 					out = [keyword for keyword in vars(ProbeInfo()).keys() if keyword.startswith(start)]
 			elif addel == "del":
 				if entered[1] == "aps":
-					out = [keyword for keyword in vars(DeauthAP()).keys() if keyword.startswith(start)]
+					out = [keyword for keyword in vars(AccessPoint()).keys() if keyword.startswith(start)]
 				elif entered[1] == "clients":
-					out = [keyword for keyword in vars(DeauthClient()).keys() if keyword.startswith(start)]
+					out = [keyword for keyword in vars(WiFiClient()).keys() if keyword.startswith(start)]
 
 		return out
 
@@ -387,10 +386,10 @@ class ETFConsole(Cmd):
 				self.aircommunicator.print_sniffed_clients(filter_string)
 			elif option == "sniffed_probes":
 				self.aircommunicator.print_sniffed_probes(filter_string)
-			elif option == "deauth_aps":
-				self.aircommunicator.print_aps_to_deauth(filter_string)
-			elif option == "deauth_clients":
-				self.aircommunicator.print_clients_to_deauth(filter_string)
+			elif option == "ap_targets":
+				self.aircommunicator.print_ap_injection_targets(filter_string)
+			elif option == "client_targets":
+				self.aircommunicator.print_client_injection_targets(filter_string)
 			elif option == "connected_clients":
 				self.aircommunicator.print_connected_clients(filter_string)
 			elif option == "wpa_handshakes":
@@ -419,10 +418,10 @@ class ETFConsole(Cmd):
 				out = vars(WiFiClient()).keys()
 			elif entered[1] == "sniffed_probes":
 				out = vars(ProbeInfo()).keys()
-			elif entered[1] == "deauth_aps":
-				out = vars(DeauthAP()).keys()
-			elif entered[1] == "deauth_clients":
-				out = vars(DeauthClient()).keys()
+			elif entered[1] == "ap_targets":
+				out = vars(AccessPoint()).keys()
+			elif entered[1] == "client_targets":
+				out = vars(WiFiClient()).keys()
 			elif entered[1] == "connected_clients":
 				out = vars(Client()).keys()
 			elif entered[1] == "wpa_handshakes" or entered[1] == "half_wpa_handshakes":
@@ -444,10 +443,10 @@ class ETFConsole(Cmd):
 					out = [keyword for keyword in vars(WiFiClient()).keys() if keyword.startswith(start)]
 				elif entered[1] == "sniffed_probes":
 					out = [keyword for keyword in vars(ProbeInfo()).keys() if keyword.startswith(start)]
-				elif entered[1] == "deauth_aps":
-					out = [keyword for keyword in vars(DeauthAP()).keys() if keyword.startswith(start)]
-				elif entered[1] == "deauth_clients":
-					out = [keyword for keyword in vars(DeauthClient()).keys() if keyword.startswith(start)]
+				elif entered[1] == "ap_targets":
+					out = [keyword for keyword in vars(AccessPoint()).keys() if keyword.startswith(start)]
+				elif entered[1] == "client_targets":
+					out = [keyword for keyword in vars(WiFiClient()).keys() if keyword.startswith(start)]
 				elif entered[1] == "connected_clients":
 					out = [keyword for keyword in vars(Client()).keys() if keyword.startswith(start)]
 				elif entered[1] == "wpa_handshakes" or entered[1] == "half_wpa_handshakes":
@@ -535,8 +534,8 @@ class ETFConsole(Cmd):
 				out = self.airhost_plugins
 			elif entered[1] == "airscanner":
 				out = self.airscanner_plugins
-			elif entered[1] == "airdeauthor":
-				out = self.airdeauthor_plugins
+			elif entered[1] == "airinjector":
+				out = self.airinjector_plugins
 			elif entered[1] == "mitmproxy":
 				out = self.mitmproxy_plugins
 
@@ -566,8 +565,8 @@ class ETFConsole(Cmd):
 					out = [keyword for keyword in self.airhost_plugins if keyword.startswith(start)]
 				elif entered[1] == "airscanner":
 					out = [keyword for keyword in self.airscanner_plugins if keyword.startswith(start)]
-				elif entered[1] == "airdeauthor":
-					out = [keyword for keyword in self.airdeauthor_plugins if keyword.startswith(start)]
+				elif entered[1] == "airinjector":
+					out = [keyword for keyword in self.airinjector_plugins if keyword.startswith(start)]
 				elif entered[1] == "mitmproxy":
 					out = [keyword for keyword in self.mitmproxy_plugins if keyword.startswith(start)]
 

@@ -9,9 +9,9 @@ as sniffing the packets in the air
 from pyric.pyw import interfaces, winterfaces
 from airhost import AirHost
 from airscanner import AirScanner
-from airdeauthor import AirDeauthenticator
+from airinjector import AirInjector
 from aircracker import AirCracker
-from Plugins.plugin import Plugin, AirHostPlugin, AirScannerPlugin, AirDeauthorPlugin
+from Plugins.plugin import Plugin, AirHostPlugin, AirScannerPlugin, AirInjectorPlugin
 from AuxiliaryModules.infoprinter import InfoPrinter, ObjectFilter
 from AuxiliaryModules.wpacracker import WPACracker
 from Plugins.dnsspoofer import DNSSpoofer
@@ -32,37 +32,23 @@ class AirCommunicator(object):
 
 		self.air_host = AirHost(self.config_files["hostapd_conf"], self.config_files["dnsmasq_conf"])
 		self.air_scanner = AirScanner()
-		self.air_deauthenticator = AirDeauthenticator()
+		self.air_injector = AirInjector()
 		self.air_cracker = AirCracker()
 		self.network_manager = NetworkManager(self.config_files["networkmanager_conf"])
 
 		self.info_printer = InfoPrinter()
 
-	def start_deauthentication_attack(self, plugins = []):
-		if not self.air_deauthenticator.deauth_running:
-			jamming_interface = self.configs["airdeauthor"]["jamming_interface"]
-			if jamming_interface not in winterfaces():
-				print "[-] jamming_interface '{}' does not exist".format(jamming_interface)
+	def start_injection_attack(self, plugins = []):
+		if not self.air_injector.is_running():
+			injection_interface = self.configs["airinjector"]["injection_interface"]
+			if injection_interface not in winterfaces():
+				print "[-] injection_interface '{}' does not exist".format(injection_interface)
 				return
-
-			burst_count = 5
-			targeted_only = False
-			for arg in self.configs["airdeauthor"].keys():
-				try:
-					val = self.configs["airdeauthor"][arg]
-					if arg == "burst_count":    burst_count = int(val)
-					else:                       targeted_only = True if str(val).lower() == "true" else False
-				except ValueError:
-					print "[-] Burst count must be in integer form, not changing value."
-				except KeyError:
-					pass
 		
-			self.add_plugins(plugins, self.air_deauthenticator, AirDeauthorPlugin)
-			self.air_deauthenticator.set_burst_count(int(burst_count))
-			self.air_deauthenticator.set_targeted(targeted_only)
-			self.air_deauthenticator.start_deauthentication_attack(jamming_interface)
+			self.add_plugins(plugins, self.air_injector, AirInjectorPlugin)
+			self.air_injector.start_injection_attack(injection_interface)
 		else:
-			print "[-] Deauthentication attack still running"
+			print "[-] Injection attack still running"
 
 	def start_access_point(self, plugins = []):
 		'''
@@ -200,12 +186,12 @@ class AirCommunicator(object):
 			print "[-] Sniffer already running"
 
 	def add_plugins(self, plugins, airmodule, baseclass):
-		for airhost_plugin in baseclass.__subclasses__():
-			airhost_plugin_instance = airhost_plugin()
-			if airhost_plugin_instance.name in plugins:
-				airmodule.add_plugin(airhost_plugin_instance)
+		for air_plugin in baseclass.__subclasses__():
+			air_plugin_instance = air_plugin()
+			if air_plugin_instance.name in plugins:
+				airmodule.add_plugin(air_plugin_instance)
 
-	def stop_air_communications(self, stop_sniffer, stop_ap, stop_deauth):
+	def stop_air_communications(self, stop_sniffer, stop_ap, stop_injection):
 		if stop_sniffer and self.air_scanner.sniffer_running:
 			self.air_scanner.stop_sniffer()
 			self.network_manager.cleanup_filehandler()
@@ -215,13 +201,13 @@ class AirCommunicator(object):
 			self.air_host.cleanup()
 			self.network_manager.cleanup()
 
-		if stop_deauth and self.air_deauthenticator.deauth_running:
-			self.air_deauthenticator.stop_deauthentication_attack()
+		if stop_injection and self.air_injector.is_running():
+			self.air_injector.stop_injection_attack()
 
 	def service(self, service, option, plugins = []):
-		if service == "airdeauthor":
+		if service == "airinjector":
 			if option == "start":
-				self.start_deauthentication_attack(plugins)
+				self.start_injection_attack(plugins)
 			else:
 				self.stop_air_communications(False, False, True)
 		elif service == "airhost":
@@ -273,7 +259,6 @@ class AirCommunicator(object):
 
 			self.configs["airhost"]["aplauncher"]["ssid"] = probe.ap_ssid
 
-			# TODO if it has bssid it's because the AP is listed in the AP list
 			if probe.ap_bssids:
 				self.configs["airhost"]["aplauncher"]["bssid"] = probe.ap_bssids[0]
 
@@ -283,33 +268,40 @@ class AirCommunicator(object):
 		else:
 			print "[-] No probe with ID = {}".format(str(id))
 
-	# Deauthor action methods
-	def deauthor_add(self, add_type, filter_string):
+	# TODO: actually add clients and not probes, maybe add_probe possibility
+	# Injector action methods
+	def injector_add(self, add_type, filter_string):
 		if add_type == "aps":
 			add_list = ObjectFilter().filter(self.air_scanner.get_access_points(), filter_string)
 			for ap in add_list:
-				self.air_deauthenticator.add_ap(ap.bssid, ap.ssid, ap.channel)
+				self.air_injector.add_ap(ap.bssid, ap.ssid, ap.channel)
 		elif add_type == "clients":
+			add_list = ObjectFilter().filter(self.air_scanner.get_wifi_clients(), filter_string)
+			for client in add_list:
+				if client.associated_ssid != None:
+					if client.associated_bssid and client.associated_bssid != "":
+						self.air_injector.add_client(client.client_mac, client.associated_bssid, client.associated_ssid)
+				else:
+					print "[-] Cannot add client '{}' because no AP ssid is associated".format(client.client_mac)
+		elif add_type == "probes":
 			self.air_scanner.update_bssids_in_probes()
 			add_list = ObjectFilter().filter(self.air_scanner.get_probe_requests(), filter_string)
-			for client in add_list:
-				client_mac = client.client_mac
-				try:
-					if len(client.ap_bssids) > 0:
-						for bssid in client.ap_bssids:
-							if bssid and bssid != "":
-								self.air_deauthenticator.add_client(client_mac, bssid, client.ap_ssid)
-				except:
-					print "[-] Cannot add client '{}' because no AP bssid is associated".format(client_mac)
+			for probe in add_list:
+				if len(probe.ap_bssids) > 0:
+					for bssid in probe.ap_bssids:
+						if bssid and bssid != "":
+							self.air_injector.add_client(probe.client_mac, bssid, probe.ap_ssid)
+				else:
+					print "[-] Cannot add client '{}' because no AP bssid is associated".format(probe.client_mac)
 	
 
-	def deauthor_del(self, del_type, filter_string):
+	def injector_del(self, del_type, filter_string):
 		if del_type == "aps":
-			del_list = set(ObjectFilter().filter(self.air_deauthenticator.aps_to_deauth, filter_string))
-			self.air_deauthenticator.del_aps(del_list)
-		elif del_type == "clients":
-			del_list = ObjectFilter().filter(self.air_deauthenticator.clients_to_deauth, filter_string)
-			self.air_deauthenticator.del_clients(del_list)
+			del_list = set(ObjectFilter().filter(self.air_injector.get_ap_targets(), filter_string))
+			self.air_injector.del_aps(del_list)
+		elif del_type == "probes" or del_type == "clients":
+			del_list = ObjectFilter().filter(self.air_injector.get_client_targets(), filter_string)
+			self.air_injector.del_clients(del_list)
 
 	def crack_handshake(self, id, is_half):
 		wpa_cracker = self.wpa_cracker_from_conf(is_half)
@@ -348,19 +340,19 @@ class AirCommunicator(object):
 		self.info_printer.add_info("sniffed_probe", probe_list, probe_arg_list, headers)
 		self.info_printer.print_info("sniffed_probe", filter_string)
 
-	def print_aps_to_deauth(self, filter_string = None):
-		bssid_list = list(self.air_deauthenticator.aps_to_deauth)
-		bssid_arg_list = ["id","bssid","ssid", "channel"]
+	def print_ap_injection_targets(self, filter_string = None):
+		ap_list = list(self.air_injector.get_ap_targets())
+		ap_arg_list = ["id","bssid","ssid", "channel"]
 		headers = ["ID:", "AP BSSID:", "AP SSID", "AP CHANNEL"]
-		self.info_printer.add_info("deauth_bssid", bssid_list, bssid_arg_list, headers)
-		self.info_printer.print_info("deauth_bssid", filter_string)
+		self.info_printer.add_info("ap_target", ap_list, ap_arg_list, headers)
+		self.info_printer.print_info("ap_target", filter_string)
 
-	def print_clients_to_deauth(self, filter_string = None):
-		client_list = list(self.air_deauthenticator.clients_to_deauth)
-		client_arg_list = ["id","client_mac","ap_bssid","ap_ssid"]
+	def print_client_injection_targets(self, filter_string = None):
+		client_list = list(self.air_injector.get_client_targets())
+		client_arg_list = ["id","client_mac","associated_bssid","associated_ssid"]
 		headers = ["ID:", "CLIENT MAC:", "AP BSSID:", "AP SSID:"]
-		self.info_printer.add_info("deauth_client", client_list, client_arg_list, headers)
-		self.info_printer.print_info("deauth_client", filter_string)
+		self.info_printer.add_info("client_target", client_list, client_arg_list, headers)
+		self.info_printer.print_info("client_target", filter_string)
 
 	def print_connected_clients(self, filter_string = None):
 		client_list = self.air_host.aplauncher.get_connected_clients()

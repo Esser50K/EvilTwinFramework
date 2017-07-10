@@ -12,93 +12,10 @@ from AuxiliaryModules.packet import Beacon, ProbeResponse, ProbeRequest, Associa
 from time import sleep
 from threading import Thread, Lock
 from netaddr import EUI, OUI
-#from scapy.all import sniff, Dot11, Dot11Beacon, Dot11Elt, Dot11ProbeReq, Dot11ProbeResp, EAPOL, EAP
 from scapy.all import *
 from utils.networkmanager import NetworkCard
 from utils.utils import DEVNULL
-
-class AccessPoint(object):
-	"""
-	This class represents an Access Point Object
-	Most arguments can be filled out automatically with a scan
-	The wpa/wpa2 key has to be specified
-	"""
-
-	def __init__(self,  id = 0, ssid=None, bssid=None, channel=None, rssi=None,
-						encryption_methods=(), encryption_cipher=None, authentication_method=None):
-		self.id = id
-		self.ssid = ssid
-		self.bssid = bssid
-		self.channel = channel
-		self.rssi = rssi
-		self.crypto = "/".join(encryption_methods)
-		self.cipher = encryption_cipher
-		self.auth = authentication_method
-		self.psk = None 
-
-	def __str__(self):
-		return  " ".join(   [   str(self.bssid), str(self.ssid), \
-								str(self.crypto), str(self.cipher), str(self.auth)    ]   )
-
-class WiFiClient(object):
-	"""
-	This class represents a WiFi Client
-	These are detected whenever they send probe send probe requests
-	One can check if they are associated if the Access Point has responded
-	"""
-
-	def __init__(self, id = 0, probeInfo = None):
-		self.id = id
-		self.client_mac = None
-		self.client_org = None
-		self.probed_ssids = None
-		self.rssi = None
-		self.associated_ssid = None
-		self._parse_probe(probeInfo)
-
-	def is_associated(self):
-		return self.associated_ssid != None
-
-	def _parse_probe(self, probeInfo):
-		if probeInfo != None:
-			self.client_mac = probeInfo.client_mac
-			self.client_org = probeInfo.client_org
-			self.probed_ssids = set([probeInfo.ap_ssid])
-			if probeInfo.type == "REQ":
-				self.rssi = probeInfo.rssi
-			elif probeInfo.type == "ASSO":
-				self.associated_ssid = probeInfo.ap_ssid
-
-	def __eq__(self, other):
-		return self.client_mac == other.client_mac
-
-
-class ProbeInfo(object):
-
-	def __init__(self,  id = 0,
-						client_mac = None, client_org = None, 
-						ap_ssid = None, ap_bssids = None, 
-						rssi = None, ptype = None):
-		self.id = id
-		self.client_mac = client_mac
-		self.client_org = client_org
-		self.ap_bssids = ap_bssids
-		self.ap_ssid = ap_ssid
-		self.rssi = rssi
-		self.type = ptype
-
-	def isPair(self, otherProbe):
-		return 	(self.client_mac == other.client_mac) and \
-				(self.ap_ssid == other.ap_ssid) and \
-				(self.type != other.type)
-
-	def __eq__(self, other):
-		return 	(self.client_mac == other.client_mac) and \
-				(self.ap_ssid == other.ap_ssid) and \
-				(self.type == other.type)
-
-	def __str__(self):
-		return "{}-{}-{}".format(self.client_mac, self.ap_ssid, self.type)
+from utils.wifiutils import AccessPoint, WiFiClient, ProbeInfo
 
 class AirScanner(object):
 
@@ -263,17 +180,17 @@ class AirScanner(object):
 	def _get_info_from_probe(self, probe, probe_type):
 		ap_bssids = self.get_bssids_from_ssid(probe.ssid)   # Returns a list with all the bssids
 		probe_id = len(self.get_probe_requests())
-		probe = ProbeInfo(  probe_id, probe.client_mac, probe.client_vendor, 
-							probe.ssid, ap_bssids, probe.rssi, probe_type)
-		return probe
+		probe_info = ProbeInfo(  probe_id, probe.client_mac, probe.client_vendor, 
+								 probe.ssid, ap_bssids, probe.rssi, probe_type)
+		return probe_info
 
 	def _get_info_from_asso(self, probe, probe_type):
 		try:
 			probe.ssid = self.access_points[probe.bssid].ssid
 		except: pass
-		probe = ProbeInfo(  0, probe.client_mac, probe.client_vendor, 
-							probe.ssid, [probe.bssid], probe.rssi, probe_type)
-		return probe
+		probe_info = ProbeInfo(  0, probe.client_mac, probe.client_vendor, 
+								 probe.ssid, [probe.bssid], probe.rssi, probe_type)
+		return probe_info
 
 
 	def _add_probe(self, probeInfo):
@@ -294,11 +211,10 @@ class AirScanner(object):
 			
 		with self.client_lock:
 			client_id = len(self.get_wifi_clients())
-			wifiClient = WiFiClient(client_id, probe)
+			wifiClient = WiFiClient(client_id, probeInfo = probe)
 			try:
 				if wifiClient not in self.get_wifi_clients():
 					self.clients[probe.client_mac] = wifiClient
-					print "New client:", wifiClient.client_mac
 				else:
 					wifiClient = self.clients[probe.client_mac]
 					wifiClient.probed_ssids.add(probe.ap_ssid)
@@ -306,6 +222,7 @@ class AirScanner(object):
 					if probe.type == "ASSO":
 						try:
 							wifiClient.associated_ssid = probe.ap_ssid
+							wifiClient.associated_bssid = probe.ap_bssids[0]
 						except: pass
 					elif probe.type == "REQ":
 						wifiClient.rssi = probe.rssi
@@ -341,7 +258,7 @@ class AirScanner(object):
 		
 	def get_bssids_from_ssid(self, ssid):
 		if not (ssid and ssid != ""):
-			return None
+			return []
 
 		out = []
 		for ap in self.get_access_points():

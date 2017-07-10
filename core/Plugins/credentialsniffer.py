@@ -7,7 +7,7 @@ While sniffing or even while running a fake access point to capture hal wpa hand
 """
 import os, traceback
 from pyric import pyw as pyw
-from plugin import AirScannerPlugin, AirHostPlugin, AirDeauthorPlugin
+from plugin import AirScannerPlugin, AirHostPlugin, AirInjectorPlugin
 from AuxiliaryModules.packet import Beacon
 from scapy.all import Ether, Dot11Beacon, EAPOL, EAP, LEAP, PcapWriter, sniff
 from utils.networkmanager import NetworkCard
@@ -19,7 +19,7 @@ try:  # Python Scapy-Com check (inspiration from EAPEAK/McIntyre)
 except ImportError:
 	print "[-] Community version of Scapy (Scapy-Com) is missing, please run setup.py for full instalation"
 
-class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirDeauthorPlugin):
+class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirInjectorPlugin):
 
 	def __init__(self):
 		super(CredentialSniffer, self).__init__("credentialsniffer")
@@ -60,12 +60,12 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirDeauthorPlugin):
 
 	# This will be called before a deauthentication attack
 	# The channel needs to be fixed so it does not miss any packets
-	def pre_deauth(self):
+	def pre_injection(self):
 		card = NetworkCard(self.running_interface)
 		card.set_channel(self.fixed_channel)
 
 	# This will be called after a deauthentication attack
-	def post_deauth(self):
+	def post_injection(self):
 		print "[+] Starting Handshake and Credential sniffing on {} and channel {} for {} seconds".format(
 																				self.running_interface, 
 																				self.fixed_channel,

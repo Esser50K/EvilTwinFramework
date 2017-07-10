@@ -48,10 +48,16 @@ class AirInjectorPlugin(Plugin):
 
 	def __init__(self, name):
 		super(AirInjectorPlugin, self).__init__(name)
+		self.packets = set()
+		self.should_stop = False
+		self.injection_interface = None
+
+	def set_injection_interface(self, interface):
+		self.injection_interface = interface
 
 	# this method receives either APs or Clients from the AirScanner
 	# the specific injector will interpret what to do and create the corresponding packets
-	def interpret_targets(self, targets):
+	def interpret_targets(self, ap_targets, client_targets):
 		pass
 
 	# the packet created in interpret_targets are sent in this method as the user specifies
