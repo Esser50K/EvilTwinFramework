@@ -97,14 +97,19 @@ class ObjectFilter(object):
 			for filter_arg in filter_map:
 				try:
 					for filter_value in filter_map[filter_arg]:
-						if type(obj.__dict__[filter_arg]) is str:
-							if not (type(obj.__dict__[filter_arg]) is list or type(obj.__dict__[filter_arg]) is set):
-								add = False
-								break
-							else:
-								for element in obj.__dict__[filter_arg]:
+						if not (type(obj.__dict__[filter_arg]) is list or type(obj.__dict__[filter_arg]) is set):
+							try:
+								if int(filter_value) != int(obj.__dict__[filter_arg]):
 									add = False
 									break
+							except:
+								if str(filter_value).lower() not in str(obj.__dict__[filter_arg]).lower():
+									add = False
+									break
+						else:
+							if filter_value not in obj.__dict__[filter_arg]:
+								add = False
+								break
 				except KeyError: # Don't judge if obj does not have a certain attribute
 					pass
 
