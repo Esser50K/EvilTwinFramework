@@ -59,13 +59,16 @@ class AirScanner(object):
 			hopper_thread = Thread( target=self.hop_channels)
 			hopper_thread.start()
 		else:
-			card = NetworkCard(interface)
-			card.set_channel(fixed_channel)
-			if card.get_channel() == fixed_channel:
-				print "[+] Set fixed channel to {}".format(fixed_channel)
-			else:
-				print "[-] Could not change channel, try unplugging your interface."
-				print "[/] Channel is on {}".format(card.get_channel())
+			try:
+				card = NetworkCard(interface)
+				card.set_channel(fixed_channel)
+				if card.get_channel() == fixed_channel:
+					print "[+] Set fixed channel to {}".format(fixed_channel)
+				else:
+					print "[-] Could not change channel, try unplugging your interface."
+					print "[/] Channel is on {}".format(card.get_channel())
+			except:
+				print "[-] Cannot set channel at the moment."
 
 
 	def stop_sniffer(self):

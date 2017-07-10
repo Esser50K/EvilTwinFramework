@@ -36,12 +36,11 @@ class ARPReplayer(AirScannerPlugin, AirInjectorPlugin):
 
 	def pre_scanning(self):
 		timestr = time.strftime("%Y|%m|%d-%H|%M|%S")
-		self.filename = "wep_{m}_{t}.cap".format(m = self.target_bssid, t = timestr)
-		tcpdump_string = "tcpdump -i wlan1".split()
+		self.filename = "wep_{m}_{t}.pcap".format(m = self.target_bssid, t = timestr)
+		tcpdump_string = "tcpdump -i {}".format(self.sniffing_interface).split()
 		tcpdump_string += ["wlan type data and (wlan addr1 {t} or wlan addr2 {t})".format(t=self.target_bssid)]
 		tcpdump_string += "-w {log}".format(log = self.destination_folder + self.filename).split()
 
-		print tcpdump_string
 		self.tcpdump_process = Popen(tcpdump_string, stdout = DEVNULL, stderr = DEVNULL)
 
 
