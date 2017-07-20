@@ -6,6 +6,7 @@ the deauthentication attacks, targeted or general
 import os
 import logging
 import traceback
+from scapy.all import conf
 from time import sleep
 from threading import Thread, Lock
 from utils.utils import DEVNULL
@@ -55,9 +56,10 @@ class AirInjector(object):
         if len(self.plugins) == 0:
             self.add_plugin(Deauthenticator()) # Deauthentication is default behaviour of injector
 
+        injection_socket = conf.L2socket(iface=self.injection_interface)
         for plugin in self.plugins:
             plugin.interpret_targets(self._ap_targets, self._client_targets)
-            plugin.set_injection_interface(self.injection_interface)
+            plugin.set_injection_socket(injection_socket)
 
         # Launches all added plugins' post injection methods and waits for finish
         self.injection_thread_pool_start("pre_injection")
@@ -73,10 +75,11 @@ class AirInjector(object):
         del self.plugins[:] # Plugin cleanup for next use
         
         print "[+] Post injection methods finished"
-
+        
         # Restore state after all threads finishing
+        injection_socket.close()
         self.injection_running = False
-        self._restore_deauthor_state()
+        self._restore_injection_state()
 
     def injection_thread_pool_start(self, plugin_method):
         plugin_threads = []
@@ -91,7 +94,7 @@ class AirInjector(object):
             thread.join()       # Wait to finish execution
         del plugin_threads[:]   # Cleanup
 
-    def _restore_deauthor_state(self):
+    def _restore_injection_state(self):
         try:
             card = NetworkCard(self.running_interface)
             if card.get_mode().lower() != self._previous_mode:

@@ -61,14 +61,14 @@ class Deauthenticator(AirInjectorPlugin):
         count = self._burst_count if self._burst_count > 0 else 5
 
         print dedent("[+] Starting deauthentication attack \n\
-                    - {nburst} bursts of 2 packets \n\
+                    - {nburst} bursts of 1 packets \n\
                     - {npackets} different packets").format( nburst=self._burst_count,
                                                              npackets=len(self.packets))
         try:
             while count >= 0 and not self.should_stop:
                 for packet in self.packets:
-                    sendp(packet, iface = self.injection_interface, count = 2, inter = 0.1, verbose=0)
-                            
+                    self.injection_socket.send(packet)
+                    
                 count -= 1
         except socket_error as e:
             if not e.errno == 100:

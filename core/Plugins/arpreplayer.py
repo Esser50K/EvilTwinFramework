@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 This plugin will launch a full arp replay attack on a WEP network
+You can then check the wep data log and launch aircrack on it.
 """
 import os, traceback, time
 from plugin import AirScannerPlugin, AirInjectorPlugin
@@ -101,6 +102,7 @@ class ARPReplayer(AirScannerPlugin, AirInjectorPlugin):
 		self.injection_running = False
 		self.arp_packet = None
 		self.n_arp_packets_sent = 0
+		s.close()
 
 	def post_scanning(self):
 		self.injection_working = False

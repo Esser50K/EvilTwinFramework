@@ -50,10 +50,10 @@ class AirInjectorPlugin(Plugin):
 		super(AirInjectorPlugin, self).__init__(name)
 		self.packets = set()
 		self.should_stop = False
-		self.injection_interface = None
+		self.injection_socket = None
 
-	def set_injection_interface(self, interface):
-		self.injection_interface = interface
+	def set_injection_socket(self, L2socket):
+		self.injection_socket = L2socket
 
 	# this method receives either APs or Clients from the AirScanner
 	# the specific injector will interpret what to do and create the corresponding packets
