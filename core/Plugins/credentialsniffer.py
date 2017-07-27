@@ -152,8 +152,11 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirInjectorPlugin):
 					self.wpa_handshakes[client_mac]['packets'].append(packet)
 
 			# Frame 3
-			# Flags: KeyType + Install + ACK + MIC + Secure + Encrypted
-			elif eapol_packet.flags == 633:
+			# Flags: (WPA2) KeyType + Install + ACK + MIC + Secure + Encrypted 
+			# or 
+			# Flags: (WPA) KeyType + Install + ACK + MIC
+
+			elif eapol_packet.flags == 633 or eapol_packet.flags == 57:
 				client_mac = self._get_destination_from_packet(packet)
 				try:
 					self.wpa_handshakes[client_mac]['frame3'] = True
@@ -162,8 +165,10 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirInjectorPlugin):
 				except Exception as e: pass # Caught some response packets before capturing the requests
 
 			# Frame 4
-			# Flags: KeyType + MIC + Secure
-			elif eapol_packet.flags == 97:
+			# Flags: (WPA2) KeyType + MIC + Secure
+			# or
+			# Flags: (WPA) KeyType + MIC
+			elif eapol_packet.flags == 97 or eapol_packet.flags == 33:
 				client_mac = self._get_source_from_packet(packet)
 				try:
 					if packet.replay == self.wpa_handshakes[client_mac]['replay_counter']:
