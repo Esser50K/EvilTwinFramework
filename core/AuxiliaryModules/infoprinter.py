@@ -28,14 +28,17 @@ class InfoPrinter(object):
 			for arg in args:
 				val = obj.__dict__[arg]
 				if type(val) is list or type(val) is set:
-					val = [x for x in val if x is not None] # Remove Nones
+					val = sorted([x for x in val if x is not None]) # Remove Nones
 					val = "\n".join(val).encode("utf-8").strip()
 
 				# Try parse it as int so the output is sorted correctly
 				try:
 					obj_arg_list.append(int(val))
 				except:
-					obj_arg_list.append(str(val).encode("utf-8"))
+					if type(val) is str:
+						obj_arg_list.append(val.encode("utf-8"))
+					else:
+						obj_arg_list.append(str(val).encode("utf-8"))
 			table.add_row(obj_arg_list)
 
 		sorted_prettytable = table.get_string(sortby=headers[0])

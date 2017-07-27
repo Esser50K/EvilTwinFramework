@@ -191,7 +191,7 @@ class AirCommunicator(object):
 			air_plugin_instance = air_plugin()
 			if air_plugin_instance.name in plugins:
 				airmodule.add_plugin(air_plugin_instance)
-				print "Successfully added {} plugin.".format(air_plugin_instance.name)
+				print "[+] Successfully added {} plugin.".format(air_plugin_instance.name)
 
 	def stop_air_communications(self, stop_sniffer, stop_ap, stop_injection):
 		if stop_sniffer and self.air_scanner.sniffer_running:

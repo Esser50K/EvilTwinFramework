@@ -43,7 +43,7 @@ class ETFConsole(Cmd):
 	filter_keywords = ["where", "only"]
 	plugin_keyword = ["with"]
 
-	airhost_plugins = ["dnsspoofer", "credentialprinter", "credentialsniffer", "karma"]
+	airhost_plugins = ["dnsspoofer", "credentialsniffer", "karma"]
 	airscanner_plugins = ["packetlogger", "selfishwifi", "credentialsniffer", "arpreplayer"]
 	airinjector_plugins = ["credentialsniffer", "deauthenticator", "arpreplayer"]
 	aircracker_types = ["wpa_crackers", "half_wpa_crackers"]

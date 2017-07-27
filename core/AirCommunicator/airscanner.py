@@ -101,7 +101,7 @@ class AirScanner(object):
 			conf.use_pcap=True # Accelerate sniffing -> Less packet loss
 			sniff(iface=self.running_interface, store=0, prn=self.handle_packets, stop_filter= (lambda pkt: not self.sniffer_running))
 		except Exception as e:
-			print e
+			print str(e)
 			print "[-] Exception occurred while sniffing on interface '{}'".format(self.running_interface)
 
 		print "[+] Packet sniffer on interface '{}' has finished".format(self.running_interface)
