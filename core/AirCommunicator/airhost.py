@@ -55,9 +55,7 @@ class AirHost(object):
 		self.aplauncher.stop_access_point()
 		self.dnsmasqhandler.stop_dnsmasq()
 		self.running_interface = None
-		print "[+] Access Point stopped, restarting network services..."
-		os.system('service networking restart')
-		os.system('service NetworkManager restart')
+		print "[+] Access Point stopped..."
 
 		for plugin in self.plugins:
 			plugin.stop()

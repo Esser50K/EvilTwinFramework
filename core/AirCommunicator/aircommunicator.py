@@ -35,7 +35,9 @@ class AirCommunicator(object):
 		self.air_scanner = AirScanner()
 		self.air_injector = AirInjector()
 		self.air_cracker = AirCracker(self.configs["aircracker"]["log_dir"])
-		self.network_manager = NetworkManager(self.config_files["networkmanager_conf"])
+
+		unmanaged_interfaces = ConfigurationManager().config["etf"]["unmanaged_interfaces"]
+		self.network_manager = NetworkManager(self.config_files["networkmanager_conf"], unmanaged_interfaces)
 
 		self.info_printer = InfoPrinter()
 
