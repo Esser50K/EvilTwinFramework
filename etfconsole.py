@@ -609,10 +609,9 @@ class ETFConsole(Cmd):
 	def do_EOF(self, line): # control-D
 		print "Exiting..."
 		self.aircommunicator.stop_air_communications(True, True, True)
+		console.aircommunicator.network_manager.cleanup()
 		self.etfitm.stop()
 		self.spawnmanager.restore_all()
-		os.system('service networking restart')
-		os.system('service network-manager restart')
 		os._exit(0)
 
 	# Just overwriting this method so it doesn't execute the last non-empty line
@@ -635,9 +634,5 @@ if __name__ == '__main__':
 	except Exception as e:
 		print "[-] Exception in command line loop:\n", e
 		traceback.print_exc()
-		console.aircommunicator.stop_air_communications(True, True, True)
-		console.etfitm.stop()
-		console.spawnmanager.restore_all()
-		os.system('service networking restart')
-		os.system('service network-manager restart')
+		console.do_EOF("")
 		os._exit(1)

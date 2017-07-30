@@ -23,6 +23,13 @@ class NetworkCard(object):
         self._ap_mode_support = "AP" in self.modes
         self._monitor_mode_support = "monitor" in self.modes
         self._number_of_supported_aps = None
+        self._is_managed = False
+
+    def set_managed(self, state):
+        self._is_managed = state
+
+    def is_managed(self):
+        return self._is_managed
 
     def set_txpower(self, dbm):
         pyw.txset(self.card, 'fixed', dbm)
@@ -148,15 +155,16 @@ class NetworkManager(object):
         self.unmanaged_interfaces_setup(unmanaged_interfaces)
 
     def unmanaged_check(self, interface):
+        ok_status = ["unmanaged", "disconnected", "unavailable"]
         for line in check_output(["nmcli","dev"]).split("\n"):
             args = line.split()
             if len(args) == 4:
                 iface, type, status, connection = args
-                if interface == iface and status == "unmanaged":
-                    return True
+                if interface == iface:
+                    return True if status in ok_status else False
             else: continue
 
-        return False
+        return True
 
     def unmanaged_interfaces_setup(self, unmanaged_interfaces):
         for iface in unmanaged_interfaces:
@@ -185,10 +193,10 @@ class NetworkManager(object):
                 if not card.set_mac(mac):
                     return False
                     
-                if not self.network_manager_ignore(interface, mac, virtInterfaces):
-                    return False
-
                 if not self.unmanaged_check(interface):
+                    if not self.network_manager_ignore(interface, mac, virtInterfaces):
+                        return False
+
                     os.system("service network-manager restart") # Restarting NetworkManager service
 
                 if pyw.macget(card.card) == mac:
@@ -234,6 +242,7 @@ class NetworkManager(object):
             self.cleanup_filehandler()
             self.file_handler = FileHandler(self.nm_config_file)
             self.file_handler.write(ignore_config)
+            self.netcards[interface].set_managed(True)
         except Exception as e:
             print e
             return False
@@ -263,9 +272,16 @@ class NetworkManager(object):
             self.file_handler = None
 
     def reset_interfaces(self):
+        restart_services = False
         for card in [card for card in self.netcards if not self.netcards[card].is_virtual]:
             self.netcards[card].set_mac(self.netcards[card].original_mac)
             self.netcards[card].set_mode('managed')
+            if self.netcards[card].is_managed():
+                restart_services = True
+
+        if restart_services:
+            os.system("service networking restart")
+            os.system("service network-manager restart")
 
     def cleanup(self):
         NetUtils().flush_iptables()

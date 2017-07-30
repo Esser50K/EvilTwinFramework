@@ -60,10 +60,11 @@ class AirHost(object):
 		for plugin in self.plugins:
 			plugin.stop()
 
-		if free_plugins:
+		if free_plugins and len(self.plugins) > 0:
 			for plugin in self.plugins:
 				plugin.restore()
 			del self.plugins[:]
+			print "[+] Cleared Airhost plugins"
 
 	def is_running(self):
 		return self.running_interface != None
