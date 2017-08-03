@@ -45,9 +45,9 @@ class AirCommunicator(object):
 		if not self.air_injector.is_running():
 			injection_interface = self.configs["airinjector"]["injection_interface"]
 			if injection_interface not in winterfaces():
-				print "[-] injection_interface '{}' does not exist".format(injection_interface)
+				print "[-] Injection_interface '{}' does not exist".format(injection_interface)
 				return
-		
+
 			self.add_plugins(plugins, self.air_injector, AirInjectorPlugin)
 			self.air_injector.start_injection_attack(injection_interface)
 		else:
@@ -55,10 +55,10 @@ class AirCommunicator(object):
 
 	def start_access_point(self, plugins = []):
 		'''
-		This method is responsible for starting the access point with hostapd 
+		This method is responsible for starting the access point with hostapd
 		while also avoiding conflicts with NetworkManager.
 		It replaces the original NetworkManager.conf file
-		and adding some lines that tell it to ignore managing the interface 
+		and adding some lines that tell it to ignore managing the interface
 		that we are going to use as AP then it restarts the service
 		'''
 
@@ -95,14 +95,14 @@ class AirCommunicator(object):
 								  len(ssid) - 1	if is_multiple_ssid else \
 								  0
 
-		if self.network_manager.set_mac_and_unmanage(	ap_interface, bssid, 
-														retry = True, 
+		if self.network_manager.set_mac_and_unmanage(	ap_interface, bssid,
+														retry = True,
 														virtInterfaces = nVirtInterfaces):
 
 			# Initial configuration
 			self.network_manager.configure_interface(ap_interface, gateway)
 			self.network_manager.iptables_redirect(ap_interface, internet_interface)
-			
+
 			# dnsmasq and hostapd setup
 			try:
 				captive_portal_mode = self.configs["airhost"]["dnsmasqhandler"]["captive_portal_mode"].lower() == "true"
@@ -115,7 +115,7 @@ class AirCommunicator(object):
 			try:
 				self.air_host.aplauncher.write_hostapd_configurations(
 					interface=ap_interface, ssid=ssid, bssid=bssid, channel=channel, hw_mode=hw_mode,
-					encryption=self.configs["airhost"]["aplauncher"]["encryption"], 
+					encryption=self.configs["airhost"]["aplauncher"]["encryption"],
 					auth=self.configs["airhost"]["aplauncher"]["auth"],
 					cipher=self.configs["airhost"]["aplauncher"]["cipher"],
 					password=self.configs["airhost"]["aplauncher"]["password"],
@@ -129,7 +129,7 @@ class AirCommunicator(object):
 
 			# Start services
 			print_creds = self.configs["airhost"]["aplauncher"]["print_creds"].lower() == "true"
-			self.air_host.start_access_point(   ap_interface, 
+			self.air_host.start_access_point(   ap_interface,
 												print_creds)
 
 			# Configure Virtual Interfaces once hostapd has set them up
@@ -145,15 +145,15 @@ class AirCommunicator(object):
 
 			# Needed for dnsmasq to work correctly with virtual interfaces once they are configured
 			if extra_interfaces:
-				self.air_host.dnsmasqhandler.start_dnsmasq() 
+				self.air_host.dnsmasqhandler.start_dnsmasq()
 
 			return True
 
 		print dedent("""
-					[-] Errors occurred while trying to start access point, 
+					[-] Errors occurred while trying to start access point,
 					try restarting network services and unplug your network adapter""")
 		return False
-		
+
 	def start_sniffer(self, plugins = []):
 		# Sniffing options
 		if not self.air_scanner.sniffer_running:
@@ -184,7 +184,7 @@ class AirCommunicator(object):
 			self.air_scanner.set_probe_sniffing(sniff_probes)
 			self.air_scanner.set_beacon_sniffing(sniff_beacons)
 			self.air_scanner.start_sniffer(sniffing_interface, hop_channels, fixed_sniffing_channel)
-				
+
 		else:
 			print "[-] Sniffer already running"
 
@@ -228,12 +228,12 @@ class AirCommunicator(object):
 
 	# APLauncher action methods
 	def airhost_copy_ap(self, id):
-		password_info = dedent( """ 
-								Note:   The AP you want to copy uses encryption, 
+		password_info = dedent( """
+								Note:   The AP you want to copy uses encryption,
 										you have to specify the password in the airhost/aplauncher configurations.
 								""")
 		bssid_info = dedent("""
-							Note:   Issues will arise when starting the 
+							Note:   Issues will arise when starting the
 									rogue access point with a bssid that exists nearby.
 							""")
 		access_point = self.air_scanner.get_access_point(id)
@@ -253,7 +253,7 @@ class AirCommunicator(object):
 			ConfigurationManager().config.write() # Singleton perks ;)
 		else:
 			print "[-] No access point with ID = {}".format(str(id))
-		
+
 	def airhost_copy_probe(self, id):
 		probe = self.air_scanner.get_probe_request(id)
 		if probe:
@@ -297,7 +297,7 @@ class AirCommunicator(object):
 							self.air_injector.add_client(probe.client_mac, bssid, probe.ap_ssid)
 				else:
 					print "[-] Cannot add client '{}' because no AP bssid is associated".format(probe.client_mac)
-	
+
 
 	def injector_del(self, del_type, filter_string):
 		if del_type == "aps":
@@ -318,7 +318,7 @@ class AirCommunicator(object):
 		aircracker_conf = self.configs["aircracker"]
 		wpa_cracker = aircracker_conf["half_wpa_cracker"] if is_half else aircracker_conf["wpa_cracker"]
 		wpa_cracker_conf = aircracker_conf["half_wpa_crackers" if is_half else "wpa_crackers"][wpa_cracker]
-		return WPACracker(	wpa_cracker_conf["name"], wpa_cracker_conf["location"], 
+		return WPACracker(	wpa_cracker_conf["name"], wpa_cracker_conf["location"],
 							wpa_cracker_conf["ssid_flag"], wpa_cracker_conf["pcap_flag"], wpa_cracker_conf["wordlist_flag"],
 							aircracker_conf["ssid"], aircracker_conf["pcap_file"], aircracker_conf["wordlist_file"],
 							aircracker_conf["wordlist_generator_string"])
