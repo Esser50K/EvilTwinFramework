@@ -13,35 +13,35 @@ from ConfigurationManager.configmanager import ConfigurationManager
 
 
 class Spawner(object):
-	def __init__(self, name):
-		self.name = name
-		self.config = ConfigurationManager().config["etf"]["spawner"][name]
-		self.arg_string = " ".join(self.config["args"])
-		self.system_location = self.config["system_location"]
-		self.calling = None
-		self.process = None
-		self.is_set_up = False
-		if not os.path.exists(self.system_location):
-			raise InvalidFilePathException("The path '{location}' does not exist, \
-											'{name}' could not be loaded.".format(	location=system_location,
-																					name=name))
+    def __init__(self, name):
+        self.name = name
+        self.config = ConfigurationManager().config["etf"]["spawner"][name]
+        self.arg_string = " ".join(self.config["args"])
+        self.system_location = self.config["system_location"]
+        self.calling = None
+        self.process = None
+        self.is_set_up = False
+        if not os.path.exists(self.system_location):
+            raise InvalidFilePathException("The path '{location}' does not exist, \
+                                            '{name}' could not be loaded.".format(  location=system_location,
+                                                                                    name=name))
 
-	# This method is supposed to be overriden by subclass
-	def setup_process(self):
-		self.is_set_up = True
+    # This method is supposed to be overriden by subclass
+    def setup_process(self):
+        self.is_set_up = True
 
-	# This method is supposed to be overriden by subclass
-	def restore_process(self):
-		os.system("pkill {}".format(self.name))
-		self.is_set_up = False
+    # This method is supposed to be overriden by subclass
+    def restore_process(self):
+        os.system("pkill {}".format(self.name))
+        self.is_set_up = False
 
 
-	def spawn(self):
-		self.setup_process()
-		self.process = Popen("sudo gnome-terminal -e".split() +
-							 ['{name} {args}'.format(	name=self.name,
-														args=self.arg_string)])
+    def spawn(self):
+        self.setup_process()
+        self.process = Popen("sudo gnome-terminal -e".split() +
+                             ['{name} {args}'.format(   name=self.name,
+                                                        args=self.arg_string)])
 
-		print "[+] Spawned '{}' with args:\n{}".format(self.calling, self.arg_string)
-		print "[/] NOTE: \nType 'restore {}' to close and restore the spawner.".format(self.name)
-		print "Should type it even if already closed manually."
+        print "[+] Spawned '{}' with args:\n{}".format(self.calling, self.arg_string)
+        print "[/] NOTE: \nType 'restore {}' to close and restore the spawner.".format(self.name)
+        print "Should type it even if already closed manually."
