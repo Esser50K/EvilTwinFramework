@@ -132,7 +132,7 @@ class NetworkCard(object):
 
                             self._number_of_supported_aps = int(real_num)
                             break
-                        except: 
+                        except:
                             print "Error converting '{}' to int".format(line.split("=")[-1].strip())
                             return None
 
@@ -156,13 +156,14 @@ class NetworkManager(object):
 
     def unmanaged_check(self, interface):
         ok_status = ["unmanaged", "disconnected", "unavailable"]
-        for line in check_output(["nmcli","dev"]).split("\n"):
-            args = line.split()
-            if len(args) == 4:
+        for line in check_output(["nmcli", "dev"]).split("\n"):
+            try:
+                args = line.split()[:4]
                 iface, type, status, connection = args
                 if interface == iface:
-                    return True if status in ok_status else False
-            else: continue
+                    return status in ok_status
+                else: continue
+            except: pass
 
         return True
 
@@ -172,8 +173,8 @@ class NetworkManager(object):
                 self.set_mac_and_unmanage(iface, self.netcards[iface].get_mac(), True)
 
     def iptables_redirect(self, from_if, to_if):
-        card = self.get_netcard(from_if) # Get NetCard object
-        if card != None:
+        card = self.get_netcard(from_if)  # Get NetCard object
+        if card is not None:
             NetUtils().accept_forwarding(from_if)
             if not card.is_virtual():
                 NetUtils().set_postrouting_interface(to_if)
@@ -186,18 +187,18 @@ class NetworkManager(object):
     def set_mac_and_unmanage(self, interface, mac, retry = False, virtInterfaces = 0):
         card = self.get_netcard(interface)
 
-        # Runs at least once, if retry is flagged 
+        # Runs at least once, if retry is flagged
         # it will try to reset the interface and repeat the process
         while(True):
             if card != None:
                 if not card.set_mac(mac):
                     return False
-                    
+
                 if not self.unmanaged_check(interface):
                     if not self.network_manager_ignore(interface, mac, virtInterfaces):
                         return False
 
-                    os.system("service network-manager restart") # Restarting NetworkManager service
+                    os.system("service network-manager restart")  # Restarting NetworkManager service
 
                 if pyw.macget(card.card) == mac:
                     return True
@@ -210,11 +211,11 @@ class NetworkManager(object):
             card = NetworkCard(interface)
             if card.get_mode() != 'managed':
                 card.set_mode('managed')
-        
+
         return False
 
-    # NetworkManager is usually a conflicting process, 
-    # but we can configure it to ignore the interface 
+    # NetworkManager is usually a conflicting process,
+    # but we can configure it to ignore the interface
     # we use as access point or to sniff packets
     def network_manager_ignore(self, interface, mac_address, virtInterfaces = 0):
         if virtInterfaces > 0:
@@ -261,7 +262,7 @@ class NetworkManager(object):
         except KeyError:
             print "[-] Interface: '{}' does not exist".format(interface)
             return None
-        
+
         return netcard
 
 
@@ -287,6 +288,3 @@ class NetworkManager(object):
         NetUtils().flush_iptables()
         self.cleanup_filehandler()
         self.reset_interfaces()
-
-
-
