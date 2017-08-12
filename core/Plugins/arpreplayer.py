@@ -34,7 +34,6 @@ class ARPReplayer(AirScannerPlugin):
         self.injection_running = False
         self.injection_working = False
 
-
     def pre_scanning(self):
         timestr = time.strftime("%Y|%m|%d-%H|%M|%S")
         self.filename = "wep_{m}_{t}.pcap".format(m = self.target_bssid, t = timestr)

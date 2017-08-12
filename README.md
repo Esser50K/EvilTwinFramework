@@ -25,7 +25,7 @@ All Wi-Fi attacks can be implemented with one or a combination of these core fea
 
 <b>All Forms of Evil Twin AP</b>
 
-The Evil Twin Framework, with the help of hostapd can mimick any type of Wi-Fi Network. And by using the hostapd-wpe patch it is easy to get WPA-EAP credentials. 
+The Evil Twin Framework, with the help of hostapd can mimick any type of Wi-Fi Network. And by using the hostapd-wpe patch it is easy to get WPA-EAP credentials.
 
 One can configure it as a catch-all honeypot to find out the encryption type of a network that was probed for.
 
@@ -79,14 +79,14 @@ For now there only is a console interface that is very easy to use and has tab c
 The whole thing wil work according to the etf.conf file.
 You can view and change all configurations via de console, just type:
 
-> config \<press double tab> 
+> config \<press double tab>
 
 to list the modules available for configuration.
 While working on the console type:
 
 > listargs
 
-to view the available parameters, then type:
+to view the available parameters (here you can check if configurations are OK), then type:
 
 > set \<parameter> \<value>
 
@@ -98,15 +98,15 @@ To start an access point make sure you have it configured correctly, type:
 
 > config airhost
 
-check if everything is ok
+check if everything is OK (use listargs)
 
 > config aplauncher
 
-check if everything is ok
+check if everything is OK (use listargs)
 
 > config dnsmasqhandler
 
-check if everything is ok adn start the access point
+check if everything is OK and start the access point
 
 > start airhost
 
@@ -115,7 +115,7 @@ Start scanning:
 
 > config airscanner
 
-check if everything is ok
+check if everything is OK (use listargs)
 
 > start airscanner
 
@@ -138,7 +138,7 @@ Then start the fake access point
 > start airhost
 
 
-If you have an extra WiFi adapter you can deauthenticate others from their network while running the acces point.
+You can deauthenticate others from their network while running the acces point.
 To add access points or clients to be deauthenticated type:
 
 > show sniffed_aps
@@ -152,7 +152,7 @@ The filter_string follows an easy syntax, it goes:
 The args can be any of the column names listed in the table.
 The filter keywords are 'where' for inclusive filtering or 'only' for exclusive filtering, examples:
 
-This will add the access point whose id is 5 to the deauthentication list:
+This will add the access point whose id is 5 to the deauthentication list (this is adding a single and specific AP):
 
 > add aps where id = 5
 
@@ -168,19 +168,20 @@ This will add the access point whose ssid id 'freewifi' AND is on channel 6 to t
 
 > add aps only ssid = freewifi, channel = 6
 
-Now make sure the interface used for the deuathentication attack 
-is not the same as the one used for the fake access point while it is running.
+You can use the same interface for injecting packets while running the fake access point.
+You can check and set configurations with:
 
-> config airdeauthor
+> config airinjector
 
 > listargs
 
-After all that run the deauthor:
+After all that run the Injector (which by default performs Deauthentication attack):
 
-> start airdeauthor
+> start airinjector
 
 Same can be done when deleting from the deauth list with the 'del' command.
 The 'show' command can also be followed by a filter string
 
 
 Contributors can program Plugins in python either for the airscanner or airhost or airdeauthor.
+Contributors can also code MITM scripts for mitmproxy.

@@ -611,7 +611,6 @@ class ETFConsole(Cmd):
         console.aircommunicator.network_manager.cleanup()
         self.etfitm.stop()
         self.spawnmanager.restore_all()
-        os.system("service network-manager restart")
         os._exit(0)
 
     # Just overwriting this method so it doesn't execute the last non-empty line

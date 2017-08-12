@@ -271,6 +271,7 @@ class NetworkManager(object):
         if self.file_handler:
             self.file_handler.restore_file()
             self.file_handler = None
+            os.system("service network-manager restart")
 
     def reset_interfaces(self):
         restart_services = False

@@ -63,9 +63,9 @@ class CaffeLatte(AirScannerPlugin, AirInjectorPlugin):
         flipped_packet[Dot11WEP].wepdata = "".join(flipped_result)
         flipped_packet[Dot11WEP].icv = patched_icv
         # Now lets change the 802.11 information header a bit
-        flipped_packet[Dot11].addr1 = "ff:ff:ff:ff:ff:ff"
-        flipped_packet[Dot11].addr3 = (packet[Dot11].addr2[:-2] + "%02x") % randint(0, 255)
-        flipped_packet[Dot11].addr2 = self.ap_bssid
+        #flipped_packet[Dot11].addr1 = "ff:ff:ff:ff:ff:ff"
+        #flipped_packet[Dot11].addr3 = (packet[Dot11].addr2[:-2] + "%02x") % randint(0, 255)
+        #flipped_packet[Dot11].addr2 = self.ap_bssid
 
         return flipped_packet
 

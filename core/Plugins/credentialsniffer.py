@@ -9,15 +9,40 @@ import os, traceback
 from pyric import pyw as pyw
 from plugin import AirScannerPlugin, AirHostPlugin, AirInjectorPlugin
 from AuxiliaryModules.packet import Beacon
-from scapy.all import Ether, Dot11Beacon, EAPOL, EAP, LEAP, PcapWriter, sniff
+from scapy.packet import *
+from scapy.fields import *
+from scapy.all import Ether, Dot11Beacon, EAPOL, EAP, LEAP, PcapWriter, sniff, bind_layers
+from scapy.all import eap_types as EAP_TYPES
 from utils.networkmanager import NetworkCard
 from utils.utils import NetUtils
 from threading import Thread
 from time import sleep
-try:  # Python Scapy-Com check (inspiration from EAPEAK/McIntyre)
-    from scapy.layers.l2 import eap_types as EAP_TYPES
-except ImportError:
-    print "[-] Community version of Scapy (Scapy-Com) is missing, please run setup.py for full instalation"
+
+# Copied from the scapy-com repository.
+# Seems that new version of Scapy2.3.3.1 does not yet parse WPA handshake packets
+class EAPOLKey(Packet):
+    name = "EAPOL - Key Descriptor Header"
+    fields_desc = [ ByteEnumField("desc_type", 2, {1: "RC4", 2: "802.11", 254: "WPA"}), ]
+
+class EAPOLKeyDot11(Packet):
+    name = "EAPOL - Key Descriptor - 802.11"
+    fields_desc = [ FlagsField("flags", 0, 13, ["KeyType", "res4", "res5", "Install", "ACK",
+                                                "MIC", "Secure", "Error", "Request", "Encrypted", "SMK", "res14", "res15"]),
+                    BitEnumField("version", 1, 3, {1: "MD5/RC4", 2: "SHA1/AES"}),
+                    ShortField("keylen", 0),
+                    LongField("replay", 0),
+                    StrFixedLenField("nonce", "\x00" * 32, 32),
+                    StrFixedLenField("iv", "\x00" * 16, 16),
+                    StrFixedLenField("rsc", "\x00" * 8, 8),
+                    LongField("res", 0),
+                    StrFixedLenField("mic", "\x00" * 16, 16),
+                    FieldLenField("keydatalen", None, length_of="keydata", fmt="H"),
+                    StrLenField("keydata", "", length_from=lambda x: x.keydatalen) ]
+
+bind_layers( EAPOL,         EAP,           type=0)
+bind_layers( EAPOL,         EAPOLKey,      type=3)
+bind_layers( EAPOLKey,      EAPOLKeyDot11, desc_type=254)
+bind_layers( EAPOLKey,      EAPOLKeyDot11, desc_type=2)
 
 class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirInjectorPlugin):
 
@@ -27,7 +52,7 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirInjectorPlugin):
         self.log_dir = self.config["log_dir"]
         self.wifi_clients = {}
         self.wpa_handshakes = {}
-        self.broadcasted_bssids = {} #bssid: beacon_packet
+        self.broadcasted_bssids = {}  # bssid: beacon_packet
 
         self.sniffer_thread = None
         self.should_stop = False
@@ -47,7 +72,6 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirInjectorPlugin):
         # so it never receives a Beacon packet (layer2) to verify the access point ssid
         # best to pass it as parameter since we are running the access point we know the ssid
         self.is_ap = False
-        
 
     # This will be called by the AirSniffer
     def handle_packet(self, packet):
@@ -68,7 +92,7 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirInjectorPlugin):
     # This will be called after a deauthentication attack
     def post_injection(self):
         print "[+] Starting Handshake and Credential sniffing on {} and channel {} for {} seconds".format(
-                                                                                self.running_interface, 
+                                                                                self.running_interface,
                                                                                 self.fixed_channel,
                                                                                 self.timeout)
         self.sniffer_thread = Thread(target=self.start_credential_sniffing)
@@ -82,7 +106,7 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirInjectorPlugin):
             sniff(  store       =   0,
                     prn         =   self.extract_credential_info,
                     stop_filter =   self._stop)
-        except Exception as e: 
+        except Exception as e:
             #print "Error Occurred while sniffing"
             #print e
             pass
@@ -117,8 +141,8 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirInjectorPlugin):
         Looks for frame number 2, 3 and 4 of the WPA 4-Way Handshake and logs the packets
         to be cracked with aircrack-ng or cowpatty
         """
-        eapol_packet = packet["EAPOL"]
 
+        eapol_packet = packet["EAPOL"]
 
         try:
             # Frame 1
@@ -137,7 +161,7 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirInjectorPlugin):
                     self.wpa_handshakes[client_mac]['packets'].append(packet)
 
             # Frame 2
-            # Flags: KeyType + MIC  
+            # Flags: KeyType + MIC
             elif eapol_packet.flags == 33:
                 client_mac = self._get_source_from_packet(packet)
                 bssid = self._get_destination_from_packet(packet)
@@ -152,8 +176,8 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirInjectorPlugin):
                     self.wpa_handshakes[client_mac]['packets'].append(packet)
 
             # Frame 3
-            # Flags: (WPA2) KeyType + Install + ACK + MIC + Secure + Encrypted 
-            # or 
+            # Flags: (WPA2) KeyType + Install + ACK + MIC + Secure + Encrypted
+            # or
             # Flags: (WPA) KeyType + Install + ACK + MIC
 
             elif eapol_packet.flags == 633 or eapol_packet.flags == 57:
@@ -223,9 +247,8 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirInjectorPlugin):
         else:
             self._log_complete_wpa_handshake(client_mac)
 
-
     def _log_half_wpa_handshake(self, client_mac):
-        if (self.wpa_handshakes[client_mac]['frame1'] and 
+        if (self.wpa_handshakes[client_mac]['frame1'] and
             self.wpa_handshakes[client_mac]['frame2'] and
             not self.wpa_handshakes[client_mac]['logged']):
 
@@ -241,7 +264,6 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirInjectorPlugin):
                                                                                             client_mac)
             self._log_packets(log_file_path, client_mac)
 
-
     def _log_complete_wpa_handshake(self, client_mac):
         # Get the corresponding beacon packet of the captured handshake
         try:
@@ -254,13 +276,13 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirInjectorPlugin):
         except Exception as e:
             print "Exception Logging WPA Handshake: ", traceback.print_exc()
             return
-            
+
         # Only the last 3 frames are needed
         # Aircrack needs at least one beacon to know the ESSID
-        # Cowpatty is default WPA/WPA2 cracker because 
+        # Cowpatty is default WPA/WPA2 cracker because
         # it is still able to crack the password even if ssid is not in packet information
         # as long as it is passed as an argument, the ssid is logged in the name of the file
-        if (self.wpa_handshakes[client_mac]['frame2'] and 
+        if (self.wpa_handshakes[client_mac]['frame2'] and
             self.wpa_handshakes[client_mac]['frame3'] and
             self.wpa_handshakes[client_mac]['frame4'] and
             self.wpa_handshakes[client_mac]['beacon'] and
@@ -270,7 +292,7 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirInjectorPlugin):
                                                                                       self.wpa_handshakes[client_mac]['ssid'])
             if "wpa_handshakes" not in os.listdir(self.log_dir):
                 os.makedir(self.log_dir + "wpa_handshakes")
-                
+
             log_file_path = self.log_dir + "wpa_handshakes/handshake_{}_{}.cap".format( self.wpa_handshakes[client_mac]['ssid'],
                                                                                         client_mac)
             self._log_packets(log_file_path, client_mac)
@@ -285,7 +307,7 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirInjectorPlugin):
 
     def parse_eap_packet(self, packet):
         eap_layer = packet[EAP]
-        if eap_layer.type not in EAP_TYPES: 
+        if eap_layer.type not in EAP_TYPES:
             return
 
         REQUEST, RESPONSE = 1, 2
@@ -297,7 +319,7 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirInjectorPlugin):
             client_mac = self._get_destination_from_packet(packet)
         else:
             client_mac = self._get_source_from_packet(packet)
-            
+
         if client_mac:
             if not client_mac in self.wifi_clients:
                 self.wifi_clients[client_mac] = WiFiClient(client_mac)
@@ -352,7 +374,7 @@ class WiFiClient(object):
         self.authentications =  {   # {Type(MD5 or LEAP) : {auth_id : ChallengeResponseAuth}}
                                     "MD5"   : {},
                                     "LEAP"  : {}
-                                }   
+                                }
 
     def check_and_log_credentials(self):
         chall_resps = []
@@ -399,7 +421,7 @@ class ChallengeResponseAuth(object):
         out.write(jtr_hash_string + "\n")
         out.close()
 
-        
+
     def __eq__(self, other):
         return self.auth_id == other.auth_id
 

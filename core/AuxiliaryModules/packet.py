@@ -1,7 +1,7 @@
 
 from netaddr import EUI, OUI
-from scapy.layers.dot11 import EAPOL
-from scapy.all import Dot11, Dot11Beacon, Dot11Elt, Dot11ProbeReq, Dot11ProbeResp
+#from scapy.layers.dot11 import EAPOL
+from scapy.all import Dot11, Dot11Beacon, Dot11Elt, Dot11ProbeReq, Dot11ProbeResp, EAPOL
 
 cipher_suites = { 'GROUP'   : '\x00\x0f\xac\x00',
                   'WEP'     : '\x00\x0f\xac\x01',
@@ -39,7 +39,7 @@ class Packet(object):
 
     def _get_ssid_from_packet(self, packet):
         ssid = None
-        if packet.haslayer(Dot11Elt):                          
+        if packet.haslayer(Dot11Elt):
             elt_layer = packet[Dot11Elt]
 
             while isinstance(elt_layer, Dot11Elt):
@@ -84,7 +84,7 @@ class Beacon(AccessPointPacket):
         super(Beacon, self).__init__(packet)
 
     def parse_packet(self):
-        # Based on an answer from stack-overflow: 
+        # Based on an answer from stack-overflow:
         # https://stackoverflow.com/questions/21613091/how-to-use-scapy-to-determine-wireless-encryption-type
         elt_layer = self.packet[Dot11Elt]
 
