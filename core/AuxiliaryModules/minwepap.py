@@ -5,8 +5,9 @@ This is not possible with hostapd unfortunately and needed for the caffe-latte a
 """
 import time
 from scapy.layers.dot11 import *
+from utils.radiotap import RadioTap
 from threading import Lock, Thread
-
+from random import randint
 
 # Copied from the scapy-fakeap project.
 def _get_channel_bytestr(channel):
@@ -20,12 +21,14 @@ def _get_channel_bytestr(channel):
     return freq_string
 
 def radiotap(channel):
-    return RadioTap(len=18, TSFT=None, Rate=2, Channel=_get_channel_bytestr(channel),
+    radiotap = RadioTap(len=18, TSFT=None, Rate=2, Channel=_get_channel_bytestr(channel),
                     present=18478, notdecoded='\x01\x00\x00')
+    return radiotap
+
 
 def dot11beacon(source, sc, ssid, channel, timestamp):
     return  Dot11(ID=0, type=0, subtype=8, addr2=source, addr3=source, addr1="ff:ff:ff:ff:ff:ff", addr4=None, SC=sc) / \
-            Dot11Beacon(timestamp=timestamp, cap=1041, beacon_interval=100) / \
+            Dot11Beacon(timestamp=timestamp, cap=4356, beacon_interval=100) / \
             Dot11Elt(info=ssid, ID='SSID', len=len(ssid)) / \
             Dot11Elt(info="\x0c\x12\x18\x24\x30\x48\x60\x6c", ID='Rates', len=len("\x0c\x12\x18\x24\x30\x48\x60\x6c")) / \
             Dot11Elt(info=chr(channel), ID='DSset', len=len(chr(channel)))
@@ -33,14 +36,14 @@ def dot11beacon(source, sc, ssid, channel, timestamp):
 def dot11proberesp(source, destination, sc, ssid, channel, timestamp):
     return  Dot11(type=0, subtype=11, addr2=source, addr3=source, addr1=destination, addr4=None, SC=sc) / \
             Dot11ProbeResp(timestamp=timestamp, cap=1041, beacon_interval=100) / \
-            Dot11Elt(info=ssid, ID='SSID')/\
+            Dot11Elt(info=ssid, ID='SSID') / \
             Dot11Elt(info='\\x82\\x84\\x8b\\x96\\x0c\\x12\\x18$', ID='Rates') / \
             Dot11Elt(info=chr(channel), ID='DSset')
 
 # Always success authentication response
 def dot11auth(source, destination, sc, is_challenge):
     seqnum = 2 if is_challenge else 4
-    authp = Dot11(type=0, subtype=0x0B, addr1=destination, addr2=source, addr3=source, SC=sc) / \
+    authp = Dot11(type=0, subtype=11, addr1=destination, addr2=source, addr3=source, SC=sc) / \
             Dot11Auth(status=0, seqnum=seqnum, algo=1)
 
     if is_challenge:
@@ -50,11 +53,9 @@ def dot11auth(source, destination, sc, is_challenge):
 
 def dot11assoresp(source, destination, sc, aid, is_reasso):
     subtype = 0x03 if is_reasso else 0x01
-    return  Dot11(type=0, subtype=subtype, addr1=destination, addr2=source, addr3=source, SC=sc)/\
+    return  Dot11(type=0, subtype=subtype, addr1=destination, addr2=source, addr3=source, SC=sc) / \
             Dot11AssoResp(cap=1041, status=0, AID=aid) /\
             Dot11Elt(info='\\x82\\x84\\x8b\\x96\\x0c\\x12\\x18$', ID='Rates')
-
-
 
 class MinimalWEP(object):
 
@@ -96,10 +97,10 @@ class MinimalWEP(object):
         while self.is_up:
             try:
                 self.outgoing_socket.send(beacon_packet)
-                time.sleep(.12)
+                time.sleep(.2)
             except:
                 print "Exception when sending Beacon..."
-                break
+                pass
 
     def start(self):
         self.is_up = True
@@ -131,7 +132,7 @@ class MinimalWEP(object):
                 self.send_auth_response(response_destination, True)
                 print "Received auth request, responded with WEP challenge."
 
-            elif Dot11WEP in packet: # It's is the response to the previously sent challenge
+            elif Dot11WEP in packet:  # It is the response to the previously sent challenge
                 self.send_auth_response(response_destination, False)
                 print "Received WEP challenge-response packet, responded with success message."
 
@@ -161,13 +162,12 @@ class MinimalWEP(object):
         if self.is_up:
             self.outgoing_socket.send(asso_response)
 
-
 if __name__ == "main":
     minwep = MinimalWEP("wep_test", "aa:bb:cc:dd:ee:ff", 1, "wlan1")
     minwep.start()
     while True:
         try:
-            sniff(iface="wlan1", prn = minwep.respond_to_packet)  #, filter = "wlan type management and wlan addr1 {}".format("aa:bb:cc:dd:ee:ff"))
+            sniff(iface="wlan1", prn = minwep.respond_to_packet)  # filter = "wlan type management and wlan addr1 {}".format("aa:bb:cc:dd:ee:ff"))
         except Exception as e:
             print str(e)
             minwep.shutdown()

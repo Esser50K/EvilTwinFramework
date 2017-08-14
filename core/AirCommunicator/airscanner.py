@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 '''
-This module is responsible for scanning the air 
+This module is responsible for scanning the air
 for 802.11x packets mostly using the Scapy module
 '''
 
@@ -72,7 +72,7 @@ class AirScanner(object):
 
 
     def stop_sniffer(self):
-        Thread(target=self._clean_quit).start() # Avoids blocking when executed via the console
+        Thread(target=self._clean_quit).start()  # Avoids blocking when executed via the console
 
     def _clean_quit(self, wait = True):
         self.sniffer_running = False
@@ -80,12 +80,12 @@ class AirScanner(object):
             plugin.post_scanning()
             plugin.restore()
         del self.plugins[:]
-        
+
         if wait:
-            self.sniffing_thread.join() # The sniffing_thread will stop once it receives the next packet
+            self.sniffing_thread.join()  # The sniffing_thread will stop once it receives the next packet
 
         # Reset card operaing state to 'managed'
-        if self.running_interface != None:
+        if self.running_interface is not None:
             try:
                 card = NetworkCard(self.running_interface)
                 if card.get_mode().lower() != 'managed':
@@ -98,7 +98,7 @@ class AirScanner(object):
         print "[+] Starting packet sniffer on interface '{}'".format(self.running_interface)
 
         try:
-            conf.use_pcap=True # Accelerate sniffing -> Less packet loss
+            conf.use_pcap = True  # Accelerate sniffing -> Less packet loss
             sniff(iface=self.running_interface, store=0, prn=self.handle_packets, stop_filter= (lambda pkt: not self.sniffer_running))
         except Exception as e:
             print str(e)
@@ -106,7 +106,7 @@ class AirScanner(object):
 
         print "[+] Packet sniffer on interface '{}' has finished".format(self.running_interface)
         self._clean_quit(wait = False)
-        
+
     def hop_channels(self):
         # Hop through channels to get find more beacons
         try:
@@ -165,12 +165,12 @@ class AirScanner(object):
 
     def handle_probe_req_packets(self, packet):
         probe_req = ProbeRequest(packet)
-        
+
         if probe_req.client_mac.lower() != "ff:ff:ff:ff:ff:ff":
             probe = self._get_info_from_probe(probe_req, "REQ")
             self._add_probe(probe)
             self._add_client(probe)
-            
+
 
     def handle_probe_resp_packets(self, packet):
         probe_resp = ProbeResponse(packet)
@@ -190,7 +190,7 @@ class AirScanner(object):
     def _get_info_from_probe(self, probe, probe_type):
         ap_bssids = self.get_bssids_from_ssid(probe.ssid)   # Returns a list with all the bssids
         probe_id = len(self.get_probe_requests())
-        probe_info = ProbeInfo(  probe_id, probe.client_mac, probe.client_vendor, 
+        probe_info = ProbeInfo(  probe_id, probe.client_mac, probe.client_vendor,
                                  probe.ssid, ap_bssids, probe.rssi, probe_type)
         return probe_info
 
@@ -198,7 +198,7 @@ class AirScanner(object):
         try:
             probe.ssid = self.access_points[probe.bssid].ssid
         except: pass
-        probe_info = ProbeInfo(  0, probe.client_mac, probe.client_vendor, 
+        probe_info = ProbeInfo(  0, probe.client_mac, probe.client_vendor,
                                  probe.ssid, [probe.bssid], probe.rssi, probe_type)
         return probe_info
 
@@ -218,7 +218,7 @@ class AirScanner(object):
     def _add_client(self, probe):
         if probe.ap_ssid == "" and probe.type != "ASSO":
             return
-            
+
         with self.client_lock:
             client_id = len(self.get_wifi_clients())
             wifiClient = WiFiClient(client_id, probeInfo = probe)
@@ -242,7 +242,7 @@ class AirScanner(object):
 
 
     def get_access_points(self):
-        return [self.access_points[mac] 
+        return [self.access_points[mac]
                 for mac in self.access_points.keys()]
 
     def get_access_point(self, id):
@@ -253,7 +253,7 @@ class AirScanner(object):
         return None
 
     def get_wifi_clients(self):
-        return [self.clients[mac] 
+        return [self.clients[mac]
                 for mac in self.clients.keys()]
 
     def get_probe_requests(self):
@@ -265,7 +265,7 @@ class AirScanner(object):
                 return probe
 
         return None
-        
+
     def get_bssids_from_ssid(self, ssid):
         if not (ssid and ssid != ""):
             return []
