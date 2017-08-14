@@ -19,8 +19,8 @@ class WPACracker(object):
         self.wordlist_file = wordlist_file
 
     def generate_execution_string(self):
-        if  not (self.ssid != None or self.pcap_file != None or \
-                (self.wordlist_file != None or self.word_generator_prepend_string != None)):
+        if  not (self.ssid is not None or self.pcap_file is not None or \
+                (self.wordlist_file is not None or self.word_generator_prepend_string is not None)):
             print "[-] Not enough arguments to start dictionary attack."
             return
 
@@ -32,9 +32,9 @@ class WPACracker(object):
                                                                             pcap_flag = self.pcap_flag,
                                                                             pcap_file = self.pcap_file,
                                                                             wordlist_flag = self.wordlist_flag)
-        if self.wordlist_file != None:
+        if self.wordlist_file is not None:
             final_string = common_string + " \"{}\"".format(self.wordlist_file)
-        elif self.word_generator_prepend_string != None:
+        elif self.word_generator_prepend_string is not None:
             final_string = self.word_generator_prepend_string + " | " + common_string
 
         return final_string
@@ -47,7 +47,7 @@ class WPACracker(object):
             rcfile.write(shebang + execution_string + back_to_bash)
 
         os.system("chmod +x rcfile.sh")
-        if execution_string != None:
+        if execution_string is not None:
             print "[+] Called:", execution_string
             call("sudo gnome-terminal -e".split() + [ "./rcfile.sh" ])
         os.system("rm rcfile.sh")

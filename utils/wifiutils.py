@@ -57,10 +57,10 @@ class WiFiClient(object):
         self._parse_probe(probeInfo)
 
     def is_associated(self):
-        return self.associated_ssid != None
+        return self.associated_ssid is not None
 
     def _parse_probe(self, probeInfo):
-        if probeInfo != None:
+        if probeInfo is not None:
             self.client_mac = probeInfo.client_mac
             self.client_org = probeInfo.client_org
             self.probed_ssids = set([probeInfo.ap_ssid])

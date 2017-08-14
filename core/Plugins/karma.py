@@ -58,7 +58,7 @@ class Karma(AirHostPlugin):
         # Wait for hostapd to setup all the access points
         sleep(1)
         card = NetworkCard(self.ap_interface)
-        if card != None:
+        if card is not None:
             gateway = card.get_ip()
             for i in range(self.number_of_configured_nets-1):
                 interface_name = "{}_{}".format(self.ap_interface, i)
@@ -116,7 +116,7 @@ class Karma(AirHostPlugin):
         else:
             return
 
-        if is_client_packet and packet.ssid != None and packet.ssid != "":
+        if is_client_packet and packet.ssid is not None and packet.ssid != "":
             self.lonely_probes.add(packet.ssid)
             try:
                 self.hit_count[packet.ssid] += 1

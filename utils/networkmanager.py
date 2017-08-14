@@ -190,7 +190,7 @@ class NetworkManager(object):
         # Runs at least once, if retry is flagged
         # it will try to reset the interface and repeat the process
         while(True):
-            if card != None:
+            if card is not None:
                 if not card.set_mac(mac):
                     return False
 

@@ -1,6 +1,5 @@
 
 from netaddr import EUI, OUI
-#from scapy.layers.dot11 import EAPOL
 from scapy.all import Dot11, Dot11Beacon, Dot11Elt, Dot11ProbeReq, Dot11ProbeResp, EAPOL
 
 cipher_suites = { 'GROUP'   : '\x00\x0f\xac\x00',
@@ -46,7 +45,7 @@ class Packet(object):
                 if elt_layer.ID == 0:
                     ssid = elt_layer.info
                     break
-                elt_layer = elt_layer.payload # Check for more Dot11Elt packets within
+                elt_layer = elt_layer.payload  # Check for more Dot11Elt packets within
 
         return ssid
 

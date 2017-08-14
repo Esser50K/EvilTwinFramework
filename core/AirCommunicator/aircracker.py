@@ -29,7 +29,7 @@ class WEPDataFile(object):
         self.ap_org = None
         try:
             self.ap_org = EUI(self.bssid).oui.registration().org    # OUI - Organizational Unique Identifier
-        except: pass    
+        except: pass
 
 
 class AirCracker(object):
@@ -47,29 +47,32 @@ class AirCracker(object):
         del self.wpa_handshakes[:]
         for handshake in os.listdir(self.log_dir + "wpa_handshakes"):
             handshake = self._parse_filename_to_handshake(handshake, False)
-            if handshake != None:
+            if handshake is not None:
                 self.wpa_handshakes.append(handshake)
 
     def load_half_wpa_handshakes(self):
         del self.half_wpa_handshakes[:]
         for handshake in os.listdir(self.log_dir + "wpa_half_handshakes"):
             handshake = self._parse_filename_to_handshake(handshake, True)
-            if handshake != None:
+            if handshake is not None:
                 self.half_wpa_handshakes.append(handshake)
 
     def load_wep_data_logs(self):
         del self.wep_data_logs[:]
-        for data_log in os.listdir(self.log_dir + "wep_captures"):
+        for data_log in os.listdir(self.log_dir + "arpreplay_captures"):
             data_log = self._parse_wep_data_filename(data_log)
-            if data_log != None:
+            if data_log is not None:
                 self.wep_data_logs.append(data_log)
 
     def _parse_filename_to_handshake(self, handshake, is_half):
         try:
             handshake_name = handshake.split(".")[0]
             _, ssid, client_mac = handshake_name.split("_")
-            return  WPAHandshake(len(self.half_wpa_handshakes), ssid, client_mac, os.path.abspath(self.log_dir + "wpa_half_handshakes/"+handshake)) if is_half else \
-                    WPAHandshake(len(self.wpa_handshakes), ssid, client_mac, os.path.abspath(self.log_dir + "wpa_handshakes/"+handshake))
+            return  WPAHandshake(len(self.half_wpa_handshakes), ssid, client_mac,
+                    os.path.abspath(self.log_dir + "wpa_half_handshakes/" + handshake)) \
+                        if is_half else \
+                    WPAHandshake(len(self.wpa_handshakes), ssid, client_mac,
+                    os.path.abspath(self.log_dir + "wpa_handshakes/" + handshake))
         except: pass
 
     def _parse_wep_data_filename(self, wepfile):
@@ -77,7 +80,7 @@ class AirCracker(object):
             filename = wepfile.split(".")[0]
             _, bssid, date = filename.split("_")
             return WEPDataFile(len(self.wep_data_logs), bssid, date, self.log_dir + "wep_captures/"+wepfile)
-        except: 
+        except:
             pass
 
     def set_wpa_cracker(self, wpa_cracker):
@@ -127,11 +130,7 @@ class AirCracker(object):
             rcfile.write(shebang + execution_string + back_to_bash)
 
         os.system("chmod +x wep_rcfile.sh")
-        if execution_string != None:
+        if execution_string is not None:
             print "[+] Called:", execution_string
             call("sudo gnome-terminal -e".split() + [ "./wep_rcfile.sh" ])
         os.system("rm wep_rcfile.sh")
-
-
-
-

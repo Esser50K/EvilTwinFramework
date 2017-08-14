@@ -50,7 +50,7 @@ class DNSSpoofer(AirHostPlugin):
         self.httpserver = server
 
     def has_http_server(self):
-        return self.httpserver != None
+        return self.httpserver is not None
 
     def add_page_to_spoof(self, page_name):
         for page in os.listdir("data/spoofpages/"):

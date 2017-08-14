@@ -123,7 +123,7 @@ class AirCommunicator(object):
                                                 print_creds)
 
             # Configure Virtual Interfaces once hostapd has set them up
-            sleep(.5) # Wait for for hostapd to setup interfaces
+            sleep(.5)  # Wait for for hostapd to setup interfaces
             extra_interfaces = False
             for i in range(nVirtInterfaces):
                 interface_name = "{}_{}".format(ap_interface, i)
@@ -215,7 +215,6 @@ class AirCommunicator(object):
             else:
                 self.stop_air_communications(True, False, False)
 
-
     # APLauncher action methods
     def airhost_copy_ap(self, id):
         password_info = dedent( """
@@ -240,7 +239,7 @@ class AirCommunicator(object):
                 print password_info
 
             print bssid_info
-            ConfigurationManager().config.write() # Singleton perks ;)
+            ConfigurationManager().config.write()  # Singleton perks ;)
         else:
             print "[-] No access point with ID = {}".format(str(id))
 
@@ -258,7 +257,7 @@ class AirCommunicator(object):
 
             self.configs["airhost"]["aplauncher"]["encryption"] = "None"
 
-            ConfigurationManager().config.write() # Singleton perks ;)
+            ConfigurationManager().config.write()  # Singleton perks ;)
         else:
             print "[-] No probe with ID = {}".format(str(id))
 
@@ -272,7 +271,7 @@ class AirCommunicator(object):
         elif add_type == "clients":
             add_list = ObjectFilter().filter(self.air_scanner.get_wifi_clients(), filter_string)
             for client in add_list:
-                if client.associated_ssid != None:
+                if client.associated_ssid is not None:
                     if client.associated_bssid and client.associated_bssid != "":
                         self.air_injector.add_client(client.client_mac, client.associated_bssid, client.associated_ssid)
                 else:
@@ -287,7 +286,6 @@ class AirCommunicator(object):
                             self.air_injector.add_client(probe.client_mac, bssid, probe.ap_ssid)
                 else:
                     print "[-] Cannot add client '{}' because no AP bssid is associated".format(probe.client_mac)
-
 
     def injector_del(self, del_type, filter_string):
         if del_type == "aps":
@@ -316,15 +314,15 @@ class AirCommunicator(object):
     # Informational print methods
     def print_sniffed_aps(self, filter_string = None):
         ap_list = self.air_scanner.get_access_points()
-        ap_arg_list = [ "id","bssid","ssid","channel","rssi",
-                        "crypto","cipher","auth"]
+        ap_arg_list = [ "id", "bssid", "ssid", "channel", "rssi",
+                        "crypto", "cipher", "auth"]
         headers = ["ID:", "BSSID:", "SSID:", "CHANNEL:", "SIGNAL:", "CRYPTO:", "CIPHER:", "AUTH:"]
         self.info_printer.add_info("sniffed_ap", ap_list, ap_arg_list, headers)
         self.info_printer.print_info("sniffed_ap", filter_string)
 
     def print_sniffed_clients(self, filter_string = None):
         client_list = self.air_scanner.get_wifi_clients()
-        client_arg_list = [ "id","client_mac","client_org","probed_ssids","associated_ssid","rssi"]
+        client_arg_list = [ "id", "client_mac", "client_org", "probed_ssids", "associated_ssid", "rssi"]
         headers = ["ID:", "MAC:", "CLIENT ORG:", "PROBED SSIDS:", "ASSOCIATED SSID:", "SIGNAL:"]
         self.info_printer.add_info("sniffed_wifi_clients", client_list, client_arg_list, headers)
         self.info_printer.print_info("sniffed_wifi_clients", filter_string)
@@ -332,28 +330,28 @@ class AirCommunicator(object):
     def print_sniffed_probes(self, filter_string = None):
         self.air_scanner.update_bssids_in_probes()
         probe_list = self.air_scanner.get_probe_requests()
-        probe_arg_list = ["id","client_mac","client_org","ap_ssid","ap_bssids","rssi","type"]
+        probe_arg_list = ["id", "client_mac", "client_org", "ap_ssid", "ap_bssids", "rssi", "type"]
         headers = ["ID:", "CLIENT MAC:", "CLIENT ORG:", "AP SSID:", "AP BSSID:", "SIGNAL:", "TYPE:"]
         self.info_printer.add_info("sniffed_probe", probe_list, probe_arg_list, headers)
         self.info_printer.print_info("sniffed_probe", filter_string)
 
     def print_ap_injection_targets(self, filter_string = None):
         ap_list = list(self.air_injector.get_ap_targets())
-        ap_arg_list = ["id","bssid","ssid", "channel"]
+        ap_arg_list = ["id", "bssid", "ssid", "channel"]
         headers = ["ID:", "AP BSSID:", "AP SSID", "AP CHANNEL"]
         self.info_printer.add_info("ap_target", ap_list, ap_arg_list, headers)
         self.info_printer.print_info("ap_target", filter_string)
 
     def print_client_injection_targets(self, filter_string = None):
         client_list = list(self.air_injector.get_client_targets())
-        client_arg_list = ["id","client_mac","associated_bssid","associated_ssid"]
+        client_arg_list = ["id", "client_mac", "associated_bssid", "associated_ssid"]
         headers = ["ID:", "CLIENT MAC:", "AP BSSID:", "AP SSID:"]
         self.info_printer.add_info("client_target", client_list, client_arg_list, headers)
         self.info_printer.print_info("client_target", filter_string)
 
     def print_connected_clients(self, filter_string = None):
         client_list = self.air_host.aplauncher.get_connected_clients()
-        client_arg_list = ["id","name","mac_address","ip_address","vendor","connected_ssid","rx_packets","tx_packets","signal"]
+        client_arg_list = ["id", "name", "mac_address", "ip_address", "vendor", "connected_ssid", "rx_packets", "tx_packets", "signal"]
         headers = ["ID:", "CLIENT NAME:", "CLIENT MAC:", "CLIENT IP:", "VENDOR:", "CONNECTED NET:", "RX PACKETS:", "TX PACKETS:", "SIGNAL:"]
         self.info_printer.add_info("connected_client", client_list, client_arg_list, headers)
         self.info_printer.print_info("connected_client", filter_string)

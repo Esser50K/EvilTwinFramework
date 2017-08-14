@@ -70,7 +70,6 @@ class AirScanner(object):
             except:
                 print "[-] Cannot set channel at the moment."
 
-
     def stop_sniffer(self):
         Thread(target=self._clean_quit).start()  # Avoids blocking when executed via the console
 
@@ -129,7 +128,7 @@ class AirScanner(object):
 
                 current_channel_index += 1
         except Exception as e:
-            pass # The sniffer has already been aborted
+            pass  # The sniffer has already been aborted
 
     def handle_packets(self, packet):
         # Pass packets through plugins before filtering
@@ -148,8 +147,6 @@ class AirScanner(object):
             if Dot11AssoResp in packet:
                 self.handle_asso_resp_packets(packet)
 
-
-
     def handle_beacon_packets(self, packet):
         beacon = Beacon(packet)
         if beacon.bssid in self.access_points:
@@ -157,8 +154,8 @@ class AirScanner(object):
             return
 
         id = len(self.access_points.keys())
-        if beacon.ssid != None: #Not adding malformed packets
-            new_ap = AccessPoint(id, beacon.ssid, beacon.bssid, beacon.channel, beacon.rssi, \
+        if beacon.ssid is not None:  # Not adding malformed packets
+            new_ap = AccessPoint(id, beacon.ssid, beacon.bssid, beacon.channel, beacon.rssi,
                                 beacon.encryption, beacon.cipher, beacon.auth)
             with self.ap_lock:
                 self.access_points[beacon.bssid] = new_ap
@@ -170,7 +167,6 @@ class AirScanner(object):
             probe = self._get_info_from_probe(probe_req, "REQ")
             self._add_probe(probe)
             self._add_client(probe)
-
 
     def handle_probe_resp_packets(self, packet):
         probe_resp = ProbeResponse(packet)
@@ -202,15 +198,14 @@ class AirScanner(object):
                                  probe.ssid, [probe.bssid], probe.rssi, probe_type)
         return probe_info
 
-
     def _add_probe(self, probeInfo):
         with self.probe_lock:
             try:
                 if probeInfo not in self.probes:
                     self.probes.append(probeInfo)
                 else:
-                    self.probes[self.probes.index(probeInfo)].rssi = probeInfo.rssi             #Just update the rssi
-                    self.probes[self.probes.index(probeInfo)].ap_bssids = probeInfo.ap_bssids   #Just update the bssids
+                    self.probes[self.probes.index(probeInfo)].rssi = probeInfo.rssi             # Just update the rssi
+                    self.probes[self.probes.index(probeInfo)].ap_bssids = probeInfo.ap_bssids   # Just update the bssids
             except Exception as e:
                 print "Error in airscanner._add_probe"
                 print e

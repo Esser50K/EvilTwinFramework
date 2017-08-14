@@ -165,7 +165,7 @@ class EvilInTheMiddle(object):
         if self.running:
             print "[+] Clearing iptable rules"
             self._clear_iptable_rules()
-            if self.master_handler != None:
+            if self.master_handler is not None:
                 print "[+] Shutting down the master handler"
                 for plugin in self.master_handler.plugins:
                     plugin.cleanup()
