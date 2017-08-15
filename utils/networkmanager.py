@@ -208,9 +208,12 @@ class NetworkManager(object):
 
             print "[-] Unable to set mac and unmanage, resetting interface and retrying."
             retry = False
-            card = NetworkCard(interface)
-            if card.get_mode() != 'managed':
-                card.set_mode('managed')
+            try:
+                card = NetworkCard(interface)
+                if card.get_mode() != 'managed':
+                    card.set_mode('managed')
+            except:
+                return False
 
         return False
 

@@ -44,9 +44,13 @@ class AirScanner(object):
 
     def start_sniffer(self, interface, hop_channels=True, fixed_channel=7):
         self.running_interface = interface
-        card = NetworkCard(interface)
-        if card.get_mode().lower() != 'monitor':
-            card.set_mode('monitor')
+        try:
+            card = NetworkCard(interface)
+            if card.get_mode().lower() != 'monitor':
+                card.set_mode('monitor')
+        except:
+            print "[-] Could not set card to monitor mode. Card might be busy."
+            return
 
         for plugin in self.plugins:
             plugin.pre_scanning()
@@ -234,7 +238,6 @@ class AirScanner(object):
             except Exception as e:
                 print "Error in airscanner._add_client"
                 print e
-
 
     def get_access_points(self):
         return [self.access_points[mac]

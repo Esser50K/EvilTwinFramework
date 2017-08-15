@@ -7,16 +7,17 @@ import time
 from scapy.layers.dot11 import *
 from utils.radiotap import RadioTap
 from threading import Lock, Thread
-from random import randint
+from struct import pack
 
 # Copied from the scapy-fakeap project.
+# https://github.com/rpp0/scapy-fakeap
 def _get_channel_bytestr(channel):
     if channel == 14:
         freq = 2484
     else:
         freq = 2407 + (channel * 5)
 
-    freq_string = struct.pack("<h", freq)
+    freq_string = pack("<h", freq)
 
     return freq_string
 

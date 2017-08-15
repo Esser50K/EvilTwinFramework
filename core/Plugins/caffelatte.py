@@ -102,10 +102,6 @@ class CaffeLatte(AirScannerPlugin, AirInjectorPlugin):
                     self.replay_attack_running = True
                     Thread(target=self.replay_attack).start()
 
-                    tmp = self.flipped_packet
-                    tmp[Dot11WEP].decrypt(key="\x31\x32\x33\x34\x35")
-                    tmp.show()
-
     def post_scanning(self):
         self.replay_attack_running = False
         self.wep_ap.shutdown()
