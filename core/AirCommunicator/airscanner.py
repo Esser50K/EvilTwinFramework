@@ -7,7 +7,6 @@ for 802.11x packets mostly using the Scapy module
 
 import os
 import pyric.pyw as pyw
-import traceback
 from AuxiliaryModules.packet import Beacon, ProbeResponse, ProbeRequest, AssociationResponse
 from time import sleep
 from threading import Thread, Lock

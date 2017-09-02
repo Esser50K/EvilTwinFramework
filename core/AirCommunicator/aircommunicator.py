@@ -299,8 +299,8 @@ class AirCommunicator(object):
         wpa_cracker = self.wpa_cracker_from_conf(is_half)
         self.air_cracker.launch_handshake_cracker(id, is_half, wpa_cracker)
 
-    def crack_wep(self, id):
-        self.air_cracker.launch_wep_cracker(id)
+    def crack_wep(self, id, is_latte):
+        self.air_cracker.launch_wep_cracker(id, is_latte)
 
     def wpa_cracker_from_conf(self, is_half):
         aircracker_conf = self.configs["aircracker"]
@@ -308,8 +308,7 @@ class AirCommunicator(object):
         wpa_cracker_conf = aircracker_conf["half_wpa_crackers" if is_half else "wpa_crackers"][wpa_cracker]
         return WPACracker(  wpa_cracker_conf["name"], wpa_cracker_conf["location"],
                             wpa_cracker_conf["ssid_flag"], wpa_cracker_conf["pcap_flag"], wpa_cracker_conf["wordlist_flag"],
-                            aircracker_conf["ssid"], aircracker_conf["pcap_file"], aircracker_conf["wordlist_file"],
-                            aircracker_conf["wordlist_generator_string"])
+                            aircracker_conf["wordlist_file"], aircracker_conf["wordlist_generator_string"])
 
     # Informational print methods
     def print_sniffed_aps(self, filter_string = None):
@@ -366,10 +365,19 @@ class AirCommunicator(object):
         self.info_printer.print_info(info_key, filter_string)
 
     def print_wep_data_logs(self, filter_string = None):
-        self.air_cracker.load_wep_data_logs()
+        self.air_cracker.load_wep_data_logs(False)
         info_key = "wep_data"
         wep_logs = self.air_cracker.wep_data_logs
         wep_log_args = ["id", "bssid", "ap_org", "date"]
         wep_log_headers = ["ID:", "BSSID:", "AP ORG:", "DATE"]
+        self.info_printer.add_info(info_key, wep_logs, wep_log_args, wep_log_headers)
+        self.info_printer.print_info(info_key, filter_string)
+
+    def print_caffelatte_data_logs(self, filter_string = None):
+        self.air_cracker.load_wep_data_logs(True)
+        info_key = "caffelatte_data"
+        wep_logs = self.air_cracker.wep_data_logs
+        wep_log_args = ["id", "ssid", "client_mac", "client_org", "date"]
+        wep_log_headers = ["ID:", "SSID:", "CLIENT MAC:", "CLIENT ORG:", "DATE"]
         self.info_printer.add_info(info_key, wep_logs, wep_log_args, wep_log_headers)
         self.info_printer.print_info(info_key, filter_string)

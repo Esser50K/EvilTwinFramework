@@ -1,5 +1,5 @@
 """
-This class is responsible for printing 
+This class is responsible for printing
 information tables according to filters
 """
 from prettytable import PrettyTable
@@ -8,10 +8,10 @@ class InfoPrinter(object):
 
     def __init__(self):
         self.info_filter = InfoFilter()
-        self.args_info = {} # key: (args, headers)
+        self.args_info = {}  # key: (args, headers)
 
     def add_info(self, key, values, args_to_print, headers):
-        if len(args_to_print) != len (headers):
+        if len(args_to_print) != len(headers):
             print "[-] Incompatible header and args_to_print size for '{}'".format(key)
             return
 
@@ -28,7 +28,7 @@ class InfoPrinter(object):
             for arg in args:
                 val = obj.__dict__[arg]
                 if type(val) is list or type(val) is set:
-                    val = sorted([x for x in val if x is not None]) # Remove Nones
+                    val = sorted([x for x in val if x is not None])  # Remove Nones
                     val = "\n".join(val).encode("utf-8").strip()
 
                 # Try parse it as int so the output is sorted correctly
@@ -46,7 +46,6 @@ class InfoPrinter(object):
         return filtered_objs
 
 
-
 class InfoFilter(object):
 
     def __init__(self):
@@ -54,7 +53,7 @@ class InfoFilter(object):
         self_info_headers = {}      # key: list
         self.obj_filter = ObjectFilter()
 
-    def add_info(self, key, values): # value must be list
+    def add_info(self, key, values):  # value must be list
         if type(values) is not list:
             print "[-] Error cannot add '{}' because values is not a list".format(key)
             return False
@@ -83,7 +82,7 @@ class ObjectFilter(object):
         self.OR_keyword = "where"
 
     def filter(self, objlist, filter_string):
-        if not filter_string or filter_string == "": #NoFilters
+        if not filter_string or filter_string == "":  # NoFilters
             return objlist
 
         AND_filter, filter_map = self._parse_filter_string(filter_string)
@@ -113,7 +112,7 @@ class ObjectFilter(object):
                             if filter_value not in obj.__dict__[filter_arg]:
                                 add = False
                                 break
-                except KeyError: # Don't judge if obj does not have a certain attribute
+                except KeyError:  # Don't judge if obj does not have a certain attribute
                     pass
 
             if add:
@@ -141,12 +140,10 @@ class ObjectFilter(object):
                                 if str(filter_value).lower() in str(obj.__dict__[filter_arg]).lower():
                                     filtered_objlist.append(obj)
                                     break
-                except KeyError: # Don't judge if obj does not have a certain attribute
+                except KeyError:  # Don't judge if obj does not have a certain attribute
                     pass
 
         return filtered_objlist
-
-
 
     # returns a map of attributes with filter key and filter type (AND or OR filter)
     def _parse_filter_string(self, filter_string):
@@ -157,7 +154,7 @@ class ObjectFilter(object):
         filter_map = self._parse_filter_args(filter_args)
 
         AND_filter = filter_type == self.AND_keyword
-            
+
         return (AND_filter, filter_map)
 
     # returns a map of attributes with filter key
@@ -175,4 +172,3 @@ class ObjectFilter(object):
                 print "[-] Unable to parse arg '{}'".format(arg)
 
         return filter_map
-

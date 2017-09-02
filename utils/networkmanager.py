@@ -138,8 +138,6 @@ class NetworkCard(object):
 
         return self._number_of_supported_aps
 
-
-
     def is_virtual(self):
         return "_" in self.interface
 
@@ -226,7 +224,7 @@ class NetworkManager(object):
         interface_ignore_string = interface
 
         for i in range(virtInterfaces):
-            interface_ignore_string += ",mac:{}".format(mac_address[:-1] + str(i+1))
+            interface_ignore_string += ",mac:{}".format(mac_address[:-1] + str(i + 1))
             interface_ignore_string += ",interface-name:{}_{}".format(interface, i)
 
         try:
@@ -267,8 +265,6 @@ class NetworkManager(object):
             return None
 
         return netcard
-
-
 
     def cleanup_filehandler(self):
         if self.file_handler:

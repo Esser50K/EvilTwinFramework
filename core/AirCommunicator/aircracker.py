@@ -19,6 +19,7 @@ class WPAHandshake(object):
             self.client_org = EUI(self.client_mac).oui.registration().org   # OUI - Organizational Unique Identifier
         except: pass                                                        # OUI not registered exception
 
+
 class WEPDataFile(object):
 
     def __init__(self, id=0, bssid=None, date=None, location=None):
@@ -29,6 +30,20 @@ class WEPDataFile(object):
         self.ap_org = None
         try:
             self.ap_org = EUI(self.bssid).oui.registration().org    # OUI - Organizational Unique Identifier
+        except: pass
+
+
+class CaffeLatteDataFile(object):
+
+    def __init__(self, id=0, ssid=None, client_mac=None, date=None, location=None):
+        self.id = id
+        self.ssid = ssid
+        self.client_mac = client_mac
+        self.date = date
+        self.location = location
+        self.client_org = None
+        try:
+            self.client_org = EUI(self.client_mac).oui.registration().org    # OUI - Organizational Unique Identifier
         except: pass
 
 
@@ -57,10 +72,14 @@ class AirCracker(object):
             if handshake is not None:
                 self.half_wpa_handshakes.append(handshake)
 
-    def load_wep_data_logs(self):
+    def load_wep_data_logs(self, is_latte):
         del self.wep_data_logs[:]
-        for data_log in os.listdir(self.log_dir + "arpreplay_captures"):
-            data_log = self._parse_wep_data_filename(data_log)
+        data_folder = "caffelatte_captures" if is_latte else "arpreplay_captures"
+        for data_log in os.listdir(self.log_dir + data_folder):
+            data_log =  self._parse_caffelatte_data_filename(data_log) \
+                        if is_latte else \
+                        self._parse_wep_data_filename(data_log)
+
             if data_log is not None:
                 self.wep_data_logs.append(data_log)
 
@@ -79,7 +98,15 @@ class AirCracker(object):
         try:
             filename = wepfile.split(".")[0]
             _, bssid, date = filename.split("_")
-            return WEPDataFile(len(self.wep_data_logs), bssid, date, self.log_dir + "wep_captures/"+wepfile)
+            return WEPDataFile(len(self.wep_data_logs), bssid, date, self.log_dir + "wep_captures/" + wepfile)
+        except:
+            pass
+
+    def _parse_caffelatte_data_filename(self, wepfile):
+        try:
+            filename = wepfile.split(".")[0]
+            _, ssid, client_mac, date = filename.split("_")
+            return CaffeLatteDataFile(len(self.wep_data_logs), ssid, client_mac, date, self.log_dir + "caffelatte_captures/" + wepfile)
         except:
             pass
 
@@ -90,7 +117,6 @@ class AirCracker(object):
         handshake = self.half_wpa_handshakes[id] if is_half else self.wpa_handshakes[id]
         self.wpa_cracker.ssid = handshake.ssid
         self.wpa_cracker.pcap_file = handshake.location
-
 
     def launch_handshake_cracker(self, id, is_half, wpa_cracker = None):
         if not self.wpa_cracker and not wpa_cracker:
@@ -116,10 +142,10 @@ class AirCracker(object):
         self.prepare_wpa_cracker(id, is_half)
         self.wpa_cracker.spawn_cracker()
 
-    def launch_wep_cracker(self, id):
-        self.load_wep_data_logs()
+    def launch_wep_cracker(self, id, is_latte):
+        self.load_wep_data_logs(is_latte)
 
-        if id < 0 or id > len(self.wep_data_logs)-1:
+        if id < 0 or id > len(self.wep_data_logs) - 1:
             print "[-] Chosen index is out of bounds"
             return
 

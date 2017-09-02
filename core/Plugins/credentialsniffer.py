@@ -110,9 +110,8 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirInjectorPlugin):
                     prn         =   self.extract_credential_info,
                     stop_filter =   self._stop)
         except Exception as e:
-            #print "Error Occurred while sniffing"
-            #print e
-            pass
+            print "Error Occurred while sniffing."
+            print str(e)
 
     def restore(self):
         self.should_stop = True
@@ -401,8 +400,6 @@ class WiFiClient(object):
                 chall_resp.log()
 
 
-
-
 class ChallengeResponseAuth(object):
 
     def __init__(self, auth_id, type, username=None, challenge=None, response=None):
@@ -432,7 +429,6 @@ class ChallengeResponseAuth(object):
         out = open("eap_hashes{}.log".format(n_log), "a")
         out.write(jtr_hash_string + "\n")
         out.close()
-
 
     def __eq__(self, other):
         return self.auth_id == other.auth_id

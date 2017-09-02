@@ -94,7 +94,12 @@ class MinimalWEP(object):
         beacon_packet = radiotap(self.channel) / \
                         dot11beacon(self.bssid, self._next_sc(), self.ssid, self.channel, self.current_timestamp())
 
-        self.outgoing_socket = conf.L2socket(iface=self.interface)
+        try:
+            self.outgoing_socket = conf.L2socket(iface=self.interface)
+        except:
+            print "[-] Error opening socket on '{}'.".format(self.interface)
+            return
+
         while self.is_up:
             try:
                 self.outgoing_socket.send(beacon_packet)

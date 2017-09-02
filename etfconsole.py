@@ -8,10 +8,10 @@ os.chdir(os.path.dirname(sys.argv[0]))  # Change working directory
 sys.path.append('./core')
 sys.path.append('./utils')
 
-from cmd import Cmd
+from cmd2 import Cmd
 from utils import etfbanners
 from AirCommunicator.aircommunicator import AirCommunicator
-from AirCommunicator.aircracker import WPAHandshake
+from AirCommunicator.aircracker import WPAHandshake, WEPDataFile, CaffeLatteDataFile
 from AuxiliaryModules.aplauncher import Client
 from ConfigurationManager.configmanager import ConfigurationManager
 from MITMCore.etfitm import EvilInTheMiddle
@@ -54,8 +54,10 @@ class ETFConsole(Cmd):
     add_del_options = ["aps", "clients", "probes"]                              # Meant to be followed by ID
     show_options = ["sniffed_aps", "sniffed_probes", "sniffed_clients",
                     "ap_targets", "client_targets", "connected_clients",
-                    "wpa_handshakes", "half_wpa_handshakes", "wep_data_logs"]   # Meant to be followed by filter
-    crack_options = ["wpa_handshakes", "half_wpa_handshakes", "wep_data"]       # Meant to be followed by ID
+                    "wpa_handshakes", "half_wpa_handshakes", "wep_data_logs",
+                    "caffelatte_data_logs"]                                     # Meant to be followed by filter
+    crack_options = ["wpa_handshakes", "half_wpa_handshakes",
+                     "wep_data", "caffelatte_data"]                             # Meant to be followed by ID
 
     # Configuration Handling
     current_config_mode = configs["etf"]["aircommunicator"]
@@ -104,7 +106,6 @@ class ETFConsole(Cmd):
                             "var" if is_var(key) else "mode")
                         for key in self.current_config_mode.keys()])
 
-
     def do_back(self, args):
         mode = [mode for mode in self.config_mode_string.split("/") if mode != '']
         if len(mode) == 1:
@@ -128,7 +129,7 @@ class ETFConsole(Cmd):
         try:
             config_key = arg[0]
             dict_string, config = self._look_for_config("", self.configs, config_key)
-            dict_string = "/".join(dict_string[:-1].split("/")[::-1]) # the output string is from bottom to top, we reverse
+            dict_string = "/".join(dict_string[:-1].split("/")[::-1])  # the output string is from bottom to top, we reverse
             self.current_config_mode = config
             self.config_mode_string = dict_string
             self.update_prompt()
@@ -148,7 +149,6 @@ class ETFConsole(Cmd):
                     if item is not None:
                         return (dict_string, item)
                 except: pass
-
 
     def complete_config(self, text, line, begidx, endidx):
         args = line.split()
@@ -175,8 +175,8 @@ class ETFConsole(Cmd):
 
         try:
             mode = var[0]
-            if  isinstance(self.current_config_mode[mode], str) or \
-                isinstance(self.current_config_mode[mode], list):
+            if isinstance(self.current_config_mode[mode], str) or \
+               isinstance(self.current_config_mode[mode], list):
 
                 config, value = mode, self.current_config_mode[mode]
                 print "{config} = {value}".format(  config = config,
@@ -220,31 +220,29 @@ class ETFConsole(Cmd):
                     self._set_global_config(value, var, val)
                 except: pass
 
-
     def complete_set(self, text, line, begidx, endidx):
         return self.complete_vars(text)
 
     def complete_vars(self, text):
         out = [keyword for keyword  in  self.current_config_mode
-                                    if  keyword.startswith(text) and \
-                                        (isinstance(self.current_config_mode[keyword], str) or \
+                                    if  keyword.startswith(text) and
+                                        (isinstance(self.current_config_mode[keyword], str) or
                                         isinstance(self.current_config_mode[keyword], list))]
         return out
 
     def complete_modes(self, text):
         out = [keyword for keyword  in  self.current_config_mode
-                                    if  keyword.startswith(text) and not \
-                                        (isinstance(self.current_config_mode[keyword], str) or \
+                                    if  keyword.startswith(text) and not
+                                        (isinstance(self.current_config_mode[keyword], str) or
                                         isinstance(self.current_config_mode[keyword], list))]
         return out
-
 
     # Copy Add Del
     def do_copy(self, args):
         args = args.split()
         if len(args) == 2:
             try:
-                id = int(args[-1]) # line should be something like "copy ap 4"
+                id = int(args[-1])  # line should be something like "copy ap 4"
             except ValueError:
                 print "[-] ID must be an integer value"
                 print "Copy syntax: copy [option] [ID]"
@@ -254,7 +252,6 @@ class ETFConsole(Cmd):
             elif args[0] == "probe":
                 self.aircommunicator.airhost_copy_probe(id)
 
-
     def complete_copy(self, text, line, begidx, endidx):
         entered = line.split()
         if len(entered) == 1:
@@ -263,7 +260,6 @@ class ETFConsole(Cmd):
         elif len(entered) == 2:
             start = entered[1]
             return [option for option in self.copy_options if option.startswith(start)]
-
 
     def do_add(self, args):
         args = args.split()
@@ -370,7 +366,6 @@ class ETFConsole(Cmd):
         return out
 
     # Show
-
     def do_show(self, args):
         args = args.split()
         if len(args) >= 1:
@@ -397,8 +392,8 @@ class ETFConsole(Cmd):
                 self.aircommunicator.print_captured_handshakes(filter_string, True)
             elif option == "wep_data_logs":
                 self.aircommunicator.print_wep_data_logs(filter_string)
-
-
+            elif option == "caffelatte_data_logs":
+                self.aircommunicator.print_caffelatte_data_logs(filter_string)
 
     def complete_show(self, text, line, begidx, endidx):
         if not text or text == "":
@@ -427,6 +422,10 @@ class ETFConsole(Cmd):
                 out = vars(Client()).keys()
             elif entered[1] == "wpa_handshakes" or entered[1] == "half_wpa_handshakes":
                 out = vars(WPAHandshake()).keys()
+            elif entered[1] == "wep_data_logs":
+                out = vars(WEPDataFile()).keys()
+            elif entered[1] == "caffelatte_data_logs":
+                out = vars(CaffeLatteDataFile()).keys()
 
         return out
 
@@ -452,19 +451,20 @@ class ETFConsole(Cmd):
                     out = [keyword for keyword in vars(Client()).keys() if keyword.startswith(start)]
                 elif entered[1] == "wpa_handshakes" or entered[1] == "half_wpa_handshakes":
                     out = [keyword for keyword in vars(WPAHandshake()).keys() if keyword.startswith(start)]
+                elif entered[1] == "wep_data_logs":
+                    out = [keyword for keyword in vars(WEPDataFile()).keys() if keyword.startswith(start)]
+                elif entered[1] == "wep_data_logs":
+                    out = [keyword for keyword in vars(CaffeLatteDataFile()).keys() if keyword.startswith(start)]
         return out
 
-
     # Start
-
     def do_start(self, args):
         args = args.split()
         if len(args) >= 1:
             service = args[0]
             plugins = []
             if "with" in args:
-                plugins = args[args.index("with")+1:]
-
+                plugins = args[args.index("with") + 1:]
             if "air" in service:
                 self.aircommunicator.service(service, "start", plugins)
             elif service == "mitmproxy":
@@ -473,7 +473,7 @@ class ETFConsole(Cmd):
     def start_mitmproxy(self, plugins):
         mitm_configs = self.configs["etf"]["mitmproxy"]
         try:
-            listen_port = int(mitm_configs["lport"]) # Verify if it is integer
+            listen_port = int(mitm_configs["lport"])  # Verify if it is integer
             listen_host = mitm_configs["lhost"] if len(mitm_configs["lhost"].split(".")) == 4 else "127.0.0.1"
             ssl = mitm_configs["ssl"].lower() == "true"
             client_cert = mitm_configs["client_cert"]
@@ -506,7 +506,6 @@ class ETFConsole(Cmd):
             elif service == "mitmproxy":
                 self.etfitm.stop()
 
-
     def complete_start(self, text, line, begidx, endidx):
         return self._complete_basic(line, text)
 
@@ -521,7 +520,6 @@ class ETFConsole(Cmd):
             return self.show_empty_text_start_options(line)
         else:
             return self.show_to_complete_start_options(line, text)
-
 
     def show_empty_text_start_options(self, line):
         entered = line.split()
@@ -576,14 +574,14 @@ class ETFConsole(Cmd):
     def do_crack(self, args):
         args = args.split()
         try:
-            id, is_handshake, is_half = int(args[1]), "handshake"in args[0], "half" in args[0]
+            id, is_handshake, is_half, is_latte = int(args[1]), "handshake"in args[0], "half" in args[0], "latte" in args[0]
         except:
             print "[-] ID must be int"
             return
         if is_handshake:
             self.aircommunicator.crack_handshake(id, is_half)
         else:
-            self.aircommunicator.crack_wep(id)
+            self.aircommunicator.crack_wep(id, is_latte)
 
     def complete_crack(self, text, line, begidx, endidx):
         out = None
@@ -605,7 +603,7 @@ class ETFConsole(Cmd):
                                                                     mode = colored(console.config_mode_string, "green"),
                                                                     mode_end = colored("]", "cyan"))
 
-    def do_EOF(self, line): # control-D
+    def do_EOF(self, line):  # control-D
         print "Exiting..."
         self.aircommunicator.stop_air_communications(True, True, True)
         console.aircommunicator.network_manager.cleanup()

@@ -32,8 +32,9 @@ class Packet(object):
 
     def _get_rssi_from_packet(self, packet):
         try:
-            return str(packet.dBm_AntSignal) + " dbm"
-        except Exception as e:
+            # return str(packet.dBm_AntSignal) + " dbm"  # This is from Scapy-Com. Some things are more advanced there
+            return str(-(256 - ord(packet.notdecoded[-4 : -3]))) + " dbm"
+        except Exception:
             return None
 
     def _get_ssid_from_packet(self, packet):
@@ -102,7 +103,7 @@ class Beacon(AccessPointPacket):
                 rsn_info = elt_layer.info
             elif elt_layer.ID == 221 and elt_layer.info.startswith('\x00P\xf2\x01\x01\x00'):
                 crypto.add("WPA")
-            elt_layer = elt_layer.payload # Check for more Dot11Elt packets within
+            elt_layer = elt_layer.payload  # Check for more Dot11Elt packets within
         if not crypto:
             if 'privacy' in cap:
                 crypto.add("WEP")
@@ -146,7 +147,6 @@ class Beacon(AccessPointPacket):
                 auth_suite = 'PSK'
         else:
             auth_suite = 'OPN'
-
 
         return (cipher_suite, auth_suite)
 

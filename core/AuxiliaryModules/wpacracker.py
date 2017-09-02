@@ -3,10 +3,9 @@ from subprocess import call
 
 class WPACracker(object):
 
-    def __init__(self,  name, location, 
-                        ssid_flag, pcap_flag, wordlist_flag, 
-                        ssid = None, pcap_file = None, wordlist_file = None,
-                        word_generator_prepend_string = None):
+    def __init__(self,  name, location,
+                        ssid_flag, pcap_flag, wordlist_flag,
+                        wordlist_file = None, word_generator_prepend_string = None):
         self.name = name
         self.location = location
         self.ssid_flag = ssid_flag
@@ -19,7 +18,7 @@ class WPACracker(object):
         self.wordlist_file = wordlist_file
 
     def generate_execution_string(self):
-        if  not (self.ssid is not None or self.pcap_file is not None or \
+        if  not (self.ssid is not None or self.pcap_file is not None or
                 (self.wordlist_file is not None or self.word_generator_prepend_string is not None)):
             print "[-] Not enough arguments to start dictionary attack."
             return
@@ -51,6 +50,3 @@ class WPACracker(object):
             print "[+] Called:", execution_string
             call("sudo gnome-terminal -e".split() + [ "./rcfile.sh" ])
         os.system("rm rcfile.sh")
-
-
-
