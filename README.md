@@ -80,7 +80,7 @@ First enter the ETF Console interface as root:
 > ./etfconsole
 
 For now there only is a console interface that is very easy to use and has tab completion!
-The whole thing wil work according to the etf.conf file.
+The whole thing will work according to the etf.conf file.
 You can view and change all configurations via de console, just type:
 
 > config \<press double tab>

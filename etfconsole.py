@@ -33,7 +33,7 @@ class ETFConsole(Cmd):
 
     basic_commands = [  "start", "stop", "status",
                         "spawn", "restore",
-                        "get", "set", "config", "back", "listargs",
+                        "getconf", "setconf", "config", "back", "listargs",
                         "copy", "add", "del", "show"  ]
 
     services = ["airhost", "airscanner", "airinjector", "aircracker", "mitmproxy"]
@@ -167,7 +167,7 @@ class ETFConsole(Cmd):
         elif len(args) == 2:
             return [config for config in all_configs if config.startswith(args[1])]
 
-    def do_get(self, args):
+    def do_getconf(self, args):
         var = args.split()
         if len(var) != 1:
             print "[-] Only 1 arg expected after 'get'"
@@ -184,10 +184,10 @@ class ETFConsole(Cmd):
         except KeyError:
             print "'{key}' does not exist in the configuration file".format(key = mode)
 
-    def complete_get(self, text, line, begidx, endidx):
+    def complete_getconf(self, text, line, begidx, endidx):
         return self.complete_vars(text)
 
-    def do_set(self, args):
+    def do_setconf(self, args):
         is_var = lambda key: (  isinstance(self.current_config_mode[key], str) or
                                 isinstance(self.current_config_mode[key], list))
         try:
@@ -220,7 +220,7 @@ class ETFConsole(Cmd):
                     self._set_global_config(value, var, val)
                 except: pass
 
-    def complete_set(self, text, line, begidx, endidx):
+    def complete_setconf(self, text, line, begidx, endidx):
         return self.complete_vars(text)
 
     def complete_vars(self, text):
