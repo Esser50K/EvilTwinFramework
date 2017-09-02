@@ -32,6 +32,9 @@ class AirScanner(object):
 
         self.plugins = []
 
+    def is_running(self):
+        return self.sniffer_running
+
     def add_plugin(self, airscanner_plugin):
         self.plugins.append(airscanner_plugin)
 

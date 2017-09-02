@@ -1,5 +1,5 @@
 '''
-This class is responsible for performing 
+This class is responsible for performing
 the deauthentication attacks, targeted or general
 '''
 
@@ -29,11 +29,11 @@ class AirInjector(object):
 
     def add_ap(self, bssid, ssid, channel):
         deauth_ap = AccessPoint(len(self._ap_targets), ssid, bssid, channel)
-        self._ap_targets.add(deauth_ap) # Don't verify duplicates because it's a set
+        self._ap_targets.add(deauth_ap)  # Don't verify duplicates because it's a set
 
     def add_client(self, client_mac, associated_bssid, associated_ssid):
         deauth_client = WiFiClient(len(self._client_targets), client_mac, associated_bssid, associated_ssid)
-        self._client_targets.add(deauth_client) # Don't verify duplicates because it's a set
+        self._client_targets.add(deauth_client)  # Don't verify duplicates because it's a set
 
     def del_aps(self, aps = ()):
         self._ap_targets -= aps
@@ -54,7 +54,7 @@ class AirInjector(object):
         # Packet creation based on:
         # https://raidersec.blogspot.pt/2013/01/wireless-deauth-attack-using-aireplay.html
         if len(self.plugins) == 0:
-            self.add_plugin(Deauthenticator()) # Deauthentication is default behaviour of injector
+            self.add_plugin(Deauthenticator())  # Deauthentication is default behaviour of injector
 
         injection_socket = conf.L2socket(iface=self.injection_interface)
         for plugin in self.plugins:
@@ -66,16 +66,16 @@ class AirInjector(object):
 
         # Launches all added plugins' injection attacks and waits for finish
         self.injection_thread_pool_start("inject_packets")
-            
+
         print "[+] Injection attacks finished executing."
         print "[+] Starting post injection methods"
 
         # Launches all added plugins' post injection methods and waits for finish
         self.injection_thread_pool_start("post_injection")
-        del self.plugins[:] # Plugin cleanup for next use
-        
+        del self.plugins[:]  # Plugin cleanup for next use
+
         print "[+] Post injection methods finished"
-        
+
         # Restore state after all threads finishing
         injection_socket.close()
         self.injection_running = False
@@ -121,7 +121,7 @@ class AirInjector(object):
 
     def stop_injection_attack(self):
         for plugin in self.plugins:
-            plugin.should_stop = True # Stop every plugin
+            plugin.should_stop = True  # Stop every plugin
 
     def is_running(self):
         return self.injection_running

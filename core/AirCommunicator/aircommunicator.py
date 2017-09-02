@@ -75,6 +75,19 @@ class AirCommunicator(object):
             print "[-] internet_interface '{}' does not exist".format(internet_interface)
             return False
 
+        necessary_interfaces = [internet_interface, ap_interface]
+
+        # Check if another service is using our interfaces.
+        if self.air_injector.is_running() and \
+           self.air_injector.injection_interface in necessary_interfaces:
+            print "[-] AirInjector is using a needed interface."
+            return False
+
+        if self.air_scanner.is_running() and \
+           self.air_scanner.running_interface in necessary_interfaces:
+            print "[-] AirScanner using a needed interface."
+            return False
+
         # Add plugins
         self.add_plugins(plugins, self.air_host, AirHostPlugin)
 
