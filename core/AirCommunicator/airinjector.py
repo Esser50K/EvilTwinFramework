@@ -105,8 +105,6 @@ class AirInjector(object):
         self.running_interface = None
 
     def start_injection_attack(self, interface):
-        # Restart services to avoid conflicts
-
         self.injection_interface = interface
         card = NetworkCard(interface)
         current_mode = card.get_mode().lower()
@@ -117,7 +115,6 @@ class AirInjector(object):
         self.injection_running = True
         injection_thread = Thread(target=self.injection_attack)
         injection_thread.start()
-
 
     def stop_injection_attack(self):
         for plugin in self.plugins:
