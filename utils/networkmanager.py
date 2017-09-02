@@ -16,21 +16,21 @@ class NetworkCard(object):
 
         self.interface = interface
         self.card = None
-	self.modes = None
+        self.modes = None
         self.original_mac = None
-	self._ap_mode_support = None
+        self._ap_mode_support = None
         self._monitor_mode_support = None
 
         try:
             self.card = pyw.getcard(interface)
-	    self.modes = pyw.devmodes(self.card)
-	    self.original_mac = pyw.macget(self.card)
+            self.modes = pyw.devmodes(self.card)
+            self.original_mac = pyw.macget(self.card)
 
-	    # Important capabilities
+            # Important capabilities
             self._ap_mode_support = "AP" in self.modes
             self._monitor_mode_support = "monitor" in self.modes
         except: pass
-        
+
         self._number_of_supported_aps = None
         self._is_managed = False
 

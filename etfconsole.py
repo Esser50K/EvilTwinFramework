@@ -34,7 +34,7 @@ class ETFConsole(Cmd):
     basic_commands = [  "start", "stop", "status",
                         "spawn", "restore",
                         "getconf", "setconf", "config", "back", "listargs",
-                        "copy", "add", "del", "show"  ]
+                        "copy", "add", "del", "display"  ]
 
     services = ["airhost", "airscanner", "airinjector", "aircracker", "mitmproxy"]
     aux_services = ["aplauncher", "dnsmasqhandler"]
@@ -365,8 +365,8 @@ class ETFConsole(Cmd):
                     out = [keyword for keyword in self.filter_keywords if keyword.startswith(start)]
         return out
 
-    # Show
-    def do_show(self, args):
+    # Display
+    def do_display(self, args):
         args = args.split()
         if len(args) >= 1:
             option = args[0]
@@ -395,13 +395,13 @@ class ETFConsole(Cmd):
             elif option == "caffelatte_data_logs":
                 self.aircommunicator.print_caffelatte_data_logs(filter_string)
 
-    def complete_show(self, text, line, begidx, endidx):
+    def complete_display(self, text, line, begidx, endidx):
         if not text or text == "":
-            return self.show_empty_text_show_options(line)
+            return self.display_empty_text_show_options(line)
         else:
-            return self.show_to_complete_show_options(line, text)
+            return self.display_to_complete_show_options(line, text)
 
-    def show_empty_text_show_options(self, line):
+    def display_empty_text_show_options(self, line):
         entered = line.split()
         out = None
         if len(entered) < 3:
@@ -429,7 +429,7 @@ class ETFConsole(Cmd):
 
         return out
 
-    def show_to_complete_show_options(self, line, text):
+    def display_to_complete_show_options(self, line, text):
         entered = line.split()
         out = None
         if len(entered) < 4:

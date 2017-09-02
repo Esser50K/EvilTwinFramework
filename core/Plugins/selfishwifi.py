@@ -27,7 +27,6 @@ class SelfishWiFi(AirScannerPlugin):
         self.periodic_deauthenticator = Thread(target = self.periodic_attack)
         self.periodic_deauthenticator.start()
 
-
     def craft_deauth_packets(self, client_mac, ap_bssid):
         # Craft Deauthentication packets with multiple reason codes
         deauthentication_packets = []
@@ -97,7 +96,7 @@ class SelfishWiFi(AirScannerPlugin):
 
             parsed_packet = AccessPointPacket(packet)
 
-        
+
         if  parsed_packet is not None and \
             parsed_packet.client_mac not in self.ignore_clients and \
             parsed_packet.client_mac not in self.deauth_bssids and \
@@ -106,11 +105,11 @@ class SelfishWiFi(AirScannerPlugin):
             # When multiple access points have same ssid they are deauthed and logged
             if parsed_packet.bssid not in self.deauth_bssids:
                 print "[+] Adding '{}' to the access points to deauthenticate list.".format(parsed_packet.bssid)
-                print "[+] Initial general Deauthentication attack on {}({}) started".format(self.deauth_ssid, 
+                print "[+] Initial general Deauthentication attack on {}({}) started".format(self.deauth_ssid,
                                                                                              parsed_packet.bssid)
                 self.general_deauth_attack(parsed_packet.bssid)
                 self.general_deauth_attack_completed = True
-                print "[+] General Deauthentication attack on {}({}) finished".format(  self.deauth_ssid, 
+                print "[+] General Deauthentication attack on {}({}) finished".format(  self.deauth_ssid,
                                                                                         parsed_packet.bssid)
 
             # Sets don't duplicate, no need to check
