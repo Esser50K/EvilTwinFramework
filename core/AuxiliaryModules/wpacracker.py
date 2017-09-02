@@ -13,8 +13,8 @@ class WPACracker(object):
         self.wordlist_flag = wordlist_flag
         self.word_generator_prepend_string = word_generator_prepend_string
 
-        self.ssid = ssid
-        self.pcap_file = pcap_file
+        self.ssid = None
+        self.pcap_file = None
         self.wordlist_file = wordlist_file
 
     def generate_execution_string(self):

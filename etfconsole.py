@@ -603,7 +603,7 @@ class ETFConsole(Cmd):
                                                                     mode = colored(console.config_mode_string, "green"),
                                                                     mode_end = colored("]", "cyan"))
 
-    def do_EOF(self, line):  # control-D
+    def do_eof(self, line):  # control-D
         print "Exiting..."
         self.aircommunicator.stop_air_communications(True, True, True)
         console.aircommunicator.network_manager.cleanup()
@@ -631,5 +631,5 @@ if __name__ == '__main__':
     except Exception as e:
         print "[-] Exception in command line loop:\n", e
         traceback.print_exc()
-        console.do_EOF("")
+        console.do_eof("")
         os._exit(1)
