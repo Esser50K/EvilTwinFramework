@@ -12,10 +12,10 @@ def install_scapy_git():
     installation_command    = "cd scapy && python setup.py install"
     cleanup_command         = "rm -rf scapy"
 
-    print "[+] Cloning scapy-com official repository"
+    print "[+] Cloning scapy official repository"
     os.system(clone_command)
 
-    print "[+] Running scapy-com setup installation"
+    print "[+] Running scapy setup installation"
     os.system(installation_command)
 
     print "[+] Cleaning up the cloned folder after installation"
