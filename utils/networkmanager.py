@@ -15,7 +15,10 @@ class NetworkCard(object):
     def __init__(self, interface):
 
         self.interface = interface
-        self.card = pyw.getcard(interface)
+        self.card = None
+        try:
+            self.card = pyw.getcard(interface)
+        except: pass
         self.modes = pyw.devmodes(self.card)
         self.original_mac = pyw.macget(self.card)
 
@@ -24,6 +27,9 @@ class NetworkCard(object):
         self._monitor_mode_support = "monitor" in self.modes
         self._number_of_supported_aps = None
         self._is_managed = False
+
+    def _valid_card(self):
+        return self.card is not None
 
     def set_managed(self, state):
         self._is_managed = state
