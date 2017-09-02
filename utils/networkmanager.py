@@ -197,7 +197,7 @@ class NetworkManager(object):
         self.unmanaged_interfaces_setup(unmanaged_interfaces)
 
     def unmanaged_check(self, interface):
-        ok_status = ["unmanaged", "disconnected", "unavailable"]
+        ok_status = ["unmanaged", "unavailable"]
         for line in check_output(["nmcli", "dev"]).split("\n"):
             try:
                 args = line.split()[:4]
