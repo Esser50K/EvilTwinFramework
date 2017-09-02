@@ -75,6 +75,10 @@ One of the MITM Plugins relies on peinjector service, this has to be installed m
 
 # Usage
 
+First enter the ETF Console interface as root:
+
+> ./etfconsole
+
 For now there only is a console interface that is very easy to use and has tab completion!
 The whole thing wil work according to the etf.conf file.
 You can view and change all configurations via de console, just type:
