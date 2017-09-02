@@ -38,10 +38,12 @@ class NetworkCard(object):
         return self._is_managed
 
     def set_txpower(self, dbm):
-        pyw.txset(self.card, 'fixed', dbm)
+        if self._verify_card():
+            pyw.txset(self.card, 'fixed', dbm)
 
     def get_txpower(self):
-        return pyw.txget(self.card)
+        if self._verify_card():
+            return pyw.txget(self.card)
 
     def set_mode(self, mode):
         try:
@@ -69,14 +71,21 @@ class NetworkCard(object):
             return False
 
     def get_mac(self):
-        return pyw.macget(self.card)
+        try:
+            return pyw.macget(self.card)
+        except:
+            return None
 
     def ifconfig(self, ip, netmask=None, broadcast=None):
-        pyw.up(self.card)
-        pyw.ifaddrset(self.card, ip, netmask, broadcast)
+        if self._valid_card():
+            pyw.up(self.card)
+            pyw.ifaddrset(self.card, ip, netmask, broadcast)
 
     def get_ip(self):
-        return pyw.ifaddrget(self.card)[0]
+        try:
+            return pyw.ifaddrget(self.card)[0]
+        except:
+            return None
 
     def get_subnet(self):
         ip_split = self.get_ip().split('.')
@@ -88,29 +97,52 @@ class NetworkCard(object):
         return ".".join(subnet)
 
     def get_mask(self):
-        return pyw.ifaddrget(self.card)[1]
+        try:
+            return pyw.ifaddrget(self.card)[1]
+        except:
+            return None
 
     def get_bcast(self):
-        return pyw.ifaddrget(self.card)[2]
+        try:
+            return pyw.ifaddrget(self.card)[2]
+        except:
+            return None
 
     def get_channel(self):
-        return pyw.chget(self.card)
+        try:
+            return pyw.chget(self.card)
+        except:
+            return None
 
     def set_channel(self, channel):
-        pyw.chset(self.card, channel)
+        try:
+            pyw.chset(self.card, channel)
+        except:
+            return None
 
     def get_available_channels(self):
-        return pyw.devchs(self.card)
+        try:
+            return pyw.devchs(self.card)
+        except:
+            return None
 
     def get_phy_index(self):
-        return self.card.phy
+        try:
+            return self.card.phy
+        except:
+            return None
 
     def set_mtu_size(self, nbytes):
         os.system('ifconfig {interface} mtu {size}'.format( interface=self.interface,
                                                             size=nbytes))
 
     def get_connected_clients(self):
-        if pyw.modeget(self.card) == 'AP':
+        try:
+            mode = pyw.modeget(self.card)
+        except:
+            mode = None
+
+        if mode == 'AP':
             os.system("iw dev {} station dump".format(self.interface))
         else:
             print "[-] '{}' is not on AP mode".format(self.interface)
