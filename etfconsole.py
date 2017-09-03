@@ -89,6 +89,13 @@ class ETFConsole(Cmd):
                                         "caffelatte_data_logs"  : self.aircommunicator.print_caffelatte_data_logs
                                     }
 
+        self.plugin_options =   {
+                                    "airhost"       : self.airhost_plugins,
+                                    "airscanner"    : self.airscanner_plugins,
+                                    "airinjector"   : self.airinjector_plugins,
+                                    "mitmproxy"     : self.mitmproxy_plugins,
+                                }
+
         # Configuration Handling
         self.current_config_mode = self.configs["etf"]["aircommunicator"]
         self.config_mode_string = "etf/aircommunicator/"
@@ -513,14 +520,10 @@ class ETFConsole(Cmd):
         elif len(entered) == 2:
             out = self.plugin_keyword
         elif len(entered) >= 3:
-            if entered[1] == "airhost":
-                out = self.airhost_plugins
-            elif entered[1] == "airscanner":
-                out = self.airscanner_plugins
-            elif entered[1] == "airinjector":
-                out = self.airinjector_plugins
-            elif entered[1] == "mitmproxy":
-                out = self.mitmproxy_plugins
+            try:
+                out = self.plugin_options[entered[1]]
+            except:
+                print "No plugin options for '{}'".format(entered[1])
 
         return out
 
@@ -544,14 +547,10 @@ class ETFConsole(Cmd):
         elif len(entered) >= 4:
             start = entered[-1]
             if entered[1] in self.services:
-                if entered[1] == "airhost":
-                    out = [keyword for keyword in self.airhost_plugins if keyword.startswith(start)]
-                elif entered[1] == "airscanner":
-                    out = [keyword for keyword in self.airscanner_plugins if keyword.startswith(start)]
-                elif entered[1] == "airinjector":
-                    out = [keyword for keyword in self.airinjector_plugins if keyword.startswith(start)]
-                elif entered[1] == "mitmproxy":
-                    out = [keyword for keyword in self.mitmproxy_plugins if keyword.startswith(start)]
+                try:
+                    out = [keyword for keyword in self.plugin_options[entered[1]] if keyword.startswith(start)]
+                except:
+                    print "No plugin options for '{}'".format(entered[1])
 
         return out
 
