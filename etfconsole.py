@@ -96,6 +96,12 @@ class ETFConsole(Cmd):
                                     "mitmproxy"     : self.mitmproxy_plugins,
                                 }
 
+        self.addel_options =    {
+                                    "aps"     : vars(AccessPoint()).keys(),
+                                    "clients" : vars(WiFiClient()).keys(),
+                                    "probes"  : vars(ProbeInfo()).keys()
+                                }
+
         # Configuration Handling
         self.current_config_mode = self.configs["etf"]["aircommunicator"]
         self.config_mode_string = "etf/aircommunicator/"
@@ -342,17 +348,10 @@ class ETFConsole(Cmd):
             out = self.complete_filter_command(self.add_del_options, "", entered)
         elif len(entered) >= 3:
             # list filter args (id, ssid, bssid, channel, etc...)
-            addel = entered[0]
-            if addel == "add":
-                if entered[1] == "aps":
-                    out = vars(AccessPoint()).keys()
-                elif entered[1] == "probes":
-                    out = vars(ProbeInfo()).keys()
-            elif addel == "del":
-                if entered[1] == "aps":
-                    out = vars(AccessPoint()).keys()
-                elif entered[1] == "clients":
-                    out = vars(WiFiClient()).keys()
+            try:
+                out = self.addel_options[entered[1]]
+            except:
+                print "[-] No option to add or del called '{}' !".format(entered[1])
 
         return out
 
@@ -363,17 +362,10 @@ class ETFConsole(Cmd):
             out = self.complete_filter_command(self.add_del_options, text, entered)
         elif len(entered) > 3:
             start = entered[-1]
-            addel = entered[0]
-            if addel == "add":
-                if entered[1] == "aps":
-                    out = [keyword for keyword in vars(AccessPoint()).keys() if keyword.startswith(start)]
-                elif entered[1] == "probes":
-                    out = [keyword for keyword in vars(ProbeInfo()).keys() if keyword.startswith(start)]
-            elif addel == "del":
-                if entered[1] == "aps":
-                    out = [keyword for keyword in vars(AccessPoint()).keys() if keyword.startswith(start)]
-                elif entered[1] == "clients":
-                    out = [keyword for keyword in vars(WiFiClient()).keys() if keyword.startswith(start)]
+            try:
+                out = [keyword for keyword in self.addel_options[entered[1]] if keyword.startswith(start)]
+            except:
+                print "[-] No option to add or del called '{}' !".format(entered[1])
 
         return out
 
@@ -531,10 +523,10 @@ class ETFConsole(Cmd):
         entered = line.split()
         out = None
         if len(entered) == 2:
-            # Here the first parameter after 'air' is already complete and the user wants the next
+            # Here the first parameter after 'start' is already complete and the user wants the next
             if entered[1] in self.services:
                 out = [text + " "]
-            # Here the first parameter after 'air' is incomplete and the user wants completion
+            # Here the first parameter after 'start' is incomplete and the user wants completion
             else:
                 start = entered[1]
                 out = [keyword for keyword in self.services if keyword.startswith(start)]
