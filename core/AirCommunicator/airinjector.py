@@ -1,7 +1,7 @@
-'''
+"""
 This class is responsible for performing
 the deauthentication attacks, targeted or general
-'''
+"""
 
 import os
 import logging

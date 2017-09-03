@@ -274,31 +274,38 @@ class AirCommunicator(object):
         else:
             print "[-] No probe with ID = {}".format(str(id))
 
-    # TODO: actually add clients and not probes, maybe add_probe possibility
-    # Injector action methods
     def injector_add(self, add_type, filter_string):
         if add_type == "aps":
-            add_list = ObjectFilter().filter(self.air_scanner.get_access_points(), filter_string)
-            for ap in add_list:
-                self.air_injector.add_ap(ap.bssid, ap.ssid, ap.channel)
+            self._add_aps(filter_string)
         elif add_type == "clients":
-            add_list = ObjectFilter().filter(self.air_scanner.get_wifi_clients(), filter_string)
-            for client in add_list:
-                if client.associated_ssid is not None:
-                    if client.associated_bssid and client.associated_bssid != "":
-                        self.air_injector.add_client(client.client_mac, client.associated_bssid, client.associated_ssid)
-                else:
-                    print "[-] Cannot add client '{}' because no AP ssid is associated".format(client.client_mac)
+            self._add_clients(filter_string)
         elif add_type == "probes":
-            self.air_scanner.update_bssids_in_probes()
-            add_list = ObjectFilter().filter(self.air_scanner.get_probe_requests(), filter_string)
-            for probe in add_list:
-                if len(probe.ap_bssids) > 0:
-                    for bssid in probe.ap_bssids:
-                        if bssid and bssid != "":
-                            self.air_injector.add_client(probe.client_mac, bssid, probe.ap_ssid)
-                else:
-                    print "[-] Cannot add client '{}' because no AP bssid is associated".format(probe.client_mac)
+            self._add_probes(filter_string)
+
+    def _add_aps(self, filter_string):
+        add_list = ObjectFilter().filter(self.air_scanner.get_access_points(), filter_string)
+        for ap in add_list:
+            self.air_injector.add_ap(ap.bssid, ap.ssid, ap.channel)
+
+    def _add_clients(self, filter_string):
+        add_list = ObjectFilter().filter(self.air_scanner.get_wifi_clients(), filter_string)
+        for client in add_list:
+            if client.associated_ssid is not None:
+                if client.associated_bssid and client.associated_bssid != "":
+                    self.air_injector.add_client(client.client_mac, client.associated_bssid, client.associated_ssid)
+            else:
+                print "[-] Cannot add client '{}' because no AP ssid is associated".format(client.client_mac)
+
+    def _add_probes(self, filter_string):
+        self.air_scanner.update_bssids_in_probes()
+        add_list = ObjectFilter().filter(self.air_scanner.get_probe_requests(), filter_string)
+        for probe in add_list:
+            if len(probe.ap_bssids) > 0:
+                for bssid in probe.ap_bssids:
+                    if bssid and bssid != "":
+                        self.air_injector.add_client(probe.client_mac, bssid, probe.ap_ssid)
+            else:
+                print "[-] Cannot add client '{}' because no AP bssid is associated".format(probe.client_mac)
 
     def injector_del(self, del_type, filter_string):
         if del_type == "aps":
@@ -368,10 +375,19 @@ class AirCommunicator(object):
         self.info_printer.add_info("connected_client", client_list, client_arg_list, headers)
         self.info_printer.print_info("connected_client", filter_string)
 
-    def print_captured_handshakes(self, filter_string = None, is_half = False):
-        self.air_cracker.load_half_wpa_handshakes() if is_half else self.air_cracker.load_wpa_handshakes()
-        info_key = "half_wpa_handshakes" if is_half else "wpa_handshakes"
-        handshake_list = self.air_cracker.half_wpa_handshakes if is_half else self.air_cracker.wpa_handshakes
+    def print_captured_handshakes(self, filter_string = None):
+        self.air_cracker.load_wpa_handshakes()
+        info_key = "wpa_handshakes"
+        handshake_list = self.air_cracker.wpa_handshakes
+        handshake_args = ["id", "ssid", "client_mac", "client_org"]
+        handshake_headers = ["ID:", "SSID:", "CLIENT MAC:", "CLIENT ORG:"]
+        self.info_printer.add_info(info_key, handshake_list, handshake_args, handshake_headers)
+        self.info_printer.print_info(info_key, filter_string)
+
+    def print_captured_half_handshakes(self, filter_string = None):
+        self.air_cracker.load_half_wpa_handshakes()
+        info_key = "half_wpa_handshakes"
+        handshake_list = self.air_cracker.half_wpa_handshakes
         handshake_args = ["id", "ssid", "client_mac", "client_org"]
         handshake_headers = ["ID:", "SSID:", "CLIENT MAC:", "CLIENT ORG:"]
         self.info_printer.add_info(info_key, handshake_list, handshake_args, handshake_headers)

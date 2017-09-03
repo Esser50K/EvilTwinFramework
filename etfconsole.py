@@ -23,45 +23,75 @@ class ETFConsole(Cmd):
     # Cmd is defined as an old style class, therefor inheritance
     # will not work and class variables have to be declared outside __init__
 
-    # Backend Tools
-    configs = ConfigurationManager("./core/ConfigurationManager/etf.conf").config
-    aircommunicator = AirCommunicator()
-    etfitm          = EvilInTheMiddle()
-    spawnmanager    = SpawnManager()
+    def __init__(self):
+        # Old style super ?
+        Cmd.__init__(self)
 
-    # Static strings to help with autocompletion
+        # Backend Tools
+        self.configs = ConfigurationManager("./core/ConfigurationManager/etf.conf").config
+        self.aircommunicator = AirCommunicator()
+        self.etfitm          = EvilInTheMiddle()
+        self.spawnmanager    = SpawnManager()
 
-    basic_commands = [  "start", "stop", "status",
-                        "spawn", "restore",
-                        "getconf", "setconf", "config", "back", "listargs",
-                        "copy", "add", "del", "display"  ]
+        # Static strings to help with autocompletion
 
-    services = ["airhost", "airscanner", "airinjector", "aircracker", "mitmproxy"]
-    aux_services = ["aplauncher", "dnsmasqhandler"]
-    spawners = ["mitmf", "beef-xss", "ettercap", "sslstrip"]
+        self.basic_commands = [  "start", "stop", "status",
+                            "spawn", "restore",
+                            "getconf", "setconf", "config", "back", "listargs",
+                            "copy", "add", "del", "display"  ]
 
-    filter_keywords = ["where", "only"]
-    plugin_keyword = ["with"]
+        self.services = ["airhost", "airscanner", "airinjector", "aircracker", "mitmproxy"]
+        self.aux_services = ["aplauncher", "dnsmasqhandler"]
+        self.spawners = ["mitmf", "beef-xss", "ettercap", "sslstrip"]
 
-    airhost_plugins = ["dnsspoofer", "credentialsniffer", "karma"]
-    airscanner_plugins = ["packetlogger", "selfishwifi", "credentialsniffer", "arpreplayer", "caffelatte"]
-    airinjector_plugins = ["credentialsniffer", "deauthenticator", "arpreplayer", "caffelatte"]
-    aircracker_types = ["wpa_crackers", "half_wpa_crackers"]
-    aircrackers = ["cowpatty", "aircrack-ng", "halwpaid"]
-    mitmproxy_plugins = ["downloadreplacer", "beefinjector", "peinjector"]
+        self.filter_keywords = ["where", "only"]
+        self.plugin_keyword = ["with"]
 
-    copy_options = ["ap", "probe"]
-    add_del_options = ["aps", "clients", "probes"]                              # Meant to be followed by ID
-    show_options = ["sniffed_aps", "sniffed_probes", "sniffed_clients",
-                    "ap_targets", "client_targets", "connected_clients",
-                    "wpa_handshakes", "half_wpa_handshakes", "wep_data_logs",
-                    "caffelatte_data_logs"]                                     # Meant to be followed by filter
-    crack_options = ["wpa_handshakes", "half_wpa_handshakes",
-                     "wep_data", "caffelatte_data"]                             # Meant to be followed by ID
+        self.airhost_plugins = ["dnsspoofer", "credentialsniffer", "karma"]
+        self.airscanner_plugins = ["packetlogger", "selfishwifi", "credentialsniffer", "arpreplayer", "caffelatte"]
+        self.airinjector_plugins = ["credentialsniffer", "deauthenticator", "arpreplayer", "caffelatte"]
+        self.aircracker_types = ["wpa_crackers", "half_wpa_crackers"]
+        self.aircrackers = ["cowpatty", "aircrack-ng", "halwpaid"]
+        self.mitmproxy_plugins = ["downloadreplacer", "beefinjector", "peinjector"]
 
-    # Configuration Handling
-    current_config_mode = configs["etf"]["aircommunicator"]
-    config_mode_string = "etf/aircommunicator/"
+        self.copy_options = ["ap", "probe"]
+        self.add_del_options = ["aps", "clients", "probes"]                              # Meant to be followed by ID
+        self.display_options = ["sniffed_aps", "sniffed_probes", "sniffed_clients",
+                        "ap_targets", "client_targets", "connected_clients",
+                        "wpa_handshakes", "half_wpa_handshakes", "wep_data_logs",
+                        "caffelatte_data_logs"]                                     # Meant to be followed by filter
+        self.crack_options = ["wpa_handshakes", "half_wpa_handshakes",
+                         "wep_data", "caffelatte_data"]                             # Meant to be followed by ID
+
+        self.display_options_vars =  {
+                                    "sniffed_aps"           : vars(AccessPoint()).keys(),
+                                    "sniffed_probes"        : vars(ProbeInfo()).keys(),
+                                    "sniffed_clients"       : vars(WiFiClient()).keys(),
+                                    "ap_targets"            : vars(AccessPoint()).keys(),
+                                    "client_targets"        : vars(WiFiClient()).keys(),
+                                    "connected_clients"     : vars(Client()).keys(),
+                                    "wpa_handshakes"        : vars(WPAHandshake()).keys(),
+                                    "half_wpa_handshakes"   : vars(WPAHandshake()).keys(),
+                                    "wep_data_logs"         : vars(WEPDataFile()).keys(),
+                                    "caffelatte_data_logs"  : vars(CaffeLatteDataFile()).keys()
+                                }
+
+        self.display_options_methods =   {
+                                        "sniffed_aps"           : self.aircommunicator.print_sniffed_aps,
+                                        "sniffed_clients"       : self.aircommunicator.print_sniffed_clients,
+                                        "sniffed_probes"        : self.aircommunicator.print_sniffed_probes,
+                                        "ap_targets"            : self.aircommunicator.print_ap_injection_targets,
+                                        "client_targets"        : self.aircommunicator.print_client_injection_targets,
+                                        "connected_clients"     : self.aircommunicator.print_connected_clients,
+                                        "wpa_handshakes"        : self.aircommunicator.print_captured_handshakes,
+                                        "half_wpa_handshakes"   : self.aircommunicator.print_captured_half_handshakes,
+                                        "wep_data_logs"         : self.aircommunicator.print_wep_data_logs,
+                                        "caffelatte_data_logs"  : self.aircommunicator.print_caffelatte_data_logs
+                                    }
+
+        # Configuration Handling
+        self.current_config_mode = self.configs["etf"]["aircommunicator"]
+        self.config_mode_string = "etf/aircommunicator/"
 
     # do and complete of configuration options
     def do_restore(self, args):
@@ -374,87 +404,41 @@ class ETFConsole(Cmd):
             if len(args) >= 2:
                 filter_string = " ".join(args[1:])
 
-            if option == "sniffed_aps":
-                self.aircommunicator.print_sniffed_aps(filter_string)
-            elif option == "sniffed_clients":
-                self.aircommunicator.print_sniffed_clients(filter_string)
-            elif option == "sniffed_probes":
-                self.aircommunicator.print_sniffed_probes(filter_string)
-            elif option == "ap_targets":
-                self.aircommunicator.print_ap_injection_targets(filter_string)
-            elif option == "client_targets":
-                self.aircommunicator.print_client_injection_targets(filter_string)
-            elif option == "connected_clients":
-                self.aircommunicator.print_connected_clients(filter_string)
-            elif option == "wpa_handshakes":
-                self.aircommunicator.print_captured_handshakes(filter_string, False)
-            elif option == "half_wpa_handshakes":
-                self.aircommunicator.print_captured_handshakes(filter_string, True)
-            elif option == "wep_data_logs":
-                self.aircommunicator.print_wep_data_logs(filter_string)
-            elif option == "caffelatte_data_logs":
-                self.aircommunicator.print_caffelatte_data_logs(filter_string)
+            self.display_options_methods[option](filter_string)
 
     def complete_display(self, text, line, begidx, endidx):
         if not text or text == "":
-            return self.display_empty_text_show_options(line)
+            return self.display_empty_text_display_options(line)
         else:
-            return self.display_to_complete_show_options(line, text)
+            return self.display_to_complete_display_options(line, text)
 
-    def display_empty_text_show_options(self, line):
+    def display_empty_text_display_options(self, line):
         entered = line.split()
         out = None
         if len(entered) < 3:
-            out = self.complete_filter_command(self.show_options, "", entered)
+            out = self.complete_filter_command(self.display_options, "", entered)
         elif len(entered) >= 3:
             # list filter args (id, ssid, bssid, channel, etc...)
-            if entered[1] == "sniffed_aps":
-                out = vars(AccessPoint()).keys()
-            elif entered[1] == "sniffed_clients":
-                out = vars(WiFiClient()).keys()
-            elif entered[1] == "sniffed_probes":
-                out = vars(ProbeInfo()).keys()
-            elif entered[1] == "ap_targets":
-                out = vars(AccessPoint()).keys()
-            elif entered[1] == "client_targets":
-                out = vars(WiFiClient()).keys()
-            elif entered[1] == "connected_clients":
-                out = vars(Client()).keys()
-            elif entered[1] == "wpa_handshakes" or entered[1] == "half_wpa_handshakes":
-                out = vars(WPAHandshake()).keys()
-            elif entered[1] == "wep_data_logs":
-                out = vars(WEPDataFile()).keys()
-            elif entered[1] == "caffelatte_data_logs":
-                out = vars(CaffeLatteDataFile()).keys()
+            try:
+                out = self.display_options_vars[entered[1]]
+            except:
+                print "[-] No display option called '{}' !".format(entered[1])
 
         return out
 
-    def display_to_complete_show_options(self, line, text):
+    def display_to_complete_display_options(self, line, text):
         entered = line.split()
         out = None
         if len(entered) < 4:
-            out = self.complete_filter_command(self.show_options, text, entered)
+            out = self.complete_filter_command(self.display_options, text, entered)
         elif len(entered) >= 4:
             start = entered[-1]
-            if entered[1] in self.show_options:
-                if entered[1] == "sniffed_aps":
-                    out = [keyword for keyword in vars(AccessPoint()).keys() if keyword.startswith(start)]
-                elif entered[1] == "sniffed_clients":
-                    out = [keyword for keyword in vars(WiFiClient()).keys() if keyword.startswith(start)]
-                elif entered[1] == "sniffed_probes":
-                    out = [keyword for keyword in vars(ProbeInfo()).keys() if keyword.startswith(start)]
-                elif entered[1] == "ap_targets":
-                    out = [keyword for keyword in vars(AccessPoint()).keys() if keyword.startswith(start)]
-                elif entered[1] == "client_targets":
-                    out = [keyword for keyword in vars(WiFiClient()).keys() if keyword.startswith(start)]
-                elif entered[1] == "connected_clients":
-                    out = [keyword for keyword in vars(Client()).keys() if keyword.startswith(start)]
-                elif entered[1] == "wpa_handshakes" or entered[1] == "half_wpa_handshakes":
-                    out = [keyword for keyword in vars(WPAHandshake()).keys() if keyword.startswith(start)]
-                elif entered[1] == "wep_data_logs":
-                    out = [keyword for keyword in vars(WEPDataFile()).keys() if keyword.startswith(start)]
-                elif entered[1] == "wep_data_logs":
-                    out = [keyword for keyword in vars(CaffeLatteDataFile()).keys() if keyword.startswith(start)]
+            if entered[1] in self.display_options:
+                try:
+                    out = [keyword for keyword in self.display_options_vars[entered[1]] if keyword.startswith(start)]
+                except:
+                    print "[-] No display option called '{}' !".format(entered[1])
+
         return out
 
     # Start

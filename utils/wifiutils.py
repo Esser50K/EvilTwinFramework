@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-This module simply has the Wi-Fi AP and client classes defined
+This module simply has the Wi-Fi AP and client classes defined.
 """
 from AuxiliaryModules.packet import get_vendor
 
 class AccessPoint(object):
     """
-    This class represents an Access Point Object
+    This class represents an Access Point Object.
+
     Most arguments can be filled out automatically with a scan
     The wpa/wpa2 key has to be specified
     """
@@ -21,10 +22,10 @@ class AccessPoint(object):
         self.crypto = "/".join(encryption_methods)
         self.cipher = encryption_cipher
         self.auth = authentication_method
-        self.psk = None 
+        self.psk = None
 
     def __str__(self):
-        return  " ".join(   [   str(self.bssid), str(self.ssid), \
+        return  " ".join(   [   str(self.bssid), str(self.ssid),
                                 str(self.crypto), str(self.cipher), str(self.auth)    ]   )
 
     def __eq__(self, other):
@@ -68,7 +69,7 @@ class WiFiClient(object):
                 self.rssi = probeInfo.rssi
             elif probeInfo.type == "ASSO":
                 self.associated_ssid = probeInfo.ap_ssid
-                self.associated_bssid = probeInfo.ap_bssids[0] # If its association response there is only 1 bssid
+                self.associated_bssid = probeInfo.ap_bssids[0]  # If its association response there is only 1 bssid
 
     def __eq__(self, other):
         return self.client_mac == other.client_mac
@@ -79,8 +80,8 @@ class WiFiClient(object):
 class ProbeInfo(object):
 
     def __init__(self,  id = 0,
-                        client_mac = None, client_org = None, 
-                        ap_ssid = None, ap_bssids = [], 
+                        client_mac = None, client_org = None,
+                        ap_ssid = None, ap_bssids = [],
                         rssi = None, ptype = None):
         self.id = id
         self.client_mac = client_mac
@@ -88,7 +89,7 @@ class ProbeInfo(object):
         self.ap_bssids = ap_bssids
         self.ap_ssid = ap_ssid
         self.rssi = rssi
-        self.type = ptype # REQ, RESP, ASSO 
+        self.type = ptype  # REQ, RESP, ASSO
 
     def isPair(self, otherProbe):
         return  (self.client_mac == other.client_mac) and \

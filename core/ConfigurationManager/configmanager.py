@@ -1,13 +1,12 @@
-'''
-This class is responsible for 
-reading, writing, updating the etf.conf file
+"""
+This class is responsible for reading, writing, updating the etf.conf file.
 
 It uses the singleton design pattern
-'''
+"""
 
 from configobj import ConfigObj
 
-#TODO make set_config method that treats the variable to config as global and looks where it repeats itself
+# TODO make set_config method that treats the variable to config as global and looks where it repeats itself
 class ConfigurationManager(object):
 
     class __ConfigurationManager(object):
@@ -17,6 +16,7 @@ class ConfigurationManager(object):
             self = property(self, self.config.write())
 
     instance = None
+
     def __init__(self, config_file_path='./etf.conf'):
         if not ConfigurationManager.instance:
             ConfigurationManager.instance = ConfigurationManager.__ConfigurationManager(config_file_path)

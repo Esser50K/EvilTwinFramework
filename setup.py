@@ -49,7 +49,8 @@ core_packages = [
 
 pip_upgrade_packages =  [
                             "PyRic",
-                            "cmd2"
+                            "cmd2",
+                            "jsonpickle"
                         ]
 
 spawner_packages =  [

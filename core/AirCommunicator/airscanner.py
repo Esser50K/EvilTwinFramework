@@ -2,7 +2,7 @@
 
 '''
 This module is responsible for scanning the air
-for 802.11x packets mostly using the Scapy module
+for 802.11 packets mostly using the Scapy module
 '''
 
 import os
