@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import sys, os
 from termcolor import colored
-import logging, traceback
+import logging, traceback, readline
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 
 os.chdir(os.path.dirname(sys.argv[0]))  # Change working directory
@@ -16,16 +16,18 @@ from AuxiliaryModules.aplauncher import Client
 from ConfigurationManager.configmanager import ConfigurationManager
 from MITMCore.etfitm import EvilInTheMiddle
 from Spawners.spawnmanager import SpawnManager
+from SessionManager.sessionmanager import SessionManager
 from utils.wifiutils import AccessPoint, WiFiClient, ProbeInfo
 
 
 class ETFConsole(Cmd):
-    # Cmd is defined as an old style class, therefor inheritance
-    # will not work and class variables have to be declared outside __init__
 
-    def __init__(self):
+    def __init__(self, history = []):
         # Old style super ?
         Cmd.__init__(self)
+        # Load command history
+        for cmd in history:
+            readline.add_history(cmd.strip())
 
         # Backend Tools
         self.configs = ConfigurationManager("./core/ConfigurationManager/etf.conf").config
@@ -579,6 +581,9 @@ class ETFConsole(Cmd):
                                                                     mode_end = colored("]", "cyan"))
 
     def do_eof(self, line):  # control-D
+        print "Saving and Closing Session..."
+        SessionManager().save_session()
+        SessionManager().close_session()
         print "Exiting..."
         self.aircommunicator.stop_air_communications(True, True, True)
         console.aircommunicator.network_manager.cleanup()
@@ -590,6 +595,10 @@ class ETFConsole(Cmd):
     def emptyline(self):
         pass
 
+    def postcmd(self, stop, line):
+        complete_line = readline.get_history_item(readline.get_current_history_length())
+        if complete_line.strip() != "":
+            SessionManager().log_command(complete_line)
 
 if __name__ == '__main__':
     print etfbanners.get_banner()
@@ -598,7 +607,12 @@ if __name__ == '__main__':
         print "You can't handle this yet."
         sys.exit(1)
 
-    console = ETFConsole()
+    # Load or Start new Session
+    session_manager = SessionManager()
+    session_manager.session_prompt()
+
+    # Load console interface (loads info according to session)
+    console = ETFConsole(session_manager.get_command_history())
     console.update_prompt()
 
     try:

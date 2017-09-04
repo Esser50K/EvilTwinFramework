@@ -12,6 +12,7 @@ from time import sleep
 from threading import Thread, Lock
 from netaddr import EUI, OUI
 from scapy.all import *
+from SessionManager.sessionmanager import SessionManager
 from utils.networkmanager import NetworkCard
 from utils.utils import DEVNULL
 from utils.wifiutils import AccessPoint, WiFiClient, ProbeInfo
@@ -157,6 +158,7 @@ class AirScanner(object):
         beacon = Beacon(packet)
         if beacon.bssid in self.access_points:
             self.access_points[beacon.bssid].rssi = beacon.rssi
+            SessionManager().update_session_data("sniffed_aps", self.access_points)
             return
 
         id = len(self.access_points.keys())
@@ -165,6 +167,8 @@ class AirScanner(object):
                                 beacon.encryption, beacon.cipher, beacon.auth)
             with self.ap_lock:
                 self.access_points[beacon.bssid] = new_ap
+
+            SessionManager().update_session_data("sniffed_aps", self.access_points)
 
     def handle_probe_req_packets(self, packet):
         probe_req = ProbeRequest(packet)
@@ -212,6 +216,8 @@ class AirScanner(object):
                 else:
                     self.probes[self.probes.index(probeInfo)].rssi = probeInfo.rssi             # Just update the rssi
                     self.probes[self.probes.index(probeInfo)].ap_bssids = probeInfo.ap_bssids   # Just update the bssids
+
+                SessionManager().update_session_data("sniffed_probes", self.probes)
             except Exception as e:
                 print "Error in airscanner._add_probe"
                 print e
@@ -226,6 +232,7 @@ class AirScanner(object):
             try:
                 if wifiClient not in self.get_wifi_clients():
                     self.clients[probe.client_mac] = wifiClient
+                    SessionManager().update_session_data("sniffed_clients", self.clients)
                 else:
                     wifiClient = self.clients[probe.client_mac]
                     wifiClient.probed_ssids.add(probe.ap_ssid)
@@ -237,6 +244,8 @@ class AirScanner(object):
                         except: pass
                     elif probe.type == "REQ":
                         wifiClient.rssi = probe.rssi
+
+                    SessionManager().update_session_data("sniffed_clients", self.clients)
             except Exception as e:
                 print "Error in airscanner._add_client"
                 print e

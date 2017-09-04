@@ -20,6 +20,7 @@ from ConfigurationManager.configmanager import ConfigurationManager
 from utils.networkmanager import NetworkManager
 from textwrap import dedent
 from time import sleep
+from SessionManager.sessionmanager import SessionManager
 
 class AirCommunicator(object):
 
@@ -36,6 +37,15 @@ class AirCommunicator(object):
         self.network_manager = NetworkManager(self.config_files["networkmanager_conf"], unmanaged_interfaces)
 
         self.info_printer = InfoPrinter()
+        self.load_session_data()
+
+    def load_session_data(self):
+        session = SessionManager().get_session()
+        self.air_scanner.access_points = session.session_data["sniffed_aps"]
+        self.air_scanner.clients = session.session_data["sniffed_clients"]
+        self.air_scanner.probes = session.session_data["sniffed_probes"]
+        self.air_injector._ap_targets = session.session_data["ap_targets"]
+        self.air_injector._client_targets = session.session_data["client_targets"]
 
     def start_injection_attack(self, plugins = []):
         """Launches the AirInjector module with the specified plugins."""

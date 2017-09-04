@@ -13,6 +13,7 @@ from utils.utils import DEVNULL
 from utils.networkmanager import NetworkCard
 from utils.wifiutils import AccessPoint, WiFiClient
 from Plugins.deauthenticator import Deauthenticator
+from SessionManager.sessionmanager import SessionManager
 
 class AirInjector(object):
 
@@ -30,10 +31,12 @@ class AirInjector(object):
     def add_ap(self, bssid, ssid, channel):
         deauth_ap = AccessPoint(len(self._ap_targets), ssid, bssid, channel)
         self._ap_targets.add(deauth_ap)  # Don't verify duplicates because it's a set
+        SessionManager().update_session_data("ap_targets", self._ap_targets)
 
     def add_client(self, client_mac, associated_bssid, associated_ssid):
         deauth_client = WiFiClient(len(self._client_targets), client_mac, associated_bssid, associated_ssid)
         self._client_targets.add(deauth_client)  # Don't verify duplicates because it's a set
+        SessionManager().update_session_data("client_targets", self._client_targets)
 
     def del_aps(self, aps = ()):
         self._ap_targets -= aps
