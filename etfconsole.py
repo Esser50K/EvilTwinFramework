@@ -405,7 +405,8 @@ class ETFConsole(Cmd):
             if len(args) >= 2:
                 filter_string = " ".join(args[1:])
 
-            self.display_options_methods[option](filter_string)
+            if option in self.display_options_methods.keys():
+                self.display_options_methods[option](filter_string)
 
     def complete_display(self, text, line, begidx, endidx):
         if not text or text == "":
@@ -517,7 +518,7 @@ class ETFConsole(Cmd):
             try:
                 out = self.plugin_options[entered[1]]
             except:
-                print "No plugin options for '{}'".format(entered[1])
+                print "[-] No plugin options for '{}'".format(entered[1])
 
         return out
 
@@ -544,7 +545,7 @@ class ETFConsole(Cmd):
                 try:
                     out = [keyword for keyword in self.plugin_options[entered[1]] if keyword.startswith(start)]
                 except:
-                    print "No plugin options for '{}'".format(entered[1])
+                    print "[-] No plugin options for '{}'".format(entered[1])
 
         return out
 
@@ -604,7 +605,7 @@ if __name__ == '__main__':
     print etfbanners.get_banner()
 
     if os.geteuid() != 0:
-        print "You can't handle this yet."
+        print "[-] You can't handle this yet."
         sys.exit(1)
 
     # Load or Start new Session

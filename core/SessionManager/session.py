@@ -8,7 +8,11 @@ from jsonpickle import encode, decode
 
 class Session(object):
 
-    def __init__(self):
+    def __init__(self, date, id, name):
+        self.date = date
+        self.id = id
+        self.name = name
+        self.path = date + "/session" + str(id) + "_" + name + "/"
         self.event_lock, self.command_lock, self.data_lock = Lock(), Lock(), Lock()
         self.event_history      = []
         self.command_history    = []
@@ -21,6 +25,10 @@ class Session(object):
                             }
         self.commands_filename = "commands.log"
         self.events_filename = "events.log"
+        self.index = 0
+
+    def set_index(self, index):
+        self.index = index
 
     def append_event(self, event):
         with self.event_lock:
