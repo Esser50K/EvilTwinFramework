@@ -8,7 +8,7 @@ from jsonpickle import encode, decode
 
 class Session(object):
 
-    def __init__(self, date, id, name):
+    def __init__(self, date = "", id = 0, name = ""):
         self.date = date
         self.id = id
         self.name = name

@@ -16,7 +16,7 @@ from AuxiliaryModules.aplauncher import Client
 from ConfigurationManager.configmanager import ConfigurationManager
 from MITMCore.etfitm import EvilInTheMiddle
 from Spawners.spawnmanager import SpawnManager
-from SessionManager.sessionmanager import SessionManager
+from SessionManager.sessionmanager import SessionManager, Session
 from utils.wifiutils import AccessPoint, WiFiClient, ProbeInfo
 
 
@@ -40,7 +40,8 @@ class ETFConsole(Cmd):
         self.basic_commands = [  "start", "stop", "status",
                             "spawn", "restore",
                             "getconf", "setconf", "config", "back", "listargs",
-                            "copy", "add", "del", "display"  ]
+                            "copy", "add", "del", "display",
+                            "new_session", "save_session", "load_session"  ]
 
         self.services = ["airhost", "airscanner", "airinjector", "aircracker", "mitmproxy"]
         self.aux_services = ["aplauncher", "dnsmasqhandler"]
@@ -57,13 +58,13 @@ class ETFConsole(Cmd):
         self.mitmproxy_plugins = ["downloadreplacer", "beefinjector", "peinjector"]
 
         self.copy_options = ["ap", "probe"]
-        self.add_del_options = ["aps", "clients", "probes"]                              # Meant to be followed by ID
+        self.add_del_options = ["aps", "clients", "probes"]                             # Meant to be followed by ID
         self.display_options = ["sniffed_aps", "sniffed_probes", "sniffed_clients",
                         "ap_targets", "client_targets", "connected_clients",
                         "wpa_handshakes", "half_wpa_handshakes", "wep_data_logs",
-                        "caffelatte_data_logs"]                                     # Meant to be followed by filter
+                        "caffelatte_data_logs", "sessions"]                             # Meant to be followed by filter
         self.crack_options = ["wpa_handshakes", "half_wpa_handshakes",
-                         "wep_data", "caffelatte_data"]                             # Meant to be followed by ID
+                         "wep_data", "caffelatte_data"]                                 # Meant to be followed by ID
 
         self.display_options_vars =  {
                                     "sniffed_aps"           : vars(AccessPoint()).keys(),
@@ -75,7 +76,8 @@ class ETFConsole(Cmd):
                                     "wpa_handshakes"        : vars(WPAHandshake()).keys(),
                                     "half_wpa_handshakes"   : vars(WPAHandshake()).keys(),
                                     "wep_data_logs"         : vars(WEPDataFile()).keys(),
-                                    "caffelatte_data_logs"  : vars(CaffeLatteDataFile()).keys()
+                                    "caffelatte_data_logs"  : vars(CaffeLatteDataFile()).keys(),
+                                    "sessions"              : vars(Session()).keys()
                                 }
 
         self.display_options_methods =   {
@@ -88,7 +90,8 @@ class ETFConsole(Cmd):
                                         "wpa_handshakes"        : self.aircommunicator.print_captured_handshakes,
                                         "half_wpa_handshakes"   : self.aircommunicator.print_captured_half_handshakes,
                                         "wep_data_logs"         : self.aircommunicator.print_wep_data_logs,
-                                        "caffelatte_data_logs"  : self.aircommunicator.print_caffelatte_data_logs
+                                        "caffelatte_data_logs"  : self.aircommunicator.print_caffelatte_data_logs,
+                                        "sessions"              : SessionManager().print_sessions
                                     }
 
         self.plugin_options =   {
@@ -576,14 +579,38 @@ class ETFConsole(Cmd):
                     out = [keyword for keyword in self.crack_options if keyword.startswith(entered[1])]
         return out
 
+    def do_new_session(self, args):
+        args = args.split()
+        if len(args) == 0:
+            print "[-] You have to specify a name for a the new session."
+            return
+
+        name = "_".join(args)
+        SessionManager().start_new_session(name)
+        self.aircommunicator.load_session_data()
+
+    def do_save_session(self, args):
+        SessionManager().save_session()
+        print "[+] Saved current session '{}' under '{}'!".format(SessionManager().get_current_session_name(),
+                                                                  SessionManager().get_current_session_path())
+
+    def do_load_session(self, args):
+        args = args.split()
+        try:
+            index = int(args[0])
+        except:
+            print "[-] Index must be Integer."
+            return
+
+        SessionManager().load_session(index)
+
     def update_prompt(self):
         self.prompt = "ETF{mode_start}{mode}{mode_end}::> ".format( mode_start = colored("[", "cyan"),
                                                                     mode = colored(console.config_mode_string, "green"),
                                                                     mode_end = colored("]", "cyan"))
 
     def do_eof(self, line):  # control-D
-        print "Saving and Closing Session..."
-        SessionManager().save_session()
+        print "Closing Session..."
         SessionManager().close_session()
         print "Exiting..."
         self.aircommunicator.stop_air_communications(True, True, True)

@@ -11,6 +11,7 @@ class Reporter(object):
         self._lock = Lock()
         self.file_path = file_path
         self.log_file = None
+        self.open()
 
     def is_open(self):
         return not self.log_file.closed
@@ -26,7 +27,6 @@ class Reporter(object):
 
     def write_log_line(self, line):
         with self._lock:
-            if self.is_open():
-                self.log_file.write(line + "\n")
-            else:
-                print "is closed."
+            if not self.is_open():
+                self.open()
+            self.log_file.write(line + "\n")

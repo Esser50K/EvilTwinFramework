@@ -13,6 +13,7 @@ import os
 from AuxiliaryModules.infoprinter import InfoPrinter
 from reporter import Reporter
 from session import Session
+from shutil import rmtree
 from time import strftime
 
 class SessionManager(object):
@@ -27,14 +28,16 @@ class SessionManager(object):
             self._session = None
             self._sessions_folder = sessions_folder  # Folder with all session folders
             self._session_folder = None              # Specific folder of current session
+            self._is_temporary = False
             self._session_list = []
 
             self.info_printer = InfoPrinter()
 
         def start_new_session(self, name):
             if self._session:
-                self.save_session()
+                self.close_session()
 
+            self._is_temporary = True
             self._session_name = name
             self._date = strftime("%d_%m_%Y")
             if self._date not in os.listdir(self._sessions_folder):
@@ -49,14 +52,31 @@ class SessionManager(object):
                 self._session_folder = self._sessions_folder + self._session.path
                 os.mkdir(self._session_folder)
 
+            self._initiate_reporters()
+
         def _load_previous_session(self, date, id):
             self._session_name = self._get_session_name(date, id)
             print "[+] Loading session '{}'!".format(self._session_name)
             self._session = Session(date, id, self._session_name)
+            self._load_info_from_current_session()
+
+        def load_session(self, index):
+            if index >= len(self._session_list):
+                print "[-] Session index out of bounds!"
+                return
+
+            if self._is_temporary:
+                self._cleanup_tmp_session()
+            self._session = self._session_list[index]
+            self._load_info_from_current_session()
+
+        def _load_info_from_current_session(self):
             self._session_folder = self._sessions_folder + self._session.path
             self._session.read_events(self._session_folder)
             self._session.read_commands(self._session_folder)
             self._session.parse_session_data(self._session_folder)
+            self._is_temporary = False
+            self._initiate_reporters()
 
         def _get_session_name(self, date, id):
             for session in os.listdir(self._sessions_folder + date):
@@ -64,7 +84,14 @@ class SessionManager(object):
                     return "_".join(session.split("_")[1:])
             return None
 
+        def get_current_session_name(self):
+            return self._session_name
+
+        def get_current_session_path(self):
+            return self._session.path
+
         def save_session(self):
+            self._is_temporary = False
             self._session.save_session(self._session_folder)
 
         def log_command(self, command):
@@ -83,15 +110,14 @@ class SessionManager(object):
 
         def session_prompt(self):
             self._date = strftime("%d_%m_%Y")
-            if self._date in os.listdir(self._sessions_folder):
-                answer = raw_input("[+] Found previous session from today. Do you want to load it? [Y/n]: ")
-                if answer.lower() in "yes" or answer == "":
-                    # Load previous session
-                    print "[+] Loading last session from {}".format(strftime("%d/%m/%Y"))
-                    self._session_id = len(os.listdir(self._sessions_folder + self._date))
-                    self._load_previous_session(self._date, self._session_id)
-                    self._initiate_reporters()
-                    return
+            if self._date in os.listdir(self._sessions_folder) and \
+               len(os.listdir(self._sessions_folder + "/" + self._date)) > 0:
+                # Load previous session
+                print "[+] Found previous session from today. Loading it."
+                print "[+] Loading last session from {}".format(strftime("%d/%m/%Y"))
+                self._session_id = len(os.listdir(self._sessions_folder + self._date))
+                self._load_previous_session(self._date, self._session_id)
+                return
 
             self._load_all_sessions()
             if len(self._session_list) == 0:
@@ -113,19 +139,15 @@ class SessionManager(object):
                         print "[-] Index must be Integer!"
                 self._session = self._session_list[answer]
                 self._load_previous_session(self._session.date, self._session.id)
-                self._initiate_reporters()
                 return
 
             # Create new session
-            print "[+] Creating new session on {}".format(strftime("%d/%m/%Y"))
+            print "[+] Creating new temporary session on {}".format(strftime("%d/%m/%Y"))
             self.start_new_session("_".join(raw_input("[+] Enter the desired session name: ").split()))
-            self._initiate_reporters()
 
         def _initiate_reporters(self):
             self._command_reporter = Reporter(self._session_folder + self._session.commands_filename)
             self._event_reporter = Reporter(self._session_folder + self._session.events_filename)
-            self._command_reporter.open()
-            self._event_reporter.open()
 
         def get_session(self):
             return self._session
@@ -133,26 +155,27 @@ class SessionManager(object):
         def get_command_history(self):
             return self._session.command_history
 
+        def _cleanup_tmp_session(self):
+            rmtree(self._session_folder)
+
         def close_session(self):
             self._command_reporter.close()
             self._event_reporter.close()
 
+            if self._is_temporary:
+                self._cleanup_tmp_session()
+            else:
+                self.save_session()
+
         def _load_all_sessions(self):
-            """
             self._session_list = [
                                     Session(datefolder, int(session.split("_")[0][-1]), "_".join(session.split("_")[1:]))
-                                    for datefolder in os.listdir(self._sessions_folder) if os.path.isdir(datefolder)
-                                    for session in os.listdir(datefolder)
+                                    for datefolder in os.listdir(self._sessions_folder) if os.path.isdir(self._sessions_folder + "/" + datefolder)
+                                    for session in os.listdir(self._sessions_folder + "/" + datefolder)
                                  ]
-            """
-            self._session_list = []
-            for datefolder in os.listdir(self._sessions_folder):
-                if os.path.isdir(self._sessions_folder + "/" + datefolder):
-                    for session in os.listdir(self._sessions_folder + "/" + datefolder):
-                        session = Session(datefolder, int(session.split("_")[0][-1]), "_".join(session.split("_")[1:]))
-                        self._session_list.append(session)
 
         def get_all_sessions(self):
+            self._load_all_sessions()
             all_sessions = []
             index = 0
             for session in self._session_list:
