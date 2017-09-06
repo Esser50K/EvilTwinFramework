@@ -239,7 +239,7 @@ class NetworkManager(object):
                 if not card.set_mac(mac):
                     return False
 
-                if not self.unmanaged_check(interface):
+                if not self.unmanaged_check(interface) or virtInterfaces > 0:
                     if not self.network_manager_ignore(interface, mac, virtInterfaces):
                         return False
 

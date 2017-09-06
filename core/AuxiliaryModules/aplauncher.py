@@ -107,7 +107,7 @@ class APLauncher(object):
 
         return configurations
 
-    def _get_multiple_ssid_configurations(self,  configurations,
+    def _get_multiple_ssid_configurations(self, configurations,
                                                 interface,
                                                 bssid=None,
                                                 ssids=[],
@@ -116,7 +116,7 @@ class APLauncher(object):
                                                 cipher="CCMP",
                                                 passwords=[]):
         """This method adds configuration lines for multiple netowrks to the configuration string."""
-        # hostapd can automatically create sub bssids if last bytes are set to 0
+        # hostapd can automatically create sub bssids if last byte is set to 0
         if bssid:
             bssid = bssid[:-1] + "0"
             configurations += "bssid={bssid}\n".format(bssid=bssid) + "\n"
@@ -155,6 +155,9 @@ class APLauncher(object):
                     # Forcing correct configuration so it doesnt come out WPA-WEP or something...
                     if auth.lower() not in ["psk", "eap"]:
                         auth = "PSK"
+
+                    if cipher.lower() not in ["tkip", "ccmp", "tkip/ccmp"]:
+                        cipher = "CCMP"
 
                     configurations += self._get_wpa_configurations(encryption, auth, cipher, password) + "\n"
                 counter += 1
@@ -286,7 +289,7 @@ class APLauncher(object):
                 password = line.split("password:")[-1].strip()
                 cred_string = username + ":" + password + "\n"
                 log_file.write(cred_string)
-                SessionManager().log_event(SuccessfulEvent("Got plain text password from '{}'").format(username))
+                SessionManager().log_event(SuccessfulEvent("Got plain text password from '{}'".format(username)))
                 if print_creds:
                     print cred_string
 
@@ -294,7 +297,7 @@ class APLauncher(object):
                 incoming_cred = False
                 jtr_challenge_response = line.split("NETNTLM:")[-1].strip()
                 log_file.write(jtr_challenge_response + "\n")
-                SessionManager().log_event(SuccessfulEvent("Got EAP hash from '{}'").format(username))
+                SessionManager().log_event(SuccessfulEvent("Got EAP hash from '{}'".format(username)))
                 if print_creds:
                     print jtr_challenge_response + "\n"
 

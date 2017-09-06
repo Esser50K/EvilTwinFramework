@@ -98,12 +98,10 @@ class SessionManager(object):
             self._session.append_command(command)
             self._command_reporter.write_log_line(command)
 
-        def log_event(self, event, to_print = False):
+        def log_event(self, event):
             event_str = str(event)
             self._session.append_command(event_str)
             self._event_reporter.write_log_line(event_str)
-            if to_print:
-                print event_str
 
         def update_session_data(self, key, data):
             self._session.set_session_data(key, data)
