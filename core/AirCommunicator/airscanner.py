@@ -12,6 +12,7 @@ from time import sleep
 from threading import Thread, Lock
 from netaddr import EUI, OUI
 from scapy.all import *
+from AuxiliaryModules.events import SuccessfulEvent, NeutralEvent, UnsuccessfulEvent
 from SessionManager.sessionmanager import SessionManager
 from utils.networkmanager import NetworkCard
 from utils.utils import DEVNULL
@@ -47,12 +48,14 @@ class AirScanner(object):
 
     def start_sniffer(self, interface, hop_channels=True, fixed_channel=7):
         self.running_interface = interface
+        SessionManager().log_event(NeutralEvent("Starting AirScanner module."))
         try:
             card = NetworkCard(interface)
             if card.get_mode().lower() != 'monitor':
                 card.set_mode('monitor')
         except:
             print "[-] Could not set card to monitor mode. Card might be busy."
+            SessionManager().log_event(UnsuccessfulEvent("AirScanner start was aborted, unable to set card to monitor mode."))
             return
 
         for plugin in self.plugins:
@@ -101,6 +104,7 @@ class AirScanner(object):
         self.running_interface = None
 
     def sniff_packets(self):
+        SessionManager().log_event(SuccessfulEvent("AirScanner module started successfully."))
         print "[+] Starting packet sniffer on interface '{}'".format(self.running_interface)
 
         try:
@@ -109,7 +113,9 @@ class AirScanner(object):
         except Exception as e:
             print str(e)
             print "[-] Exception occurred while sniffing on interface '{}'".format(self.running_interface)
+            SessionManager().log_event(UnsuccessfulEvent("AirScanner crashed during execution: {}.".format(str(e))))
 
+        SessionManager().log_event(NeutralEvent("AirScanner module stopped."))
         print "[+] Packet sniffer on interface '{}' has finished".format(self.running_interface)
         self._clean_quit(wait = False)
 
@@ -168,6 +174,8 @@ class AirScanner(object):
             with self.ap_lock:
                 self.access_points[beacon.bssid] = new_ap
 
+            SessionManager().log_event(NeutralEvent("Found new AP broadcasting '{}' with bssid '{}'."
+                                                    .format(beacon.ssid, beacon.bssid)))
             SessionManager().update_session_data("sniffed_aps", self.access_points)
 
     def handle_probe_req_packets(self, packet):
@@ -208,11 +216,20 @@ class AirScanner(object):
                                  probe.ssid, [probe.bssid], probe.rssi, probe_type)
         return probe_info
 
+    def _log_probe(self, probeInfo):
+        SessionManager().log_event(NeutralEvent("Found Probe {} {} '{}' {} SSID '{}'."
+                                                .format(probeInfo.type,
+                                                        "from" if probeInfo.type == "REQ" else "to",
+                                                        probeInfo.client_mac,
+                                                        "to" if probeInfo.type == "REQ" else "from",
+                                                        probeInfo.ap_ssid)))
+
     def _add_probe(self, probeInfo):
         with self.probe_lock:
             try:
                 if probeInfo not in self.probes:
                     self.probes.append(probeInfo)
+                    self._log_probe(probeInfo)
                 else:
                     self.probes[self.probes.index(probeInfo)].rssi = probeInfo.rssi             # Just update the rssi
                     self.probes[self.probes.index(probeInfo)].ap_bssids = probeInfo.ap_bssids   # Just update the bssids
@@ -221,6 +238,13 @@ class AirScanner(object):
             except Exception as e:
                 print "Error in airscanner._add_probe"
                 print e
+
+    def _log_client(self, probe):
+        SessionManager().log_event(NeutralEvent( "Identified Client from {} Packet."
+                                                 " Client MAC: '{}', AP SSID '{}'{}."
+                                                 .format(probe.type, probe.client_mac, probe.ap_ssid,
+                                                         ", AP BSSID '{}'".format(probe.bssids[0])
+                                                         if probe.type == "ASSO" else "")))
 
     def _add_client(self, probe):
         if probe.ap_ssid == "" and probe.type != "ASSO":
@@ -232,6 +256,7 @@ class AirScanner(object):
             try:
                 if wifiClient not in self.get_wifi_clients():
                     self.clients[probe.client_mac] = wifiClient
+                    self._log_client(probe)
                     SessionManager().update_session_data("sniffed_clients", self.clients)
                 else:
                     wifiClient = self.clients[probe.client_mac]

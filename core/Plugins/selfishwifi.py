@@ -1,5 +1,6 @@
-
 from AuxiliaryModules.packet import ClientPacket, AccessPointPacket
+from AuxiliaryModules.events import SuccessfulEvent, UnsuccessfulEvent, NeutralEvent
+from SessionManager.sessionmanager import SessionManager
 from plugin import AirScannerPlugin
 from utils.networkmanager import NetworkCard
 from scapy.all import   RadioTap, Dot11, Dot11Auth, Dot11Deauth, Dot11ProbeReq, Dot11ProbeResp, \
@@ -68,11 +69,13 @@ class SelfishWiFi(AirScannerPlugin):
                 for bssid in self.deauth_bssids:
                     for client in self.clients_to_deauth:
                         print "[+] Periodic attack on {} vs {}".format(client, self.deauth_ssid)
+                        SessionManager().log_event(NeutralEvent(
+                                                  "Periodic attack on {} vs {}".format(client, self.deauth_ssid)))
                         self.reactive_attack(client, bssid)
             except:
-                #Set sizes are likely to change and this raises exceptions
-                #I know how and that I can use locks, but this will lock the resource for too long
-                #This little hack ignores the exception and the attack starts over.
+                # Set sizes are likely to change and this raises exceptions
+                # I know how and that I can use locks, but this will lock the resource for too long
+                # This little hack ignores the exception and the attack starts over.
                 pass
             sleep(5)
 
@@ -82,10 +85,10 @@ class SelfishWiFi(AirScannerPlugin):
     def handle_packet(self, packet):
         parsed_packet = None
 
-        if  (Dot11ProbeReq in packet) or \
-            (Dot11AssoReq in packet) or \
-            (Dot11ReassoReq in packet) or \
-            (Dot11Auth in packet and packet[Dot11Auth].status):
+        if (Dot11ProbeReq in packet) or \
+           (Dot11AssoReq in packet) or \
+           (Dot11ReassoReq in packet) or \
+           (Dot11Auth in packet and packet[Dot11Auth].status):
 
             parsed_packet = ClientPacket(packet)
 
@@ -96,11 +99,10 @@ class SelfishWiFi(AirScannerPlugin):
 
             parsed_packet = AccessPointPacket(packet)
 
-
-        if  parsed_packet is not None and \
-            parsed_packet.client_mac not in self.ignore_clients and \
-            parsed_packet.client_mac not in self.deauth_bssids and \
-            parsed_packet.ssid == self.deauth_ssid:
+        if parsed_packet is not None and \
+           parsed_packet.client_mac not in self.ignore_clients and \
+           parsed_packet.client_mac not in self.deauth_bssids and \
+           parsed_packet.ssid == self.deauth_ssid:
 
             # When multiple access points have same ssid they are deauthed and logged
             if parsed_packet.bssid not in self.deauth_bssids:
@@ -112,9 +114,8 @@ class SelfishWiFi(AirScannerPlugin):
                 print "[+] General Deauthentication attack on {}({}) finished".format(  self.deauth_ssid,
                                                                                         parsed_packet.bssid)
 
-            # Sets don't duplicate, no need to check
-            self.deauth_bssids.add(parsed_packet.bssid)
-            if parsed_packet.client_mac not in self.deauth_bssids: # May have parsed client as bssid
+            self.deauth_bssids.add(parsed_packet.bssid)  # Sets don't duplicate, no need to check
+            if parsed_packet.client_mac not in self.deauth_bssids:  # May have parsed client as bssid
                 self.clients_to_deauth.add(parsed_packet.client_mac)
 
             print "[+] Saw a {packet} packet from {ssid} to {mac}({vendor})".format(packet = parsed_packet.__class__.__name__,
@@ -126,3 +127,6 @@ class SelfishWiFi(AirScannerPlugin):
                                                                         vendor = parsed_packet.client_vendor,
                                                                         ssid = parsed_packet.ssid)
             self.reactive_attack(parsed_packet.client_mac, parsed_packet.bssid)
+            SessionManager().log_event(NeutralEvent(
+                                      "Reactive attack on {} vs {}"
+                                      .format(parsed_packet.client_mac, parsed_packet.bssid)))

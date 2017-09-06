@@ -1,9 +1,9 @@
 """
 This class represents a pentesting session.
 """
+from AuxiliaryModules.events import parse_event_line
 from os.path import exists
 from threading import Lock
-from events import parse_event_line
 from jsonpickle import encode, decode
 
 class Session(object):

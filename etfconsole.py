@@ -610,13 +610,14 @@ class ETFConsole(Cmd):
                                                                     mode_end = colored("]", "cyan"))
 
     def do_eof(self, line):  # control-D
+        print "[+] Stopping all air communications"
+        self.aircommunicator.stop_air_communications(True, True, True)
+        self.aircommunicator.network_manager.cleanup()
+        self.etfitm.stop()
+        self.spawnmanager.restore_all()
         print "Closing Session..."
         SessionManager().close_session()
         print "Exiting..."
-        self.aircommunicator.stop_air_communications(True, True, True)
-        console.aircommunicator.network_manager.cleanup()
-        self.etfitm.stop()
-        self.spawnmanager.restore_all()
         os._exit(0)
 
     # Just overwriting this method so it doesn't execute the last non-empty line

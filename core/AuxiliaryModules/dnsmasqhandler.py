@@ -56,14 +56,12 @@ class DNSMasqHandler(object):
 
         return self._safe_write_config(configurations, self.dnsmasq_config_path)
 
-
     def _safe_write_config(self, configurations, config_path):
         if self.file_handler:
             self.file_handler.write(configurations)
         else:
             self.file_handler = FileHandler(config_path)
             self.file_handler.write(configurations)
-
 
     def start_dnsmasq(self):
         print "[+] Starting dnsmasq service"
@@ -75,7 +73,7 @@ class DNSMasqHandler(object):
 
     def stop_dnsmasq(self):
         os.system('service dnsmasq stop')
-        os.system('pkill dnsmasq')      # Cleanup
+        os.system('pkill dnsmasq')  # Cleanup
         self.dnsmasq_running = False
 
     def cleanup(self):

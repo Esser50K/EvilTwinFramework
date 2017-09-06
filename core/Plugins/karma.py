@@ -5,16 +5,18 @@ import pyric.pyw as pyw
 from AuxiliaryModules.aplauncher import APLauncher
 from AuxiliaryModules.dnsmasqhandler import DNSMasqHandler
 from AuxiliaryModules.packet import Beacon, ProbeRequest, ProbeResponse
+from AuxiliaryModules.events import NeutralEvent
+from SessionManager.sessionmanager import SessionManager
 from utils.networkmanager import NetworkCard, NetworkManager
 from utils.utils import NetUtils
-from plugin import AirScannerPlugin, AirHostPlugin
+from plugin import AirHostPlugin
 from random import randint
-from scapy.all import Dot11, Dot11Beacon, Dot11Elt, Dot11ProbeReq, Dot11ProbeResp, sniff
+from scapy.all import Dot11Beacon, Dot11ProbeReq, Dot11ProbeResp, sniff
 from threading import Thread
 from time import sleep
 
-#TODO choose AP's to launch by popularity
-#Read from a list of saved ssids and configure them if already known
+# TODO choose AP's to launch by popularity
+# Read from a list of saved ssids and configure them if already known
 class Karma(AirHostPlugin):
 
     def __init__(self):
@@ -33,22 +35,23 @@ class Karma(AirHostPlugin):
 
         self.present_networks   = set()
         self.lonely_probes      = set()
-        self.hit_count          = {} #ssid: count
+        self.hit_count          = {}  # ssid: count
         self.number_of_configured_nets = 0
 
         self.should_stop = False
 
     def pre_start(self):
-        #Prepare Threads
+        # Prepare Threads
         sniffer_thread  = Thread(target=self.sniff_packets)
         printer_thread  = Thread(target=self.print_status)
 
-        #Start Threads and Timer
+        # Start Threads and Timer
         sniffer_thread.start()
         printer_thread.start()
         self.stop_timer()
 
-        #Wait for sniffer to finish
+        SessionManager().log_event(NeutralEvent("Karma plugin sniffing for probe requests."))
+        # Wait for sniffer to finish
         sniffer_thread.join()
 
         self.post_scanning_configurations()
@@ -60,7 +63,7 @@ class Karma(AirHostPlugin):
         card = NetworkCard(self.ap_interface)
         if card is not None:
             gateway = card.get_ip()
-            for i in range(self.number_of_configured_nets-1):
+            for i in range(self.number_of_configured_nets - 1):
                 interface_name = "{}_{}".format(self.ap_interface, i)
                 if interface_name in pyw.winterfaces():
                     gateway = ".".join(gateway.split(".")[0:2] + [str(int(gateway.split(".")[2]) + 1)] + [gateway.split(".")[3]])
@@ -122,6 +125,7 @@ class Karma(AirHostPlugin):
                 self.hit_count[packet.ssid] += 1
             except:
                 self.hit_count[packet.ssid] = 1
+                SessionManager().log_event(NeutralEvent("Karma found Probe Request for '{}'".format(packet.ssid)))
         else:
             self.present_networks.add(packet.ssid)
 
@@ -139,44 +143,43 @@ class Karma(AirHostPlugin):
 
         self.aplauncher         = APLauncher(self.hostapd_conf)
         self.dnsmasqhandler     = DNSMasqHandler(self.dnsmasq_conf)
-        rand_mac = "52:54:00:%02x:%02x:%02x" % (randint(0, 255), 
+        rand_mac = "52:54:00:%02x:%02x:%02x" % (randint(0, 255),
                                                 randint(0, 255),
                                                 randint(0, 255))
         final_list = []
         if len(self.lonely_probes) < self.max_access_points:
             print "[+] Adding all requested ssids to hostapd configuration."
             for probe in self.lonely_probes:
-                print "[+] Adding '{}' with hit_count '{}' to hostapd configuration".format(probe, 
+                print "[+] Adding '{}' with hit_count '{}' to hostapd configuration".format(probe,
                                                                                             self.hit_count[probe])
             final_list = list(self.lonely_probes)
+            SessionManager().log_event(NeutralEvent("Added all found probes to Karma list."))
         else:
             inverted_popular_ssids = { hit_count : ssid for ssid, hit_count in self.hit_count.iteritems() }
             ordered_popularity = sorted(inverted_popular_ssids.keys())[::-1]
             for i in ordered_popularity:
                 popular_ssid = inverted_popular_ssids[i]
                 final_list.append(popular_ssid)
-                print "[+] Adding '{}' with hit_count '{}' to hostapd configuration".format(popular_ssid, 
+                print "[+] Adding '{}' with hit_count '{}' to hostapd configuration".format(popular_ssid,
                                                                                             self.hit_count[popular_ssid])
+                SessionManager().log_event(NeutralEvent("Added '{}' to Karma list.".format(popular_ssid)))
                 if len(final_list) == self.max_access_points:
                     break
 
         self.number_of_configured_nets = len(final_list)
-        NetworkManager().set_mac_and_unmanage(  self.ap_interface, 
-                                                rand_mac, 
-                                                True, 
+        NetworkManager().set_mac_and_unmanage(  self.ap_interface,
+                                                rand_mac,
+                                                True,
                                                 self.number_of_configured_nets)
 
-
         self.dnsmasqhandler.set_captive_portal_mode(self.captive_portal)
-        self.dnsmasqhandler.write_dnsmasq_configurations(self.ap_interface, 
-                                                    card.get_ip(), 
-                                                    [   ".".join(card.get_ip().split(".")[:3] + ["2"]), 
-                                                        ".".join(card.get_ip().split(".")[:3] + ["254"])    ], 
+        self.dnsmasqhandler.write_dnsmasq_configurations(self.ap_interface,
+                                                    card.get_ip(),
+                                                    [   ".".join(card.get_ip().split(".")[:3] + ["2"]),
+                                                        ".".join(card.get_ip().split(".")[:3] + ["254"])    ],
                                                     ["8.8.8.8", "8.8.4.4"],
                                                     len(final_list))
 
-        self.aplauncher.write_hostapd_configurations(   self.ap_interface, 
+        self.aplauncher.write_hostapd_configurations(   self.ap_interface,
                                                         final_list,
                                                         rand_mac)
-
-

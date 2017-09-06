@@ -7,8 +7,9 @@ and dhcp and dns services
 
 from AuxiliaryModules.dnsmasqhandler import DNSMasqHandler
 from AuxiliaryModules.aplauncher import APLauncher
+from AuxiliaryModules.events import SuccessfulEvent, UnsuccessfulEvent, NeutralEvent
+from SessionManager.sessionmanager import SessionManager
 from etfexceptions import MissingConfigurationFileException
-
 
 class AirHost(object):
     """
@@ -47,6 +48,7 @@ class AirHost(object):
         The print_credentials flag is used by the APLauncher
         to print out EAP credentials caught by hostapd-wpe.
         """
+        SessionManager().log_event(NeutralEvent("Starting AirHost module."))
         print "[+] Killing already started processes and restarting network services"
 
         # Restarting services helps avoiding some conflicts with dnsmasq
@@ -58,15 +60,18 @@ class AirHost(object):
         self.aplauncher.print_creds = print_credentials
         self.aplauncher.start_access_point(interface)
         if not self.dnsmasqhandler.start_dnsmasq():
-            print "[-] Error starting dnsmasq, aborting AP launch"
+            SessionManager().log_event(UnsuccessfulEvent(
+                                      "Error starting dnsmasq. AirHost module start was aborted."), True)
+            self.stop_access_point()
             return False
 
+        self.running_interface = interface
         print "[+] Running airhost plugins post_start"
         for plugin in self.plugins:
             plugin.post_start()
 
-        self.running_interface = interface
         print "[+] Access Point launched successfully"
+        SessionManager().log_event(SuccessfulEvent("AirHost module started successfully."))
         return True
 
     def stop_access_point(self, free_plugins = True):
@@ -75,13 +80,18 @@ class AirHost(object):
         self.aplauncher.stop_access_point()
         self.dnsmasqhandler.stop_dnsmasq()
         self.running_interface = None
+
+        SessionManager().log_event(NeutralEvent("AirHost module stopped."))
         print "[+] Access Point stopped..."
 
         for plugin in self.plugins:
+            SessionManager().log_event(NeutralEvent("Running stop method for '{}' plugin.".format(plugin)))
             plugin.stop()
 
         if free_plugins and len(self.plugins) > 0:
             for plugin in self.plugins:
+                SessionManager().log_event(NeutralEvent(
+                                          "Running restore method for '{}' plugin.".format(plugin)))
                 plugin.restore()
             del self.plugins[:]
             print "[+] Cleared Airhost plugins"

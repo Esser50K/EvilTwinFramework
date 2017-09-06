@@ -1,5 +1,7 @@
-import sys, os
-from netaddr import EUI, OUI
+import os
+from AuxiliaryModules.events import NeutralEvent
+from SessionManager.sessionmanager import SessionManager
+from netaddr import EUI
 from subprocess import call
 
 
@@ -22,8 +24,9 @@ class WPAHandshake(object):
 
 class WEPDataFile(object):
 
-    def __init__(self, id=0, bssid=None, date=None, location=None):
+    def __init__(self, id=0, ssid=None, bssid=None, date=None, location=None):
         self.id = id
+        self.ssid = ssid
         self.bssid = bssid
         self.date = date
         self.location = location
@@ -97,8 +100,8 @@ class AirCracker(object):
     def _parse_wep_data_filename(self, wepfile):
         try:
             filename = wepfile.split(".")[0]
-            _, bssid, date = filename.split("_")
-            return WEPDataFile(len(self.wep_data_logs), bssid, date, self.log_dir + "wep_captures/" + wepfile)
+            _, ssid, bssid, date = filename.split("_")
+            return WEPDataFile(len(self.wep_data_logs), ssid, bssid, date, self.log_dir + "wep_captures/" + wepfile)
         except:
             pass
 
@@ -113,8 +116,7 @@ class AirCracker(object):
     def set_wpa_cracker(self, wpa_cracker):
         self.wpa_cracker = wpa_cracker
 
-    def prepare_wpa_cracker(self, id, is_half):
-        handshake = self.half_wpa_handshakes[id] if is_half else self.wpa_handshakes[id]
+    def prepare_wpa_cracker(self, handshake):
         self.wpa_cracker.ssid = handshake.ssid
         self.wpa_cracker.pcap_file = handshake.location
 
@@ -139,8 +141,15 @@ class AirCracker(object):
             print "[-] Chosen index is out of bounds"
             return
 
-        self.prepare_wpa_cracker(id, is_half)
+        # Get handshake and prepare cracker
+        handshake = self.half_wpa_handshakes[id] if is_half else self.wpa_handshakes[id]
+        self.wpa_cracker.ssid = handshake.ssid
+        self.wpa_cracker.pcap_file = handshake.location
+
+        # Launch the cracker with specified cracking tool
         self.wpa_cracker.spawn_cracker()
+        SessionManager().log_event(NeutralEvent("Started cracking session with '{}' on WPA handshake with ssid '{}'."
+                                                .format(self.wpa_cracker.name, handshake.ssid)))
 
     def launch_wep_cracker(self, id, is_latte):
         self.load_wep_data_logs(is_latte)
@@ -159,4 +168,6 @@ class AirCracker(object):
         if execution_string is not None:
             print "[+] Called:", execution_string
             call("sudo gnome-terminal -e".split() + [ "./wep_rcfile.sh" ])
+            SessionManager().log_event(NeutralEvent("Started cracking session with aircrack-ng on WEP capture with ssid '{}'."
+                                                    .format(self.wep_data_logs[id].ssid)))
         os.system("rm wep_rcfile.sh")

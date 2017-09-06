@@ -6,14 +6,16 @@ the deauthentication attacks, targeted or general
 import os
 import logging
 import traceback
+from AuxiliaryModules.aplauncher import APLauncher
+from AuxiliaryModules.events import NeutralEvent
+from Plugins.deauthenticator import Deauthenticator
+from SessionManager.sessionmanager import SessionManager
 from scapy.all import conf
 from time import sleep
 from threading import Thread, Lock
 from utils.utils import DEVNULL
 from utils.networkmanager import NetworkCard
 from utils.wifiutils import AccessPoint, WiFiClient
-from Plugins.deauthenticator import Deauthenticator
-from SessionManager.sessionmanager import SessionManager
 
 class AirInjector(object):
 
@@ -54,8 +56,6 @@ class AirInjector(object):
         self.plugins.append(plugin)
 
     def injection_attack(self):
-        # Packet creation based on:
-        # https://raidersec.blogspot.pt/2013/01/wireless-deauth-attack-using-aireplay.html
         if len(self.plugins) == 0:
             self.add_plugin(Deauthenticator())  # Deauthentication is default behaviour of injector
 
@@ -87,11 +87,15 @@ class AirInjector(object):
     def injection_thread_pool_start(self, plugin_method):
         plugin_threads = []
         for plugin in self.plugins:
-            plugin_injection_thread = Thread(target =   plugin.pre_injection if plugin_method == "pre_injection" else
-                                                        plugin.inject_packets if plugin_method == "inject_packets" else
-                                                        plugin.post_injection)
+            plugin_methods = {
+                                "pre_injection"  : plugin.pre_injection,
+                                "inject_packets" : plugin.inject_packets,
+                                "post_injection" : plugin.post_injection
+                             }
+            plugin_injection_thread = Thread(target =   plugin_methods[plugin_method])
             plugin_threads.append(plugin_injection_thread)
             plugin_injection_thread.start()
+            SessionManager().log_event(NeutralEvent("Started '{}' with '{}' plugin.".format(plugin_method, plugin)))
 
         for thread in plugin_threads:
             thread.join()       # Wait to finish execution
@@ -108,12 +112,18 @@ class AirInjector(object):
         self.running_interface = None
 
     def start_injection_attack(self, interface):
+        SessionManager().log_event(NeutralEvent("Starting AirInjector module."))
         self.injection_interface = interface
         card = NetworkCard(interface)
         current_mode = card.get_mode().lower()
         self._previous_mode = current_mode
         if not (current_mode == 'monitor' or current_mode == 'ap'):
-            card.set_mode('monitor')
+            try:
+                card.set_mode('monitor')
+            except:
+                SessionManager().log_event(UnsuccessfulEvent("AirInjector start was aborted,"
+                                                             " cannot set card to monitor mode."))
+                return
 
         self.injection_running = True
         injection_thread = Thread(target=self.injection_attack)

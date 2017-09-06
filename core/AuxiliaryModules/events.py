@@ -2,7 +2,6 @@
 This module has classes related to events.
 """
 from time import strftime
-from enum import Enum
 
 event_symbols = {
                     -1  : "[-]",
@@ -20,8 +19,7 @@ def parse_event_line(line):
     except:
         return None
 
-
-class EventType(Enum):
+class EventType(object):
     Unsuccessful    = -1
     Neutral         = 0
     Successful      = 1
@@ -43,8 +41,8 @@ class UnsuccessfulEvent(Event):
 
 class NeutralEvent(Event):
     def __init__(self, message):
-        super(UnsuccessfulEvent, self).__init__(EventType.Neutral, message)
+        super(NeutralEvent, self).__init__(EventType.Neutral, message)
 
 class SuccessfulEvent(Event):
     def __init__(self, message):
-        super(UnsuccessfulEvent, self).__init__(EventType.Successful, message)
+        super(SuccessfulEvent, self).__init__(EventType.Successful, message)

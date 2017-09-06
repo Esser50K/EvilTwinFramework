@@ -1,5 +1,7 @@
 import os
 import pyric.pyw as pyw
+from AuxiliaryModules.events import SuccessfulEvent, UnsuccessfulEvent, NeutralEvent
+from SessionManager.sessionmanager import SessionManager
 from etfexceptions import InvalidConfigurationException
 from netaddr import EUI
 from subprocess import Popen, PIPE, check_output
@@ -83,7 +85,7 @@ class APLauncher(object):
 
     def _get_catch_all_honeypot_configurations(self, configurations, interface, ssid, bssid):
         """This method writes 'catch-all' honeypot configurations on the hostapd configuration file."""
-        # hostapd can automatically create sub bssids if last bytes are set to 0
+        # hostapd can automatically create sub bssids if last byte is set to 0
         if bssid:
             bssid = bssid[:-1] + "0"
             configurations += "bssid={bssid}\n".format(bssid=bssid) + "\n"
@@ -284,6 +286,7 @@ class APLauncher(object):
                 password = line.split("password:")[-1].strip()
                 cred_string = username + ":" + password + "\n"
                 log_file.write(cred_string)
+                SessionManager().log_event(SuccessfulEvent("Got plain text password from '{}'").format(username))
                 if print_creds:
                     print cred_string
 
@@ -291,6 +294,7 @@ class APLauncher(object):
                 incoming_cred = False
                 jtr_challenge_response = line.split("NETNTLM:")[-1].strip()
                 log_file.write(jtr_challenge_response + "\n")
+                SessionManager().log_event(SuccessfulEvent("Got EAP hash from '{}'").format(username))
                 if print_creds:
                     print jtr_challenge_response + "\n"
 
@@ -400,8 +404,10 @@ class APLauncher(object):
 
             try:
                 if client not in self.connected_clients[interface]:
-                    print "[+] New connected client on '{ssid}'-> ip: {ip}, mac: {mac} ({vendor})".\
-                        format(ssid=ssid, ip=client_ip, mac=client_mac, vendor=client.vendor)
+                    connected_client_str = "New connected client on '{ssid}'-> ip: {ip}, mac: {mac} ({vendor})"\
+                                           .format(ssid=ssid, ip=client_ip, mac=client_mac, vendor=client.vendor)
+                    SessionManager().log_event(SuccessfulEvent(connected_client_str))
+                    print "[+]", connected_client_str
             except: pass
 
             temp_clients.append(client)
@@ -411,8 +417,6 @@ class APLauncher(object):
 
     def _count_hash_captures(self):
         return len(os.listdir("data/hashes/"))
-
-
 
 class Client(object):
     """This class is a representation of a Wi-Fi client device."""

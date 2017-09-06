@@ -1,6 +1,8 @@
 import os
-from plugin import AirScannerPlugin
 from AuxiliaryModules.packetfilter import BSSIDPacketFilter, SSIDPacketFilter, ChannelPacketFilter
+from AuxiliaryModules.events import NeutralEvent
+from SessionManager.sessionmanager import SessionManager
+from plugin import AirScannerPlugin
 from scapy.utils import PcapWriter
 
 class PacketLogger(AirScannerPlugin):
@@ -15,7 +17,7 @@ class PacketLogger(AirScannerPlugin):
             try:
                 type, value = map(str.strip, filter.split("="))
                 self.add_filter(type, value)
-            except Exception as e: 
+            except Exception as e:
                 print e
                 pass
 
@@ -24,8 +26,9 @@ class PacketLogger(AirScannerPlugin):
         self.packet_logger = None
 
     def pre_scanning(self):
-        self.packet_logger = PcapWriter(self.destination_folder + self.current_log_file, 
+        self.packet_logger = PcapWriter(self.destination_folder + self.current_log_file,
                                         append=True, sync=True)
+        SessionManager().log_event(NeutralEvent("Packet Logger initiated."))
 
     def _get_log_count(self):
         # Get the number of existing log files
@@ -64,7 +67,7 @@ class PacketLogger(AirScannerPlugin):
 
     def refresh(self):
         self._nlogs = self._get_log_count()
-        self.packet_logger = PcapWriter(self.destination_folder + "packet_log{n}.cap".format(n = self._nlogs), 
+        self.packet_logger = PcapWriter(self.destination_folder + "packet_log{n}.cap".format(n = self._nlogs),
                                         append=True, sync=True)
 
     def handle_packet(self, packet):
