@@ -69,6 +69,9 @@ class NetworkCard(object):
     def set_mac(self, mac):
         try:
             pyw.down(self.card)
+            # If card was in monitor mode then macset wouldn't work right
+            if pyw.modeget(self.card) == "monitor":
+                pyw.modeset(self.card, "managed")
             pyw.macset(self.card, mac)
             pyw.up(self.card)
             return True
