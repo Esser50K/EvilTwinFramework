@@ -1,5 +1,6 @@
 """
-This class will save all used Spawners
+This class will save all used Spawners.
+
 and manage them by checking if the tool is present in the system
 and setting up and restoring them
 """
@@ -19,11 +20,20 @@ class SpawnManager(object):
         self.spawners = []
         self.configs = ConfigurationManager().config["etf"]["spawner"]
 
+    def _get_all_spawner_classes(self, cls = Spawner):
+        return cls.__subclasses__() + [ allcls for subcls in cls.__subclasses__()
+                                        for allcls in self._get_all_spawner_classes(subcls)]
+
     def add_spawner(self, spawner_name):
         try:
             spawner = None
-            for spawner in Spawner.__subclasses__():
-                spawner_instance = spawner()
+            all_subclasses = self._get_all_spawner_classes()
+            for spawner in all_subclasses:
+                try:
+                    spawner_instance = spawner()
+                except Exception as e:
+                    print str(e)
+                    return
                 if spawner_instance.name == spawner_name:
                     spawner_instance.spawn()
                     self.spawners.append(spawner_instance)

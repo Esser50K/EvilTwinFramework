@@ -8,7 +8,7 @@ While sniffing or even while running a fake access point to capture hal wpa hand
 """
 import os, traceback
 from AuxiliaryModules.packet import Beacon
-from AuxiliaryModules.events import SuccessfulEvent, UnsuccessfulEvent, NeutralEvent
+from AuxiliaryModules.events import SuccessfulEvent
 from SessionManager.sessionmanager import SessionManager
 from pyric import pyw as pyw
 from plugin import AirScannerPlugin, AirHostPlugin, AirInjectorPlugin
@@ -261,11 +261,11 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirInjectorPlugin):
 
             self.wpa_handshakes[client_mac]['ssid'] = self.running_ssid
             print "[+] Half WPA Handshake found for client '{}' and network '{}'\n".format( client_mac,
-                                                                                            ssid)
+                                                                                            self.running_ssid)
             if "wpa_half_handshakes" not in os.listdir(self.log_dir):
                 os.mkdir(self.log_dir + "wpa_half_handshakes")
 
-            log_file_path = self.log_dir + "wpa_half_handshakes/handshake_{}_{}.cap".format(ssid,
+            log_file_path = self.log_dir + "wpa_half_handshakes/handshake_{}_{}.cap".format(self.running_ssid,
                                                                                             client_mac)
             self._log_packets(log_file_path, client_mac)
             SessionManager().log_event(SuccessfulEvent("Logged Half-WPA Handshake between '{}' and '{}' with SSID '{}'"
@@ -300,8 +300,8 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirInjectorPlugin):
             if "wpa_handshakes" not in os.listdir(self.log_dir):
                 os.mkdir(self.log_dir + "wpa_handshakes")
 
-            log_file_path = self.log_dir + "wpa_handshakes/handshake_{}_{}.cap".format( self.wpa_handshakes[client_mac]['ssid'],
-                                                                                        client_mac)
+            log_file_path = self.log_dir + "wpa_handshakes/handshake_{}_{}.cap".format(self.wpa_handshakes[client_mac]['ssid'],
+                                                                                       client_mac)
             self._log_packets(log_file_path, client_mac)
 
             source_mac = self._get_source_from_packet(self.wpa_handshakes[client_mac]['packets'][0])
@@ -424,7 +424,7 @@ class ChallengeResponseAuth(object):
         if self.type == "MD5":
             # Save in JTR format
             # username:$1$salt$hash
-            jtr_hash_string = "{username}:$1{salt}${hash}".format(  username=self.username,
+            jtr_hash_string = "{username}:$1${salt}${hash}".format(  username=self.username,
                                                                     salt=self.challenge,
                                                                     hash=self.response  )
         elif self.type == "LEAP":
