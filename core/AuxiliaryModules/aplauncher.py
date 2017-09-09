@@ -69,6 +69,8 @@ class APLauncher(object):
                                 channel={channel}
                                 hw_mode={hw_mode}
                                 ignore_broadcast_ssid=0
+                                ieee80211n=1
+                                wmm_enabled=1
                                 """.format( interface=interface,
                                             ssid=ssid,
                                             channel=channel,
