@@ -17,7 +17,7 @@ class Spawner(object):
         self.name = name
         self.config = ConfigurationManager().config["etf"]["spawner"][name]
         self.arg_string = " ".join(self.config[name + "_args"])
-        self.system_location = self.config["system_location"]
+        self.system_location = self.config[name + "_system_location"]
         self.calling = None
         self.process = None
         self.is_set_up = False

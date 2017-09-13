@@ -3,17 +3,11 @@ This class is responsible for performing
 the deauthentication attacks, targeted or general
 """
 
-import os
-import logging
-import traceback
-from AuxiliaryModules.aplauncher import APLauncher
 from AuxiliaryModules.events import NeutralEvent
 from Plugins.deauthenticator import Deauthenticator
 from SessionManager.sessionmanager import SessionManager
 from scapy.all import conf
-from time import sleep
-from threading import Thread, Lock
-from utils.utils import DEVNULL
+from threading import Thread
 from utils.networkmanager import NetworkCard
 from utils.wifiutils import AccessPoint, WiFiClient
 

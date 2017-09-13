@@ -2,7 +2,6 @@
 This module handles custom mitm scripts using mitmproxy inline scripts
 """
 
-import sys, os
 from MITMPlugins.mitmplugin import MITMPlugin
 from MITMPlugins.beefinjector import BeefInjector
 from MITMPlugins.peinjector import PeInjector
@@ -17,7 +16,8 @@ from threading import Thread
 
 
 class ThreadController(Thread):
-    def __init__(self,main ,parent=None):
+
+    def __init__(self, main, parent = None):
         super(ThreadController, self).__init__(parent)
         self.main = main
 
@@ -141,7 +141,7 @@ class EvilInTheMiddle(object):
         self.running            = False
 
     def pass_config(self,   listen_host = None, listen_port = 8080,
-                            ssl = False, client_cert = None, certs = [], 
+                            ssl = False, client_cert = None, certs = [],
                             plugins = []):
         self.listen_host    = listen_host
         self.listen_port    = listen_port
@@ -175,12 +175,12 @@ class EvilInTheMiddle(object):
 
     def _prepare_handler(self):
         proxy_opts      = options.Options(
-                            clientcerts=self.client_cert,
-                            certs=self.certs,
-                            #listen_host=self.listen_host,
-                            listen_port=self.listen_port,
-                            mode='transparent',
-                            )
+                                            clientcerts=self.client_cert,
+                                            certs=self.certs,
+                                            listen_host=self.listen_host,
+                                            listen_port=self.listen_port,
+                                            mode='transparent',
+                                        )
         proxy_config    = proxy.ProxyConfig(proxy_opts)
         proxy_server = ProxyServer(proxy_config)
         self.master_handler = EvilInTheMiddleHandler(proxy_opts, proxy_server)
@@ -195,12 +195,12 @@ class EvilInTheMiddle(object):
 
     def _prepare_iptable_rules(self):
         if not self.set_rules:
-            NetUtils().set_port_redirection_rule("tcp", "80", self.listen_port)
+            NetUtils().set_port_redirection_rule("tcp", "80", self.listen_port, True)
             if self.ssl:
-                NetUtils().set_port_redirection_rule("tcp", "443", self.listen_port)
+                NetUtils().set_port_redirection_rule("tcp", "443", self.listen_port, True)
 
             self.set_rules = True
-            
+
     def _clear_iptable_rules(self):
         if self.set_rules:
             NetUtils().set_port_redirection_rule("tcp", "80", self.listen_port, add = False)

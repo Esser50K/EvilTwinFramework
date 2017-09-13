@@ -69,5 +69,3 @@ class AirInjectorPlugin(Plugin):
 
     def post_injection(self):
         pass
-
-

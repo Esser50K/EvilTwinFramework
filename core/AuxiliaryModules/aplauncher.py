@@ -1,6 +1,6 @@
 import os
 import pyric.pyw as pyw
-from AuxiliaryModules.events import SuccessfulEvent, UnsuccessfulEvent, NeutralEvent
+from AuxiliaryModules.events import SuccessfulEvent
 from SessionManager.sessionmanager import SessionManager
 from etfexceptions import InvalidConfigurationException
 from netaddr import EUI

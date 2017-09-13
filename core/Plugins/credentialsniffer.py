@@ -249,6 +249,9 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirInjectorPlugin):
         self.wpa_handshakes[client_mac] = fields
 
     def _log_wpa_handshake(self, client_mac):
+        if client_mac not in self.wpa_handshakes.keys():
+            return
+
         if self.is_ap:
             self._log_half_wpa_handshake(client_mac)
         else:

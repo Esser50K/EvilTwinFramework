@@ -1,6 +1,6 @@
 
-from netaddr import EUI, OUI
-from scapy.all import Dot11, Dot11Beacon, Dot11Elt, Dot11ProbeReq, Dot11ProbeResp, EAPOL
+from netaddr import EUI
+from scapy.all import Dot11, Dot11Elt
 
 cipher_suites = { 'GROUP'   : '\x00\x0f\xac\x00',
                   'WEP'     : '\x00\x0f\xac\x01',
@@ -16,7 +16,7 @@ def get_vendor(mac):
             maco = EUI(mac)                         # EUI - Extended Unique Identifier
             try:
                 return maco.oui.registration().org  # OUI - Organizational Unique Identifier
-            except Exception as e:                  # OUI not registered exception
+            except:                                 # OUI not registered exception
                 return None
         return None
 

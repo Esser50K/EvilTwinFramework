@@ -7,7 +7,6 @@ with help of the httpserver class as well as configuring dnsmasq
 import os
 from utils.utils import FileHandler
 from textwrap import dedent
-from time import sleep
 
 class DNSMasqHandler(object):
 

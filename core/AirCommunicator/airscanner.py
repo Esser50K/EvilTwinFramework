@@ -5,17 +5,13 @@ This module is responsible for scanning the air
 for 802.11 packets mostly using the Scapy module
 '''
 
-import os
-import pyric.pyw as pyw
 from AuxiliaryModules.packet import Beacon, ProbeResponse, ProbeRequest, AssociationResponse
 from time import sleep
 from threading import Thread, Lock
-from netaddr import EUI, OUI
-from scapy.all import *
+from scapy.all import Dot11Beacon, Dot11ProbeReq, Dot11ProbeResp, Dot11AssoResp, conf, sniff
 from AuxiliaryModules.events import SuccessfulEvent, NeutralEvent, UnsuccessfulEvent
 from SessionManager.sessionmanager import SessionManager
 from utils.networkmanager import NetworkCard
-from utils.utils import DEVNULL
 from utils.wifiutils import AccessPoint, WiFiClient, ProbeInfo
 
 class AirScanner(object):
@@ -136,11 +132,11 @@ class AirScanner(object):
                         current_channel_index = 0
 
                     sleep(.25)
-                except Exception as e:
+                except:
                     pass
 
                 current_channel_index += 1
-        except Exception as e:
+        except:
             pass  # The sniffer has already been aborted
 
     def handle_packets(self, packet):
@@ -243,7 +239,7 @@ class AirScanner(object):
         SessionManager().log_event(NeutralEvent( "Identified Client from {} Packet."
                                                  " Client MAC: '{}', AP SSID '{}'{}."
                                                  .format(probe.type, probe.client_mac, probe.ap_ssid,
-                                                         ", AP BSSID '{}'".format(probe.bssids[0])
+                                                         ", AP BSSID '{}'".format(probe.ap_bssids[0])
                                                          if probe.type == "ASSO" else "")))
 
     def _add_client(self, probe):
