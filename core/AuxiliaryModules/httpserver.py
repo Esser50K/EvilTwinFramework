@@ -57,18 +57,18 @@ class HTTPServer(object):
         if os.path.exists(apache_path):
             if self.overwrite:
                 shutil.rmtree(apache_path)
-            else: 
+            else:
                 return
 
         shutil.copytree(spoofpage_path, apache_path)
-        os.system("chmod 777 {apache_path}/*".format(apache_path = apache_path))
-        #Add cred files to list
+        os.system("chmod -R 777 {apache_path}".format(apache_path = apache_path))
+        # Add cred files to list
         if self.cred_file_keyword:
             for filename in os.listdir(apache_path):
                 if self.cred_file_keyword in filename:
                     self.cred_files_to_print.append(apache_path + "/" + filename)
 
-    def configure_page_in_apache(   self, domain_name, domain_alias = [], 
+    def configure_page_in_apache(   self, domain_name, domain_alias = [],
                                     captive_portal_mode = False):
         apache_http_config_file = "{conf_path}{domain}.http.conf".format(   conf_path = self.apache_config_path,
                                                                             domain = domain_name)
@@ -85,8 +85,8 @@ class HTTPServer(object):
                                         <If "%{{HTTP_HOST}} != '{domain}'">
                                             Redirect "/" "http://{domain}"
                                         </If>
-                                        """).format(domain = domain_name) 
-                                        #var has to be hardcoded because of the format function
+                                        """).format(domain = domain_name)
+                                        # var has to be hardcoded because of the format function
 
         apache_domain_config = dedent(  """
                                         ServerName {domain}
@@ -134,5 +134,3 @@ class HTTPServer(object):
             https_config.write(apache_https_config_string)
         Popen("a2ensite {http_config}".format(http_config = apache_http_config_file.split("/")[-1]).split(), stdout=DEVNULL, stderr=DEVNULL)
         Popen("a2ensite {https_config}".format(https_config = apache_https_config_file.split("/")[-1]).split(), stdout=DEVNULL, stderr=DEVNULL)
-
-

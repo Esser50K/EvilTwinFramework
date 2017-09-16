@@ -9,6 +9,11 @@ It uses <b>apache</b> with help of dnsmasq to launch spoofed webpages as well as
 
 Packet sending and receiving is all done via <b>Scapy!</b>
 
+# Youtube Tutorials
+
+I did a couple of video tutorials on the framework. Some basic use cases and a couple of actual demos.
+Tutorial Playlist: https://www.youtube.com/watch?v=3HE4aVFF2Dc&list=PLwkyhOBmFMuo9sTQeVSh8IxDjtwsbYlQk
+
 # Motivation
 
 The <b>Evil Twin Framework</b> is meant to replace all existing Wi-Fi hacking tools by integrating all features necessary for Wi-Fi penetration testing in one framework. The 3 core features needed are:

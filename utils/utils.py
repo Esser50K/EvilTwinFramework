@@ -12,7 +12,7 @@ from subprocess import check_output
 from etfexceptions import InvalidFilePathException, InvalidConfigurationException
 from threading import Thread
 
-DEVNULL = open(os.devnull, 'wb') # Stream used to hide output from another process
+DEVNULL = open(os.devnull, 'wb')  # Stream used to hide output from another process
 
 class AsyncTask(Thread):
     def __init__(self, cmd=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, screen_output=False):
@@ -54,7 +54,7 @@ class NetUtils:
     This class is responsible for setting the general
     routing rules by making calls to 'iptables' and 'route'
     """
-    
+
     def flush_iptables(self):
         os.system('iptables -F')
         os.system('iptables -t nat -F')
@@ -62,7 +62,7 @@ class NetUtils:
         os.system('iptables -t nat --delete-chain')
         os.system('echo 0 > /proc/sys/net/ipv4/ip_forward')
 
-    def accept_forwarding(self, interface): 
+    def accept_forwarding(self, interface):
         os.system('echo 1 > /proc/sys/net/ipv4/ip_forward')
         os.system('iptables -P FORWARD ACCEPT')
         os.system('iptables -A FORWARD --in-interface {interface} -j ACCEPT'.format(
@@ -130,10 +130,10 @@ class NetUtils:
         except:
             return None
 
-    
+
 class FileHandler(object):
     '''
-    This class is mostly for writing configuration files 
+    This class is mostly for writing configuration files
     without the need to overwrite the one that already exists
     '''
 
@@ -160,7 +160,3 @@ class FileHandler(object):
             with open(self.current_file, mode) as filepath:
                 filepath.write(string)
                 filepath.close()
-
-
-
-
