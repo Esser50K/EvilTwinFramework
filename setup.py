@@ -58,9 +58,12 @@ spawner_packages =  [
                         "ettercap-common", "sslstrip"
                     ]
 
-spawner_package_install_string =    "Spawner Packages are:\n" + "\n".join(spawner_packages) + \
-                                    "\nDo you want to install spawner packages too? [y/n]: "
-install_spawners = raw_input(spawner_package_install_string).lower() in ["y", "yes"]
+if len(sys.argv) > 1:
+    install_spawners = sys.argv[1] in ["y", "yes"]
+else:
+    spawner_package_install_string =    "Spawner Packages are:\n" + "\n".join(spawner_packages) + \
+                                        "\nDo you want to install spawner packages too? [y/n]: "
+    install_spawners = raw_input(spawner_package_install_string).lower() in ["y", "yes"]
 
 package_list = core_packages + spawner_packages if install_spawners else core_packages
 
