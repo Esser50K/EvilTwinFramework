@@ -23,8 +23,8 @@ from utils.crc import calc_crc32
 # that is why MinimalWEP had to be created
 class CaffeLatte(AirScannerPlugin, AirInjectorPlugin):
 
-    def __init__(self):
-        super(CaffeLatte, self).__init__("caffelatte")
+    def __init__(self, config):
+        super(CaffeLatte, self).__init__(config, "caffelatte")
         self.sniffing_interface = self.config["sniffing_interface"]
         self.ap_ssid = self.config["ap_ssid"]
         self.ap_bssid = self.config["ap_bssid"]

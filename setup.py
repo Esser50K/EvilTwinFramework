@@ -44,6 +44,7 @@ except Exception as e:
 core_packages = [
                     "python-scapy", "dnsmasq", "hostapd-wpe",
                     "python-prettytable", "python-termcolor",
+                    "python-configobj", "python-netaddr",
                     "--reinstall mitmproxy", "gnome-terminal"
                 ]
 
@@ -59,6 +60,7 @@ spawner_packages =  [
                     ]
 
 if len(sys.argv) > 1:
+    print sys.argv[1]
     install_spawners = sys.argv[1] in ["y", "yes"]
 else:
     spawner_package_install_string =    "Spawner Packages are:\n" + "\n".join(spawner_packages) + \

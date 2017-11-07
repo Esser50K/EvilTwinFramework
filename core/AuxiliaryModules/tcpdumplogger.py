@@ -14,20 +14,21 @@ class TCPDumpLogger(object):
         self.log_path = log_path
         self.filter = filter
         self.tcpdump_process = None
-        self.is_logging = False
+        self._is_logging = False
         self.log_lock = Lock()
 
     def is_logging(self):
-        return self.is_logging
+        return self._is_logging
 
     def start_logging(self):
         tcpdump_string = "tcpdump -i {}".format(self.interface).split()
         tcpdump_string += [ self.filter ] if self.filter is not None else ""
         tcpdump_string += "-w {log}".format(log = self.log_path).split()
 
+        print " ".join(tcpdump_string)
         self.tcpdump_process = Popen(tcpdump_string, stdout = DEVNULL, stderr = DEVNULL)
         with self.log_lock:
-            self.is_logging = True
+            self._is_logging = True
 
     def stop_logging(self):
         with self.log_lock:

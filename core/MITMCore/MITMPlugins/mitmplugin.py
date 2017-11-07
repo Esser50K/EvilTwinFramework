@@ -1,15 +1,17 @@
 """
-This module has the base class for MITM custom plugins
-Every MITM Plugin must be a subclass of MITMPlugin
+This module has the base class for MITM custom plugins.
+
+Every MITM Plugin must be a subclass of MITMPlugin.
 """
-import sys
-from ConfigurationManager.configmanager import ConfigurationManager
 
 class MITMPlugin(object):
+    """
+    Base class for the ETFITM plugins.
+    """
 
-    def __init__(self, name):
+    def __init__(self, config, name):
         self.name = name
-        self.config = ConfigurationManager().config["etf"]["mitmproxy"]["mitmplugins"][name]
+        self.config = config[name]
 
     def setup(self):
         pass

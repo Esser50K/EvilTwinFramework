@@ -17,24 +17,24 @@ from Plugins.karma import Karma
 from Plugins.arpreplayer import ARPReplayer
 from Plugins.caffelatte import CaffeLatte
 from ConfigurationManager.configmanager import ConfigurationManager
-from utils.networkmanager import NetworkManager
+from utils.networkmanager import NetworkManager, NetworkCard
 from textwrap import dedent
 from time import sleep
 from SessionManager.sessionmanager import SessionManager
 
 class AirCommunicator(object):
 
-    def __init__(self):
-        self.configs = ConfigurationManager().config["etf"]["aircommunicator"]
-        self.config_files = ConfigurationManager().config["etf"]["config_location"]
+    def __init__(self, config):
+        self.configs = config
+        self.plugin_configs = config["plugins"]
 
-        self.air_host = AirHost(self.config_files["hostapd_conf"], self.config_files["dnsmasq_conf"])
-        self.air_scanner = AirScanner()
-        self.air_injector = AirInjector()
-        self.air_cracker = AirCracker(self.configs["aircracker"]["log_dir"])
+        self.air_host = AirHost(config["airhost"])
+        self.air_scanner = AirScanner(config["airscanner"])
+        self.air_injector = AirInjector(config["airinjector"])
+        self.air_cracker = AirCracker(config["aircracker"])
 
-        unmanaged_interfaces = ConfigurationManager().config["etf"]["unmanaged_interfaces"]
-        self.network_manager = NetworkManager(self.config_files["networkmanager_conf"], unmanaged_interfaces)
+        unmanaged_interfaces = config["unmanaged_interfaces"]
+        self.network_manager = NetworkManager(config["networkmanager_conf"], unmanaged_interfaces)
 
         self.info_printer = InfoPrinter()
         self.load_session_data()
@@ -169,19 +169,19 @@ class AirCommunicator(object):
         return False
 
     def start_sniffer(self, plugins = []):
+        """
+        This method starts the AirScanner sniffing service.
+        """
         # Sniffing options
         if not self.air_scanner.sniffer_running:
             self.add_plugins(plugins, self.air_scanner, AirScannerPlugin)
-
-            sniff_probes = self.configs["airscanner"]["probes"].lower() == "true"
-            sniff_beacons = self.configs["airscanner"]["beacons"].lower() == "true"
-            hop_channels = self.configs["airscanner"]["hop_channels"].lower() == "true"
+            card = NetworkCard(self.configs["airscanner"]["sniffing_interface"])
             try:
                 fixed_sniffing_channel = int(self.configs["airscanner"]["fixed_sniffing_channel"])
-                if fixed_sniffing_channel > 13:
+                if fixed_sniffing_channel not in card.get_available_channels():
                     raise
             except:
-                print "Channel must be an integer and below 14\n"
+                print "Chosen operating channel is not supported by the Wi-Fi card.\n"
                 return
 
             sniffing_interface = self.configs["airscanner"]["sniffing_interface"]
@@ -189,25 +189,25 @@ class AirCommunicator(object):
                 print "[-] sniffing_interface '{}' does not exist".format(sniffing_interface)
                 return
 
-            mac = self.configs["airhost"]["aplauncher"]["bssid"]
-
-            if not self.network_manager.set_mac_and_unmanage(sniffing_interface, mac, retry = True):
+            if not self.network_manager.set_mac_and_unmanage(sniffing_interface, card.get_mac(), retry = True):
                 print "[-] Unable to set mac and unmanage, resetting interface and retrying."
                 print "[-] Sniffer will probably crash."
 
-            self.air_scanner.set_probe_sniffing(sniff_probes)
-            self.air_scanner.set_beacon_sniffing(sniff_beacons)
-            self.air_scanner.start_sniffer(sniffing_interface, hop_channels, fixed_sniffing_channel)
+            self.air_scanner.start_sniffer(sniffing_interface)
 
         else:
             print "[-] Sniffer already running"
 
     def add_plugins(self, plugins, airmodule, baseclass):
+        """
+        Adds plugins to the specified module.
+        """
         for air_plugin in baseclass.__subclasses__():
-            air_plugin_instance = air_plugin()
+            air_plugin_instance = air_plugin(self.plugin_configs)
             if air_plugin_instance.name in plugins:
                 airmodule.add_plugin(air_plugin_instance)
-                print "[+] Successfully added {} plugin.".format(air_plugin_instance.name)
+                print "[+] Successfully added {} plugin to {}.".format( air_plugin_instance.name,
+                                                                        airmodule.__class__.__name__)
 
     def stop_air_communications(self, stop_sniffer, stop_ap, stop_injection):
         if stop_sniffer and self.air_scanner.sniffer_running:
@@ -263,7 +263,6 @@ class AirCommunicator(object):
                 print password_info
 
             print bssid_info
-            ConfigurationManager().config.write()  # Singleton perks ;)
         else:
             print "[-] No access point with ID = {}".format(str(id))
 
@@ -281,7 +280,6 @@ class AirCommunicator(object):
 
             self.configs["airhost"]["aplauncher"]["encryption"] = "None"
 
-            ConfigurationManager().config.write()  # Singleton perks ;)
         else:
             print "[-] No probe with ID = {}".format(str(id))
 

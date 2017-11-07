@@ -1,9 +1,8 @@
 """
-This module is an adapted copy of Wifi-Pumpkin's downloadspoof.py plugin developped by Marcos Nesster
+This module is an adapted copy of Wifi-Pumpkin's downloadspoof.py plugin developped by Marcos Nesster.
 https://github.com/P0cL4bs/WiFi-Pumpkin/blob/master/plugins/extension/downloadspoof.py
 """
 from os import path
-from mitmproxy import ctx
 from mitmproxy.models import decoded
 from mitmplugin import MITMPlugin
 
@@ -16,8 +15,8 @@ exe_mimetypes = [
 
 class DownloadReplacer(MITMPlugin):
 
-    def __init__(self):
-        super(DownloadReplacer, self).__init__("downloadreplacer")
+    def __init__(self, config):
+        super(DownloadReplacer, self).__init__(config, "downloadreplacer")
         self.backdoors = {
                             'application/pdf'       : self.get_config('pdf_backdoor'),
                             'application/msword'    : self.get_config('doc_backdoor'),

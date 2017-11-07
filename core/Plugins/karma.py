@@ -19,8 +19,8 @@ from time import sleep
 # Read from a list of saved ssids and configure them if already known
 class Karma(AirHostPlugin):
 
-    def __init__(self):
-        super(Karma, self).__init__("karma")
+    def __init__(self, config):
+        super(Karma, self).__init__(config, "karma")
         self.scan_time = self.config["scan_time"]
         # It will configure the hostapd file according
         self.ap_interface = self.config["ap_interface"]
@@ -54,6 +54,7 @@ class Karma(AirHostPlugin):
         # Wait for sniffer to finish
         sniffer_thread.join()
 
+        # Configure hostapd and dnsmasq
         self.post_scanning_configurations()
 
     # Has to reconfigure interfaces after they are set up

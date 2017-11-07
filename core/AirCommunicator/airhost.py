@@ -5,6 +5,7 @@ It makes use of hostapd and dnsmasq to provide an access point
 and dhcp and dns services
 """
 
+from os.path import isfile
 from AuxiliaryModules.dnsmasqhandler import DNSMasqHandler
 from AuxiliaryModules.aplauncher import APLauncher
 from AuxiliaryModules.events import SuccessfulEvent, UnsuccessfulEvent, NeutralEvent
@@ -19,15 +20,15 @@ class AirHost(object):
     to configure and launch the services.
     """
 
-    def __init__(self, hostapd_config_path, dnsmasq_config_path):
+    def __init__(self, config):
         """The AirHost module constructor."""
         # Mandatory configuration files to start the access point successfully
-        if (dnsmasq_config_path is None or hostapd_config_path is None):
+        if (not isfile(config["dnsmasq_conf"]) or not isfile(config["hostapd_conf"])):
             raise MissingConfigurationFileException("dnsmasq and hostapd configuration files must be specified\n \
                                                     either by argument in the command line or in the etf.conf file")
 
-        self.aplauncher = APLauncher(hostapd_config_path)
-        self.dnsmasqhandler = DNSMasqHandler(dnsmasq_config_path)
+        self.aplauncher = APLauncher(config["hostapd_conf"])
+        self.dnsmasqhandler = DNSMasqHandler(config["dnsmasq_conf"])
 
         self.running_interface = None
 
@@ -76,6 +77,11 @@ class AirHost(object):
 
     def stop_access_point(self, free_plugins = True):
         """This method cleanly stops the access point and all its background services."""
+
+        for plugin in self.plugins:
+            SessionManager().log_event(NeutralEvent("Running pre_stop method for '{}' plugin.".format(plugin)))
+            plugin.pre_stop()
+
         print "[+] Stopping dnsmasq and hostapd services"
         self.aplauncher.stop_access_point()
         self.dnsmasqhandler.stop_dnsmasq()
@@ -85,8 +91,8 @@ class AirHost(object):
         print "[+] Access Point stopped..."
 
         for plugin in self.plugins:
-            SessionManager().log_event(NeutralEvent("Running stop method for '{}' plugin.".format(plugin)))
-            plugin.stop()
+            SessionManager().log_event(NeutralEvent("Running post_stop method for '{}' plugin.".format(plugin)))
+            plugin.post_stop()
 
         if free_plugins and len(self.plugins) > 0:
             for plugin in self.plugins:

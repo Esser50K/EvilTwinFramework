@@ -17,7 +17,6 @@ class APLauncher(object):
 
         self.ap_running = False
         self.ap_process = None
-        self.credential_printer = None
 
         self.connected_clients_updator = None
         self.connected_clients = {}  # interface: client_list

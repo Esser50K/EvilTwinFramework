@@ -15,8 +15,8 @@ from threading import Thread, Lock
 
 class ARPReplayer(AirScannerPlugin):
 
-    def __init__(self):
-        super(ARPReplayer, self).__init__("arpreplayer")
+    def __init__(self, config):
+        super(ARPReplayer, self).__init__(config, "arpreplayer")
         self.target_ssid = None
         self.arp_packet = None
         self.replay_thread = None
@@ -76,7 +76,7 @@ class ARPReplayer(AirScannerPlugin):
                                                     # real count is from tcpdump
 
                 if self.n_captured_data_packets % self.notification_divisor == 0 and \
-                   self.n_captured_data_packets > 0:
+                   self.n_captured_data_packets > 0 and self.tcpdump_logger.is_logging():
                     self.n_captured_data_packets = self.tcpdump_logger.get_wep_data_count()
                     print "[+] tcpdump captured {} wep data packets so far...".format(self.n_captured_data_packets)
 
@@ -114,5 +114,6 @@ class ARPReplayer(AirScannerPlugin):
 
     def post_scanning(self):
         self.injection_working = False
-        self.replay_thread.join()
+        if self.replay_thread:
+            self.replay_thread.join()
         self.tcpdump_logger.stop_logging()

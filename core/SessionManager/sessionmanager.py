@@ -1,5 +1,5 @@
 """
-This is another Singleton Class used for managing pentesting sessions.
+This is a Singleton Class used for managing pentesting sessions.
 
 The class holds information about the current session such as:
 - Command History
@@ -17,7 +17,18 @@ from shutil import rmtree
 from time import strftime
 
 class SessionManager(object):
+    """
+    Implementation of the ETF Session Manager.
+    """
+
     instance = None
+
+    def __init__(self):
+        """
+        Singleton Constructor that always returns the first created instance.
+        """
+        if not SessionManager.instance:
+            SessionManager.instance = SessionManager.__SessionManager()
 
     class __SessionManager(object):
         def __init__(self, sessions_folder="core/SessionManager/sessions/"):
@@ -90,7 +101,10 @@ class SessionManager(object):
         def get_current_session_path(self):
             return self._session.path
 
-        def save_session(self):
+        def save_session(self, name=None):
+            if name:
+                self._session_name = name
+                self._session.name = name
             self._is_temporary = False
             self._session.save_session(self._session_folder)
 
@@ -190,10 +204,6 @@ class SessionManager(object):
             session_headers = ["INDEX:", "DATE:", "ID:", "NAME:"]
             self.info_printer.add_info(info_key, sessions, session_args, session_headers)
             self.info_printer.print_info(info_key, filter_string)
-
-    def __init__(self):
-        if not SessionManager.instance:
-            SessionManager.instance = SessionManager.__SessionManager()
 
     def __getattr__(self, name):
         return getattr(self.instance, name)

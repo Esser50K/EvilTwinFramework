@@ -49,9 +49,12 @@ bind_layers( EAPOLKey,      EAPOLKeyDot11,  desc_type=254)
 bind_layers( EAPOLKey,      EAPOLKeyDot11,  desc_type=2)
 
 class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirInjectorPlugin):
+    """
+    A plugin that can be used by any module to look for WPA-PSK Handshakes and WPA-EAP credentials.
+    """
 
-    def __init__(self):
-        super(CredentialSniffer, self).__init__("credentialsniffer")
+    def __init__(self, config):
+        super(CredentialSniffer, self).__init__(config, "credentialsniffer")
         self.running_interface = self.config["sniffing_interface"]
         self.running_bssid = self.config["bssid"]
         self.running_ssid = self.config["ssid"]
@@ -74,7 +77,7 @@ class CredentialSniffer(AirScannerPlugin, AirHostPlugin, AirInjectorPlugin):
         except:
             self.timeout = 30
 
-        # When sniffing for credentials on interface running in master mode
+        # When sniffing for credentials on interface running in Master mode
         # scapy will only be able to sniff for layer 3 packets (Networking)
         # so it never receives a Beacon packet (layer2) to verify the access point ssid
         # best to pass it as parameter since we are running the access point we know the ssid

@@ -58,7 +58,7 @@ class AirInjector(object):
             plugin.interpret_targets(self._ap_targets, self._client_targets)
             plugin.set_injection_socket(injection_socket)
 
-        # Launches all added plugins' post injection methods and waits for finish
+        # Launches all added plugins' pre injection methods and waits for finish
         self.injection_thread_pool_start("pre_injection")
 
         # Launches all added plugins' injection attacks and waits for finish
@@ -97,13 +97,13 @@ class AirInjector(object):
 
     def _restore_injection_state(self):
         try:
-            card = NetworkCard(self.running_interface)
+            card = NetworkCard(self.injection_interface)
             if card.get_mode().lower() != self._previous_mode:
                 card.set_mode(self._previous_mode)
                 self._previous_mode = None
         except: pass
 
-        self.running_interface = None
+        self.injection_interface = None
 
     def start_injection_attack(self, interface):
         SessionManager().log_event(NeutralEvent("Starting AirInjector module."))

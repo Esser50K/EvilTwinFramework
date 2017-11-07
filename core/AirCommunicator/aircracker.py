@@ -52,12 +52,12 @@ class CaffeLatteDataFile(object):
 
 class AirCracker(object):
 
-    def __init__(self, wpa_cracker = None, log_dir = "data/"):
+    def __init__(self, config, wpa_cracker = None):
         self.wpa_handshakes         = []
         self.half_wpa_handshakes    = []
         self.wep_data_logs          = []
         self.wpa_cracker = wpa_cracker
-        self.log_dir = log_dir
+        self.log_dir = config["log_dir"]
         self.load_wpa_handshakes()
         self.load_half_wpa_handshakes()
 

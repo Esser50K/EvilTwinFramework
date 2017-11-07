@@ -23,17 +23,18 @@ from utils.wifiutils import AccessPoint, WiFiClient, ProbeInfo
 class ETFConsole(Cmd):
 
     def __init__(self, history = []):
-        # Old style super ?
+        # Super for "old style" class
         Cmd.__init__(self)
         # Load command history
         for cmd in history:
             readline.add_history(cmd.strip())
 
         # Backend Tools
-        self.configs = ConfigurationManager("./core/ConfigurationManager/etf.conf").config
-        self.aircommunicator = AirCommunicator()
-        self.etfitm          = EvilInTheMiddle()
-        self.spawnmanager    = SpawnManager()
+        self.configmanager = ConfigurationManager("core/ConfigurationManager/etf.conf")
+        self.configs = self.configmanager.config
+        self.aircommunicator = AirCommunicator(self.configs["etf"]["aircommunicator"])
+        self.etfitm          = EvilInTheMiddle(self.configs["etf"]["mitmproxy"])
+        self.spawnmanager    = SpawnManager(self.configs["etf"]["spawner"])
 
         # Static strings to help with autocompletion
 
@@ -249,24 +250,15 @@ class ETFConsole(Cmd):
             if not is_var(var):
                 return
 
-            self._set_global_config(self.configs, var, value)
-            self.configs.write()
+            self.configmanager.set_global_config(var, value)
+            self.configmanager.write()
             print "{config} = {value}".format(  config = var,
                                                 value = self.current_config_mode[var])
         except KeyError:
             print "'{key}' does not exist in the configuration file".format(key = var)
-        except Exception:
+        except Exception as e:
+            raise e
             pass
-
-    def _set_global_config(self, dict_root, var, val):
-        if var in dict_root.keys():
-            dict_root[var] = val
-
-        for key, value in dict_root.items():
-            if isinstance(value, dict):
-                try:
-                    self._set_global_config(value, var, val)
-                except: pass
 
     def complete_setconf(self, text, line, begidx, endidx):
         return self.complete_vars(text)
@@ -590,9 +582,18 @@ class ETFConsole(Cmd):
         self.aircommunicator.load_session_data()
 
     def do_save_session(self, args):
-        SessionManager().save_session()
-        print "[+] Saved current session '{}' under '{}'!".format(SessionManager().get_current_session_name(),
-                                                                  SessionManager().get_current_session_path())
+        args = args.split()
+        if SessionManager().get_current_session_name() != "":
+            SessionManager().save_session()
+            print "[+] Saved current session '{}' under '{}'!".format(SessionManager().get_current_session_name(),
+                                                                      SessionManager().get_current_session_path())
+        else:
+            if len(args) >= 1:
+                SessionManager().save_session(args[0])
+                print "[+] Saved current session '{}' under '{}'!".format(SessionManager().get_current_session_name(),
+                                                                          SessionManager().get_current_session_path())
+            else:
+                print "Cannot save nameless session. Please add a name after the command."
 
     def do_load_session(self, args):
         args = args.split()

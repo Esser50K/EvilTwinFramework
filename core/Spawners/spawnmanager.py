@@ -16,9 +16,9 @@ from ConfigurationManager.configmanager import ConfigurationManager
 
 class SpawnManager(object):
 
-    def __init__(self):
+    def __init__(self, config):
         self.spawners = []
-        self.configs = ConfigurationManager().config["etf"]["spawner"]
+        self.configs = config
 
     def _get_all_spawner_classes(self, cls = Spawner):
         return cls.__subclasses__() + [ allcls for subcls in cls.__subclasses__()
@@ -30,7 +30,7 @@ class SpawnManager(object):
             all_subclasses = self._get_all_spawner_classes()
             for spawner in all_subclasses:
                 try:
-                    spawner_instance = spawner()
+                    spawner_instance = spawner(self.configs)
                 except Exception as e:
                     print str(e)
                     return

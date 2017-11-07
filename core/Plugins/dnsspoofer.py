@@ -15,8 +15,8 @@ from utils.utils import FileHandler
 
 class DNSSpoofer(AirHostPlugin):
 
-    def __init__(self):
-        super(DNSSpoofer, self).__init__("dnsspoofer")
+    def __init__(self, config):
+        super(DNSSpoofer, self).__init__(config, "dnsspoofer")
         self.spoof_ip = self.config["spoof_ip"]
         self.hosts_config_path = self.config["hosts_conf"]
 

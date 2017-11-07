@@ -126,7 +126,8 @@ class NetworkCard(object):
     def set_channel(self, channel):
         try:
             pyw.chset(self.card, channel)
-        except:
+        except Exception as e:
+            raise e
             return None
 
     def get_available_channels(self):

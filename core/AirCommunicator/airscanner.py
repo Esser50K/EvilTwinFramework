@@ -16,7 +16,8 @@ from utils.wifiutils import AccessPoint, WiFiClient, ProbeInfo
 
 class AirScanner(object):
 
-    def __init__(self):
+    def __init__(self, config):
+        self.configs = config
         self.sniffer_running = False
         self.running_interface = None
         self.sniffing_thread = None
@@ -42,7 +43,10 @@ class AirScanner(object):
     def set_beacon_sniffing(self, option):
         self.sniff_beacons = option
 
-    def start_sniffer(self, interface, hop_channels=True, fixed_channel=7):
+    def start_sniffer(self, interface):
+        """
+        This method launches the necessary threads for the sniffing process.
+        """
         self.running_interface = interface
         SessionManager().log_event(NeutralEvent("Starting AirScanner module."))
         try:
@@ -61,20 +65,8 @@ class AirScanner(object):
         self.sniffing_thread = Thread( target=self.sniff_packets)
         self.sniffing_thread.start()
 
-        if hop_channels:
-            hopper_thread = Thread( target=self.hop_channels)
-            hopper_thread.start()
-        else:
-            try:
-                card = NetworkCard(interface)
-                card.set_channel(fixed_channel)
-                if card.get_channel() == fixed_channel:
-                    print "[+] Set fixed channel to {}".format(fixed_channel)
-                else:
-                    print "[-] Could not change channel, try unplugging your interface."
-                    print "[/] Channel is on {}".format(card.get_channel())
-            except:
-                print "[-] Cannot set channel at the moment."
+        hopper_thread = Thread( target=self.hop_channels)
+        hopper_thread.start()
 
     def stop_sniffer(self):
         Thread(target=self._clean_quit).start()  # Avoids blocking when executed via the console
@@ -116,7 +108,9 @@ class AirScanner(object):
         self._clean_quit(wait = False)
 
     def hop_channels(self):
-        # Hop through channels to get find more beacons
+        """
+        Hops through the available channels to find more access points.
+        """
         try:
             card = NetworkCard(self.running_interface)
             available_channels = card.get_available_channels()
@@ -124,31 +118,35 @@ class AirScanner(object):
             current_channel_index = 0
             while self.sniffer_running:
                 try:
-
-                    if current_channel_index < n_available_channels:
-                        card.set_channel(available_channels[current_channel_index])
+                    if self.configs["hop_channels"].lower() == "true":
+                        if current_channel_index < n_available_channels:
+                            card.set_channel(available_channels[current_channel_index])
+                        else:
+                            card.set_channel(1)
+                            current_channel_index = 0
                     else:
-                        card.set_channel(1)
-                        current_channel_index = 0
+                        card.set_channel(int(self.configs["fixed_sniffing_channel"]))
 
                     sleep(.25)
-                except:
+                except Exception:
                     pass
 
                 current_channel_index += 1
-        except:
+        except Exception:
             pass  # The sniffer has already been aborted
 
     def handle_packets(self, packet):
-        # Pass packets through plugins before filtering
+        """
+        Pass packets through plugins before filtering and parsing them.
+        """
         for plugin in self.plugins:
             plugin.handle_packet(packet)
 
-        if self.sniff_beacons:
+        if self.configs["beacons"].lower() == "true":
             if Dot11Beacon in packet:
                 self.handle_beacon_packets(packet)
 
-        if self.sniff_probes:
+        if self.configs["probes"].lower() == "true":
             if Dot11ProbeReq in packet:
                 self.handle_probe_req_packets(packet)
             if Dot11ProbeResp in packet:
