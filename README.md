@@ -14,6 +14,7 @@ Packet sending and receiving is all done via <b>Scapy!</b>
 I did a couple of video tutorials on the framework. Some basic use cases and a couple of actual demos.
 
 Tutorial Playlist: https://www.youtube.com/watch?v=3HE4aVFF2Dc&list=PLwkyhOBmFMuo9sTQeVSh8IxDjtwsbYlQk
+New Youtube channel with more engineering endeavors: https://www.youtube.com/channel/UCBxzOQd2v9wWfiMDrf_RQ7A
 
 # Motivation
 
