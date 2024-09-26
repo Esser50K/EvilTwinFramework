@@ -6,7 +6,7 @@ and their information
 
 import os
 import pyric.pyw as pyw
-from utils import NetUtils, FileHandler
+from .utils import NetUtils, FileHandler
 from subprocess import check_output
 from textwrap import dedent
 
@@ -57,7 +57,7 @@ class NetworkCard(object):
             pyw.modeset(self.card, mode)
             pyw.up(self.card)
         except Exception as e:
-            print e, "\n[-] Unable to set mode on {}".format(self.interface)
+            print(e, "\n[-] Unable to set mode on {}".format(self.interface))
             return False
 
     def get_mode(self):
@@ -76,7 +76,7 @@ class NetworkCard(object):
             pyw.up(self.card)
             return True
         except Exception as e:
-            print e, "\n[-] Unable to set mac on {}".format(self.interface)
+            print(e, "\n[-] Unable to set mac on {}".format(self.interface))
             return False
 
     def get_mac(self):
@@ -155,7 +155,7 @@ class NetworkCard(object):
         if mode == 'AP':
             os.system("iw dev {} station dump".format(self.interface))
         else:
-            print "[-] '{}' is not on AP mode".format(self.interface)
+            print("[-] '{}' is not on AP mode".format(self.interface))
 
     def get_number_of_supported_aps(self):
         if self._ap_mode_support and not self._number_of_supported_aps:
@@ -181,7 +181,7 @@ class NetworkCard(object):
                             self._number_of_supported_aps = int(real_num)
                             break
                         except:
-                            print "Error converting '{}' to int".format(line.split("=")[-1].strip())
+                            print("Error converting '{}' to int".format(line.split("=")[-1].strip()))
                             return None
 
         return self._number_of_supported_aps
@@ -252,7 +252,7 @@ class NetworkManager(object):
             if not retry:
                 break
 
-            print "[-] Unable to set mac and unmanage, resetting interface and retrying."
+            print("[-] Unable to set mac and unmanage, resetting interface and retrying.")
             retry = False
             try:
                 card = NetworkCard(interface)
@@ -294,7 +294,7 @@ class NetworkManager(object):
             self.file_handler.write(ignore_config)
             self.netcards[interface].set_managed(True)
         except Exception as e:
-            print e
+            print(e)
             return False
 
         return True
@@ -309,7 +309,7 @@ class NetworkManager(object):
                 self.netcards = { interface: NetworkCard(interface) for interface in pyw.winterfaces() }
                 netcard = self.netcards[interface]
         except KeyError:
-            print "[-] Interface: '{}' does not exist".format(interface)
+            print("[-] Interface: '{}' does not exist".format(interface))
             return None
 
         return netcard

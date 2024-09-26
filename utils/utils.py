@@ -44,7 +44,7 @@ class AsyncTask(Thread):
     def run(self):
         if self.screen_output:
             for output_line in self.async_exec():
-                print output_line.strip()
+                print(output_line.strip())
                 if self.exit: break
         else:
             self.async_exec()
@@ -110,12 +110,12 @@ class NetUtils:
         for line in arp_output:
             if mac.lower() in line.lower():
                 try:
-                    device_name, device_ip = map(str.strip, (line.split()[0:2]))
+                    device_name, device_ip = list(map(str.strip, (line.split()[0:2])))
                     device_ip = device_ip[1:-1] # Cut the enclosing parenthesis off: (0.0.0.0) -> 0.0.0.0
                     return (device_name, device_ip)
                 except Exception as e:
-                    print e
-                    print "[-] Problem occurred while parsing arp output."
+                    print(e)
+                    print("[-] Problem occurred while parsing arp output.")
 
         return (None, None)
 
