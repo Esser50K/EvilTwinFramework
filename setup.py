@@ -4,7 +4,7 @@ sys.path.append('./core')
 sys.path.append('./utils')
 
 from textwrap import dedent
-from utils.utils import FileHandler
+import utils FileHandler
 
 def install_scapy_git():
     print !"[+] Preparing to install latest version of scapy from git.")
